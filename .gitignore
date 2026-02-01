@@ -17,6 +17,7 @@ web-build/
 # config
 .env
 data/credits.json
+utils/data-source/
 utils/secrets.json
 utils/serviceAccountKey.json
 eas.json

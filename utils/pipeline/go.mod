@@ -1,4 +1,4 @@
-module schedule-games
+module pipeline
 
 go 1.23.1
 

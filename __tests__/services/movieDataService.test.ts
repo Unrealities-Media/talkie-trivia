@@ -1,29 +1,30 @@
 // --- MOCK DATA ---
-const mockBasicMovies = [
+// Mock the Minified Format
+const mockSearchIndex = [
   {
-    id: 101,
-    title: "Movie A",
-    release_date: "2020-01-01",
-    poster_path: "/a.jpg",
+    i: 101,
+    t: "Movie A",
+    y: "2020",
+    p: "/a.jpg",
+    d: "Director A",
+    g: ["Action"],
+    c: ["Actor 1"],
   },
   {
-    id: 102,
-    title: "Movie B",
-    release_date: "2021-01-01",
-    poster_path: "/b.jpg",
+    i: 102,
+    t: "Movie B",
+    y: "2021",
+    p: "/b.jpg",
+    d: "Director B",
+    g: ["Comedy"],
+    c: ["Actor 2"],
   },
-]
-
-const mockLiteMovies = [
-  { id: 101, d: "Director A", g: ["Action"], c: ["Actor 1"], y: "2020" },
-  { id: 102, d: "Director B", g: ["Comedy"], c: ["Actor 2"], y: "2021" },
 ]
 
 const mockCloudMovie = {
   id: 101,
   title: "Movie A",
-  overview: "Original Bad Plot",
-  manual_overview: "Better Manual Plot",
+  overview: "Full Cloud Plot",
   poster_path: "/a.jpg",
   release_date: "2020-01-01",
   tagline: "Cloud Tagline",
@@ -32,13 +33,14 @@ const mockCloudMovie = {
   vote_average: 8.0,
   vote_count: 100,
   genres: [{ id: 1, name: "Action" }],
-  director: { id: 1, name: "Director A", imdb_id: "nm1" },
-  actors: [{ id: 10, name: "Actor 1", imdb_id: "nm10", order: 0 }],
+  director: { name: "Director A", imdb_id: "nm1" },
+  actors: [{ name: "Actor 1", imdb_id: "nm10", order: 0 }],
 }
 
 // --- MOCKS ---
-jest.mock("../../src/data/basicMovies.json", () => mockBasicMovies)
-jest.mock("../../src/data/moviesLite.json", () => mockLiteMovies)
+jest.mock("../../src/data/searchIndex.json", () => mockSearchIndex, {
+  virtual: true,
+})
 
 jest.mock("firebase/firestore", () => ({
   getFirestore: jest.fn(),
@@ -87,8 +89,13 @@ describe("Service: MovieDataService", () => {
 
       expect(result.dailyItem.title).toBe("Movie A")
       expect(result.dailyItem.description).toBe("Full Cloud Plot")
-      expect(result.dailyItem.hints[0].value).toBe("Director A")
-      expect(result.dailyItem.description).toBe("Better Manual Plot")
+
+      // Check that hints were enriched from the Cloud Data
+      const genreHint = result.dailyItem.hints.find(
+        (h: any) => h.type === "genre",
+      )
+      expect(genreHint?.value).toBe("Action")
+
       expect(result.basicItems).toHaveLength(2)
     })
 

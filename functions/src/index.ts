@@ -25,23 +25,35 @@ export const submitGameResult = onCall(async (request) => {
   const score = calculateScore(playerGame)
   const isWin = playerGame.correctAnswer
 
-  // 3. Transactional Update of Stats
-  const playerStatsRef = db.collection("playerStats").doc(userId)
-  const playerGameRef = db.collection("playerGames").doc(playerGame.id)
-
+  // 3. FIX: Robust Date ID Generation
+  // We default to "Today" (Server Time) if parsing fails, preventing a crash.
   let dateId = new Date().toISOString().split("T")[0]
+
   try {
-    const dateVal = playerGame.startDate
-    if (typeof dateVal === "string") {
-      dateId = dateVal.split("T")[0]
-    } else if (dateVal && typeof dateVal.toDate === "function") {
-      // Handle Firestore Timestamp if passed directly
-      dateId = dateVal.toDate().toISOString().split("T")[0]
+    const raw = playerGame.startDate
+    if (raw) {
+      if (typeof raw === "string") {
+        // Handle ISO strings (e.g. "2026-01-31T...")
+        dateId = raw.split("T")[0]
+      } else if (raw.seconds) {
+        // Handle Firestore Timestamp objects { seconds: ..., nanoseconds: ... }
+        const dateObj = new Date(raw.seconds * 1000)
+        dateId = dateObj.toISOString().split("T")[0]
+      } else if (typeof raw.toDate === "function") {
+        // Handle Firestore Timestamp class instances
+        dateId = raw.toDate().toISOString().split("T")[0]
+      }
     }
   } catch (e) {
-    console.warn("Could not parse start date for history ID, using today", e)
+    console.warn(
+      "Date parsing error in submitGameResult, defaulting to server today:",
+      e,
+    )
   }
 
+  // 4. Transactional Update
+  const playerStatsRef = db.collection("playerStats").doc(userId)
+  const playerGameRef = db.collection("playerGames").doc(playerGame.id)
   const historyRef = db
     .collection("players")
     .doc(userId)
@@ -84,19 +96,21 @@ export const submitGameResult = onCall(async (request) => {
         stats!.currentStreak = 0
       }
 
-      const gameUpdate = {
-        ...playerGame,
-        statsProcessed: true,
-        score,
-      }
+      // Update Game Record (Mark as processed so client doesn't retry)
+      transaction.set(
+        playerGameRef,
+        { ...playerGame, statsProcessed: true, score },
+        { merge: true },
+      )
 
-      transaction.set(playerGameRef, gameUpdate, { merge: true })
+      // Update Global Stats
       transaction.set(playerStatsRef, stats!)
 
+      // Create History Entry
       transaction.set(historyRef, {
         dateId,
         itemId: playerGame.triviaItem.id,
-        itemTitle: playerGame.triviaItem.title || "Unknown",
+        itemTitle: playerGame.triviaItem.title || "Unknown Title",
         posterPath: playerGame.triviaItem.posterPath || "",
         wasCorrect: isWin,
         gaveUp: playerGame.gaveUp,

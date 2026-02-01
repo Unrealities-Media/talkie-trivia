@@ -7,10 +7,11 @@ Talkie Trivia is an engaging daily trivia game built with **React Native** and *
 * **Daily Challenges:** A new movie to guess every day, synced globally via Cloud Schedule.
 * **Smart Search:** Instant, offline-ready fuzzy search using a local index.
 * **Hybrid Data Architecture:**
-  * **Fast:** Search logic runs instantly on-device (~2MB footprint).
+  * **Fast:** Search logic runs instantly on-device (~1.5MB footprint).
   * **Rich:** Full movie details (high-res images, full plots) are fetched from the cloud only when needed.
 * **Difficulty Levels:** From Basic (all hints revealed) to Extreme (no hints, fewer guesses).
 * **Player Statistics:** Tracks streaks, win rates, and scores securely in Firestore.
+* **Authentication:** Anonymous and Google Sign-In support.
 
 ## 🛠 Tech Stack
 
@@ -27,71 +28,118 @@ Talkie Trivia is an engaging daily trivia game built with **React Native** and *
 
 * **Database:** Google Firestore
 * **Auth:** Firebase Authentication
-* **Data Pipeline:** Go (Golang) scripts for fetching and optimizing TMDB data.
+* **Compute:** Cloud Functions (Score verification & Stats updates)
+* **Data Pipeline:** Single Go CLI tool for fetching, optimizing, and scheduling data.
 
 ## 📂 Project Structure
 
+```text
 src/
 ├── components/ # Reusable UI components
-├── data/       # Local indexes (basicMovies.json, moviesLite.json)
+├── data/       # Local index (searchIndex.json - Generated)
 ├── services/   # Hybrid Data Services (Firestore + Local Fallbacks)
 ├── state/      # Zustand global store
+├── app/        # Expo Router screens
 └── utils/      # Helper functions and hooks
 
-## ⚙️ Data Pipeline (Go)
+utils/
+├── data-source/ # Ignored by Git. Contains raw heavy JSON.
+├── pipeline/    # Unified Go CLI tool.
+├── secrets.json # API Keys (Ignored)
+└── serviceAccountKey.json # Firebase Creds (Ignored)
+```
 
-The `utils/` folder contains Go modules to fetch, optimize, and upload data.
+## ⚙️ Data Pipeline (Unified CLI)
 
-**Prerequisites:**
+The project uses a single, robust Go tool located in `utils/pipeline` to manage the entire data lifecycle. It handles fetching from TMDB, generating app assets, populating Firestore, and scheduling games.
 
-1. `utils/secrets.json`: Contains `{"TMDBKey": "..."}`
-2. `utils/serviceAccountKey.json`: Firebase Service Account Credentials.
+### Prerequisites
 
-**Execution Order (Reset Procedure):**
+1. **Secrets:** `utils/secrets.json` containing `{"TMDBKey": "your_key"}`.
+2. **Firebase Access:** `utils/serviceAccountKey.json`.
 
-*Note: To target local emulators, export `FIRESTORE_EMULATOR_HOST="localhost:8080"` before running steps 3 & 4.*
+### CLI Usage
 
-1. **Generate Data (Fetch from TMDB):**
-    Fetches raw data and creates the "Heavy" source file (not bundled) and the "Slim" search index (bundled).
-    * *Input:* TMDB API
-    * *Output:* `utils/data-source/popularMovies.json` & `src/data/basicMovies.json`
+Navigate to the directory:
+
+```bash
+cd utils/pipeline
+```
+
+The script defaults to **Development Mode** (targeting Firebase Emulators at `localhost:8080`) unless you pass the `-prod` flag.
+
+#### 1. Full Reset (Fetch Fresh Data + Reset Dev DB)
+
+Fetches ~2,000 movies from TMDB, processes them, uploads to Emulator, and schedules games.
+
+```bash
+go run main.go -all
+```
+
+#### 2. Deploy to Production (Live)
+
+Uses existing local data (skips fetch) to update the Live Database.
+**Warning:** This writes to the real Firestore project.
+
+```bash
+go run main.go -prod -process -upload -schedule
+```
+
+#### Available Flags
+
+| Flag | Description |
+| :--- | :--- |
+| `-fetch` | Download fresh data from TMDB API (Slow). |
+| `-process` | Generate `src/data/searchIndex.json` (Required for App Bundle). |
+| `-upload` | Upload full movie details to Firestore `movies` collection. |
+| `-schedule` | Assign movies to dates in `dailyGames`. Smart-appends to existing schedule. |
+| `-all` | Run all steps in sequence. |
+| `-prod` | **Target Production.** If omitted, targets Local Emulator. |
+
+## 🚀 Getting Started (Development)
+
+1. **Install dependencies:**
 
     ```bash
-    cd utils/data-pipeline && go run main.go
+    npm install
     ```
 
-2. **Optimize Data (Create App Logic File):**
-    Strips unnecessary fields to create a lightweight logic file for the app bundle.
-    * *Input:* `utils/data-source/popularMovies.json`
-    * *Output:* `src/data/moviesLite.json`
+2. **Start Emulators:**
 
     ```bash
-    cd utils/optimize-data && go run main.go
+    firebase emulators:start
     ```
 
-3. **Populate Firestore (Upload Details):**
-    Uploads the *Full* movie details (Plots, Taglines) to Firestore using standardized lowercase keys.
-    * *Input:* `utils/data-source/popularMovies.json`
-    * *Output:* Firestore `movies` collection
+3. **Seed Data (First Time Only):**
 
     ```bash
-    cd utils/populate-firestore && go run main.go
+    cd utils/pipeline && go run main.go -all
     ```
 
-4. **Schedule Games:**
-    Randomizes movies and assigns them to specific dates in the `dailyGames` collection.
-    * *Input:* Firestore `movies` IDs
-    * *Output:* Firestore `dailyGames` collection
+4. **Run the App:**
 
     ```bash
-    cd utils/schedule-games && go run main.go
+    npx expo start
     ```
 
-## 🚀 Getting Started
+## 🤝 Maintenance Guide
 
-1. **Install dependencies:** `npm install`
-2. **Configure Environment:** Create a `.env` file with your Firebase credentials.
-3. **Run the App:** `npm start`
+### Extending the Schedule (Yearly)
+
+Run the scheduler against production. It automatically detects the last scheduled game and appends 365 new days.
+
+```bash
+go run main.go -prod -schedule
+```
+
+### Fixing Spoilers (Manual Override)
+
+If a plot summary is too obvious:
+
+1. Go to Firebase Console > Firestore > `movies`.
+2. Find the document.
+3. Add field: `manual_overview` (string).
+4. Enter the sanitized text. The app prioritizes this field immediately.
 
 ## 📄 License
 
