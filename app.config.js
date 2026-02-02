@@ -75,8 +75,8 @@ module.exports = ({ config }) => ({
       favicon: "./assets/favicon.png",
     },
     extra: {
-      eas: {
-        projectId: "f8249bd1-1713-4519-8dce-d340e2f6e746"
+      "eas": {
+        "projectId": "90056e11-69a8-4dbd-8fbd-456746ee09e8"
       },
       router: {
         origin: false,

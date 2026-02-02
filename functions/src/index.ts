@@ -1,12 +1,17 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https"
-import * as admin from "firebase-admin"
+import { initializeApp } from "firebase-admin/app"
+import { getFirestore, FieldValue } from "firebase-admin/firestore"
 import { calculateScore } from "./utils/scoreUtils"
 
-admin.initializeApp()
-const db = admin.firestore()
+initializeApp()
+const db = getFirestore()
 
+/**
+ * Atomic submission for game results.
+ * Calculates score on server to prevent tampering, updates player streaks/stats,
+ * and records a history entry for the user.
+ */
 export const submitGameResult = onCall(async (request) => {
-  // 1. Authentication Check
   if (!request.auth) {
     throw new HttpsError(
       "unauthenticated",
@@ -17,41 +22,35 @@ export const submitGameResult = onCall(async (request) => {
   const { playerGame } = request.data
   const userId = request.auth.uid
 
+  // Security check: Ensure the user is only submitting results for their own account
   if (!playerGame || playerGame.playerID !== userId) {
     throw new HttpsError("permission-denied", "Invalid game data ownership.")
   }
 
-  // 2. Validate the Game
   const score = calculateScore(playerGame)
   const isWin = playerGame.correctAnswer
 
-  // 3. FIX: Robust Date ID Generation
-  // We default to "Today" (Server Time) if parsing fails, preventing a crash.
+  /**
+   * Date ID Parsing Logic:
+   * Safely derive a YYYY-MM-DD string from the client's startDate.
+   * Handles raw ISO strings, Firestore Timestamp objects, or falls back to server time.
+   */
   let dateId = new Date().toISOString().split("T")[0]
-
   try {
     const raw = playerGame.startDate
     if (raw) {
       if (typeof raw === "string") {
-        // Handle ISO strings (e.g. "2026-01-31T...")
         dateId = raw.split("T")[0]
       } else if (raw.seconds) {
-        // Handle Firestore Timestamp objects { seconds: ..., nanoseconds: ... }
-        const dateObj = new Date(raw.seconds * 1000)
-        dateId = dateObj.toISOString().split("T")[0]
+        dateId = new Date(raw.seconds * 1000).toISOString().split("T")[0]
       } else if (typeof raw.toDate === "function") {
-        // Handle Firestore Timestamp class instances
         dateId = raw.toDate().toISOString().split("T")[0]
       }
     }
   } catch (e) {
-    console.warn(
-      "Date parsing error in submitGameResult, defaulting to server today:",
-      e,
-    )
+    console.warn("Date parsing error, falling back to server date:", e)
   }
 
-  // 4. Transactional Update
   const playerStatsRef = db.collection("playerStats").doc(userId)
   const playerGameRef = db.collection("playerGames").doc(playerGame.id)
   const historyRef = db
@@ -78,7 +77,6 @@ export const submitGameResult = onCall(async (request) => {
         }
       }
 
-      // Update Stats
       stats!.games = (stats!.games || 0) + 1
       stats!.allTimeScore = (stats!.allTimeScore || 0) + score
 
@@ -89,6 +87,7 @@ export const submitGameResult = onCall(async (request) => {
         const guessCount = playerGame.guesses.length
         if (!stats!.wins) stats!.wins = [0, 0, 0, 0, 0]
 
+        // Map guess count (1-5) to 0-indexed wins array
         if (guessCount > 0 && guessCount <= 5) {
           stats!.wins[guessCount - 1] = (stats!.wins[guessCount - 1] || 0) + 1
         }
@@ -96,17 +95,15 @@ export const submitGameResult = onCall(async (request) => {
         stats!.currentStreak = 0
       }
 
-      // Update Game Record (Mark as processed so client doesn't retry)
+      // Mark game as processed so client doesn't attempt re-submission
       transaction.set(
         playerGameRef,
         { ...playerGame, statsProcessed: true, score },
         { merge: true },
       )
 
-      // Update Global Stats
       transaction.set(playerStatsRef, stats!)
 
-      // Create History Entry
       transaction.set(historyRef, {
         dateId,
         itemId: playerGame.triviaItem.id,
@@ -118,8 +115,8 @@ export const submitGameResult = onCall(async (request) => {
         guessesMax: playerGame.guessesMax,
         difficulty: playerGame.difficulty,
         score: score,
-        gameMode: "movies",
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        gameMode: playerGame.gameMode || "movies",
+        createdAt: FieldValue.serverTimestamp(),
       })
     })
 

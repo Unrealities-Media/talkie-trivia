@@ -25,8 +25,11 @@ GoogleService-Info.plist
 google-services.json
 
 # third-party
-repomix-output.xml
 repomix-output.txt
+
+# firebase emulator
+emulator_data/
+firebase-export-**/
 
 # todo
 todo.txt
