@@ -22,7 +22,7 @@ utils/secrets.json
 utils/serviceAccountKey.json
 eas.json
 GoogleService-Info.plist
-google-services.json
+google-services*.json
 
 # third-party
 repomix-output.txt
