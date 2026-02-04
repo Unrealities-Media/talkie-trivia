@@ -3,7 +3,7 @@ require("dotenv").config()
 const IS_DEV = process.env.APP_VARIANT === "development"
 const IS_PREVIEW = process.env.APP_VARIANT === "preview"
 
-// 1. Identity Logic
+// Identity Logic
 const getAppName = () => {
   if (IS_DEV) return "Talkie Dev"
   if (IS_PREVIEW) return "Talkie Alpha"
@@ -16,7 +16,7 @@ const getBundleIdentifier = () => {
     : "com.unrealities.talkietrivia"
 }
 
-// 2. Security Logic - Select specific Google Service files per environment
+// Security Logic - Select specific Google Service files per environment
 // You need to rename your existing files to match these paths!
 const getGoogleServicesFileAndroid = () => {
   return IS_DEV ? "./google-services-dev.json" : "./google-services-prod.json"
