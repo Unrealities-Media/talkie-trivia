@@ -61,7 +61,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
       if (Platform.OS !== "web") {
         if (newTheme === "system") {
-          Appearance.setColorScheme(null)
+          Appearance.setColorScheme("unspecified")
         } else {
           Appearance.setColorScheme(newTheme)
         }

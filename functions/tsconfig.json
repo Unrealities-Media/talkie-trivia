@@ -4,6 +4,8 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
+    "rootDir": "src",
+    "isolatedModules": true,
     "sourceMap": true,
     "strict": true,
     "target": "es2022",

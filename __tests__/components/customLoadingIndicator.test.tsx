@@ -38,8 +38,14 @@ describe("CustomLoadingIndicator Component", () => {
   // Store original Platform.OS to restore it after tests
   const originalPlatformOS = Platform.OS
 
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+
   afterEach(() => {
     cleanup()
+    jest.runOnlyPendingTimers()
+    jest.useRealTimers()
     // Restore original Platform.OS after each test
     Object.defineProperty(Platform, "OS", {
       get: () => originalPlatformOS,
@@ -77,6 +83,19 @@ describe("CustomLoadingIndicator Component", () => {
     beforeEach(() => {
       // Ensure tests in this block run as if on a native platform
       Object.defineProperty(Platform, "OS", { get: () => "ios" })
+    })
+
+    it("can switch to the standard indicator after mounting", () => {
+      const { rerender } = renderWithTheme(<CustomLoadingIndicator />)
+
+      rerender(
+        <ThemeProvider>
+          <CustomLoadingIndicator isLowEndDevice />
+        </ThemeProvider>
+      )
+
+      expect(screen.getByTestId("standard-activity-indicator")).toBeTruthy()
+      expect(screen.queryByTestId("activity-indicator")).toBeNull()
     })
 
     it("should render the custom SVG indicator on a non-low-end native device by default", () => {

@@ -11,9 +11,7 @@ import { calculateScore } from "../../src/utils/scoreUtils"
 import { PlayerGame, Guess } from "../../src/models/game"
 
 // Mocks
-jest.mock("react-native/Libraries/Share/Share", () => ({
-  share: jest.fn(),
-}))
+jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" })
 jest.mock("../../src/utils/analyticsService")
 jest.mock("../../src/utils/hapticsService")
 jest.mock("../../src/utils/scoreUtils")

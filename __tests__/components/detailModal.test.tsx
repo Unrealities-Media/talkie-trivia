@@ -19,10 +19,7 @@ import { PlayerGame } from "../../src/models/game";
 // --- Mocking Dependencies ---
 jest.mock("../../src/utils/hapticsService");
 jest.mock("../../src/utils/analyticsService");
-jest.mock("react-native/Libraries/Share/Share", () => ({
-  ...jest.requireActual("react-native/Libraries/Share/Share"),
-  share: jest.fn(),
-}));
+jest.spyOn(Share, "share").mockResolvedValue({ action: Share.sharedAction });
 jest.spyOn(Alert, "alert");
 
 // Custom Render Helper with ThemeProvider

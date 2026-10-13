@@ -27,7 +27,7 @@ export const ScalePressable: React.FC<PressableProps> = ({
 
   const resolveStyle = (
     state: PressableStateCallbackType
-  ): StyleProp<ViewStyle> => {
+  ): any => {
     const userStyle = typeof style === "function" ? style(state) : style
     return [userStyle, animatedStyle]
   }

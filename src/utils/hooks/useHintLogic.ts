@@ -38,7 +38,7 @@ export function useHintLogic() {
     null
   )
   const [highlightedHint, setHighlightedHint] = useState<string | null>(null)
-  const prevHintsUsedRef = useRef<Partial<Record<string, boolean>>>()
+  const prevHintsUsedRef = useRef<Partial<Record<string, boolean>>>(undefined)
 
   const hintsAvailable = playerStats?.hintsAvailable ?? 0
   const allHints: Hint[] = playerGame.triviaItem?.hints || []

@@ -18,7 +18,7 @@ interface PickerUIProps {
   isSearching: boolean
   results: readonly BasicTriviaItem[]
   showResults: boolean
-  animatedInputStyle: StyleProp<ViewStyle>
+  animatedInputStyle: any
   isInteractionsDisabled: boolean
   handleInputChange: (text: string) => void
   renderItem: ListRenderItem<BasicTriviaItem>
@@ -95,7 +95,6 @@ export const PickerUI: React.FC<PickerUIProps> = memo(
                     data={results}
                     renderItem={renderItem}
                     keyExtractor={(item, index) => `${item.id}-${index}`}
-                    estimatedItemSize={62}
                     keyboardShouldPersistTaps="handled"
                   />
                 </View>

@@ -157,7 +157,7 @@ const themedStyles = (theme: Theme): GuessRowStyles => ({
     ...theme.shadows.light,
   },
   feedbackOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: theme.colors.tertiary,
     justifyContent: "center",
     alignItems: "center",

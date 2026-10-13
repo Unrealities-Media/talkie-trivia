@@ -116,7 +116,6 @@ const GuessesContainer = memo(
           data={listData}
           renderItem={renderListItem}
           keyExtractor={keyExtractor}
-          estimatedItemSize={ESTIMATED_ROW_HEIGHT}
           contentContainerStyle={styles.container}
           scrollEnabled={false}
         />

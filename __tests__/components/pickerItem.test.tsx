@@ -13,14 +13,8 @@ import { Platform } from "react-native"
 
 // --- Mocks ---
 
-// Mock LayoutAnimation to prevent native errors and verify calls
-jest.mock("react-native/Libraries/LayoutAnimation/LayoutAnimation", () => ({
-  ...jest.requireActual(
-    "react-native/Libraries/LayoutAnimation/LayoutAnimation"
-  ),
-  configureNext: jest.fn(),
-  Presets: { easeInEaseOut: "easeInEaseOut" },
-}))
+import { LayoutAnimation } from "react-native"
+jest.spyOn(LayoutAnimation, "configureNext").mockImplementation(jest.fn())
 
 // --- Test Setup ---
 const renderWithTheme = (ui: ReactElement, options?: RenderOptions) => {

@@ -9,9 +9,10 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["jest", "node"]
   },
   "include": ["src/**/*", "__tests__/**/*", "src/app/profile.tsx", "index.tsx"],
   "exclude": ["node_modules"]

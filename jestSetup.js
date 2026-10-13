@@ -5,13 +5,68 @@ import 'react-native-gesture-handler/jestSetup';
 global.self = global;
 global.window = global;
 global.XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+if (typeof require.resolveWeak !== "function") {
+  require.resolveWeak = (id) => id;
+}
 
 // --- GLOBAL MOCKS ---
 
-// Reanimated setup
+// Reanimated and Worklets setup
+global.__workletsModuleProxy = new Proxy({}, {
+  get: () => jest.fn(),
+});
 global.ReanimatedDataMock = {
   now: () => 0,
 };
+global._getAnimationTimestamp = () => Date.now();
+global.__frameTimestamp = 0;
+
+jest.mock("react-native-worklets", () => ({
+  init: jest.fn(),
+  isBundleModeEnabled: jest.fn(() => false),
+  toggleSlowAnimationsOnUIRuntime: jest.fn(),
+  getDynamicFeatureFlag: jest.fn(),
+  getStaticFeatureFlag: jest.fn(),
+  setDynamicFeatureFlag: jest.fn(),
+  isShareable: jest.fn(() => false),
+  isSynchronizable: jest.fn(() => false),
+  createSerializable: jest.fn((val) => val),
+  isSerializableRef: jest.fn(() => false),
+  makeShareable: jest.fn((val) => val),
+  makeShareableCloneRecursive: jest.fn((val) => val),
+  makeShareableCloneOnUIRecursive: jest.fn((val) => val),
+  isShareableRef: jest.fn(() => false),
+  shareableMappingCache: { set: jest.fn(), get: jest.fn() },
+  serializableMappingCache: { set: jest.fn(), get: jest.fn() },
+  createShareable: jest.fn((val) => val),
+  createSynchronizable: jest.fn((val) => val),
+  getRuntimeKind: jest.fn(() => 1),
+  isRNRuntime: jest.fn(() => true),
+  isUIRuntime: jest.fn(() => false),
+  isWorkerRuntime: jest.fn(() => false),
+  isWorkletRuntime: jest.fn(() => false),
+  RuntimeKind: { ReactNative: 1, UI: 2, Worker: 3 },
+  createWorkletRuntime: jest.fn(),
+  getUIRuntimeHolder: jest.fn(),
+  getUISchedulerHolder: jest.fn(),
+  runOnRuntime: jest.fn((fn) => fn),
+  runOnRuntimeAsync: jest.fn((fn) => fn),
+  runOnRuntimeAsyncWithId: jest.fn(),
+  runOnRuntimeSync: jest.fn((fn) => fn),
+  runOnRuntimeSyncWithId: jest.fn(),
+  scheduleOnRuntime: jest.fn(),
+  scheduleOnRuntimeWithId: jest.fn(),
+  UIRuntimeId: {},
+  executeOnUIRuntimeSync: jest.fn((fn) => fn),
+  runOnJS: jest.fn((fn) => fn),
+  runOnUI: jest.fn((fn) => fn),
+  runOnUIAsync: jest.fn((fn) => fn),
+  runOnUISync: jest.fn((fn) => fn),
+  scheduleOnRN: jest.fn((fn) => fn),
+  scheduleOnUI: jest.fn((fn) => fn),
+  isWorkletFunction: jest.fn(() => false),
+  WorkletsModule: {},
+}));
 
 // --- CONSOLE SUPPRESSION ---
 const originalConsoleError = console.error;
@@ -73,6 +128,14 @@ jest.mock('react-native', () => {
       callback && callback({ finished: true });
     },
   });
+
+  // Mock Share
+  RN.Share = {
+    ...RN.Share,
+    share: jest.fn().mockResolvedValue({ action: "sharedAction" }),
+    sharedAction: "sharedAction",
+    dismissedAction: "dismissedAction",
+  };
 
   return RN;
 });

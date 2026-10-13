@@ -163,7 +163,6 @@ const GameHistory = ({ onHistoryItemPress }: GameHistoryProps) => {
         renderItem={renderItem}
         keyExtractor={(item) => `${item.dateId}-${item.itemId}`}
         contentContainerStyle={styles.listContainer}
-        estimatedItemSize={107}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             <Typography style={styles.emptyText}>

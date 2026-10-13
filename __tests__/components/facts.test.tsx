@@ -115,7 +115,7 @@ describe("Facts Component", () => {
 
       const headerPressable = screen.getByText(
         itemWithoutImdb.title
-      ).parentElement
+      ).parent
       expect(headerPressable?.props.onPress).toBeUndefined()
 
       expect(screen.queryByTestId("mock-icon-external-link-square")).toBeNull()

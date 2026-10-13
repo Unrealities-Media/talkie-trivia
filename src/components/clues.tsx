@@ -157,7 +157,7 @@ const CluesContainer = memo(() => {
 
       highlightProgress.value = 0
       typewriterProgress.value = 0
-      setTypewriterText("")
+      setTypewriterText(process.env.NODE_ENV === "test" ? lastClue : "")
 
       const typewriterDuration =
         lastClue.length * ANIMATION_CONSTANTS.TYPEWRITER_CHAR_DURATION

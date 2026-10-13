@@ -20,7 +20,8 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23" # Matches your go.mod
+          go-version-file: utils/pipeline/go.mod
+          cache-dependency-path: utils/pipeline/go.sum
 
       # 1. Create Credential Files from Secrets
       # The Go scripts expect these files to exist in the 'utils/' directory

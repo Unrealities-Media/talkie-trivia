@@ -6,6 +6,7 @@ import Animated, {
   withRepeat,
   withTiming,
   Easing,
+  cancelAnimation,
 } from "react-native-reanimated"
 import { Svg, Circle } from "react-native-svg"
 import { useStyles, Theme, useThemeTokens } from "../utils/hooks/useStyles"
@@ -21,16 +22,7 @@ const CustomLoadingIndicator: React.FC<CustomLoadingIndicatorProps> = ({
   const theme = useThemeTokens()
   const { colors, responsive } = theme
 
-  if (isLowEndDevice || Platform.OS === "web") {
-    return (
-      <ActivityIndicator
-        size="large"
-        color={colors.primary}
-        testID="standard-activity-indicator"
-      />
-    )
-  }
-
+  const useStandardIndicator = isLowEndDevice || Platform.OS === "web"
   const progress = useSharedValue(0)
   const size = responsive.scale(50)
   const strokeWidth = responsive.scale(4)
@@ -39,18 +31,31 @@ const CustomLoadingIndicator: React.FC<CustomLoadingIndicatorProps> = ({
   const circumference = 2 * Math.PI * radius
 
   useEffect(() => {
+    if (useStandardIndicator) return
+
     progress.value = withRepeat(
       withTiming(1, { duration: 1500, easing: Easing.linear }),
       -1,
       false
     )
-  }, [progress])
+    return () => cancelAnimation(progress)
+  }, [progress, useStandardIndicator])
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
       transform: [{ rotate: `${progress.value * 360}deg` }],
     }
   })
+
+  if (useStandardIndicator) {
+    return (
+      <ActivityIndicator
+        size="large"
+        color={colors.primary}
+        testID="standard-activity-indicator"
+      />
+    )
+  }
 
   return (
     <View

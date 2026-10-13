@@ -124,6 +124,38 @@ go run main.go -prod -process -upload -schedule
 
 ## 🤝 Maintenance Guide
 
+### Dependencies and validation
+
+Use Node.js 22 for the app and Cloud Functions, and Go 1.26 or newer for the
+pipeline. Install both JavaScript dependency sets with `npm ci` and
+`npm --prefix functions ci`; no legacy peer-dependency flag is needed.
+
+```bash
+npm run typecheck
+npm test -- --ci --runInBand
+npm --prefix functions run build
+npm --prefix functions test -- --ci --runInBand
+cd utils/pipeline
+go test ./...
+go vet ./...
+```
+
+`npm test` runs once; use `npm run test:watch` for watch mode. The pipeline has
+no Go test files yet, so `go test` currently checks compilation.
+
+Keep React and native packages aligned with Expo SDK 57 using
+`npx expo install --check`. Some packages intentionally remain below their npm
+`latest` tag: Expo's preset uses Babel 7, Jest 29 and React 19.2; the existing
+synchronous component tests use React Native Testing Library 13; and the
+Functions transformer (`ts-jest`) requires TypeScript below 7. Both projects
+currently use TypeScript 6. Upgrade these together with their consumers.
+
+The checked-in Android and iOS projects still need native configuration
+synchronization and platform builds after the Expo upgrade. Unit tests and
+TypeScript checks do not validate those native builds. Follow the
+[Expo SDK upgrade guide](https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/)
+when updating the native projects.
+
 ### Extending the Schedule (Yearly)
 
 Run the scheduler against production. It automatically detects the last scheduled game and appends 365 new days.

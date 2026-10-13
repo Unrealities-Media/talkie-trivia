@@ -122,7 +122,7 @@ const themedStyles = (theme: Theme): ModalStyles => ({
     alignItems: "center",
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
   },
   modalView: {

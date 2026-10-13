@@ -22,15 +22,18 @@ jobs:
           cache: "npm"
 
       - name: Install App Dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Install Functions Dependencies
         run: |
           cd functions
-          npm ci --legacy-peer-deps
+          npm ci
 
       - name: Type Check (App)
-        run: npx tsc --noEmit
+        run: npm run typecheck
+
+      - name: Build Functions
+        run: npm --prefix functions run build
 
       - name: Run App Tests
         run: npm test -- --watchAll=false --ci --maxWorkers=2 --coverage
@@ -60,3 +63,18 @@ jobs:
           files: ./coverage/lcov.info,./functions/coverage/lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
+  pipeline:
+    name: Check Go Pipeline
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: utils/pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: utils/pipeline/go.mod
+          cache-dependency-path: utils/pipeline/go.sum
+      - run: go test ./...
+      - run: go vet ./...

@@ -102,7 +102,7 @@ interface RevealSequenceStyles {
 
 const themedStyles = (theme: Theme): RevealSequenceStyles => ({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.85)",
     justifyContent: "center",
     alignItems: "center",

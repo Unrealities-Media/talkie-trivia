@@ -13,20 +13,16 @@ const mockFirestoreInstance = {
   }),
 }
 
-// Mock firebase-admin
-jest.mock("firebase-admin", () => {
-  return {
-    initializeApp: jest.fn(),
-    firestore: Object.assign(
-      jest.fn(() => mockFirestoreInstance),
-      {
-        FieldValue: {
-          serverTimestamp: jest.fn(() => "MOCK_TIMESTAMP"),
-        },
-      }
-    ),
-  }
-})
+jest.mock("firebase-admin/app", () => ({
+  initializeApp: jest.fn(),
+}))
+
+jest.mock("firebase-admin/firestore", () => ({
+  getFirestore: jest.fn(() => mockFirestoreInstance),
+  FieldValue: {
+    serverTimestamp: jest.fn(() => "MOCK_TIMESTAMP"),
+  },
+}))
 
 // Mock firebase-functions/v2/https
 jest.mock("firebase-functions/v2/https", () => ({
