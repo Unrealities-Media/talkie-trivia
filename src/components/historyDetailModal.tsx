@@ -191,7 +191,7 @@ const themedStyles = (theme: Theme): HistoryDetailModalStyles => ({
     textAlign: "center",
     marginBottom: theme.spacing.small,
     color: theme.colors.textPrimary,
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
   },
 })
 

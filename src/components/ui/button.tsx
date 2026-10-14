@@ -2,6 +2,7 @@ import React, { useMemo } from "react"
 import {
   Pressable,
   Text,
+  View,
   StyleSheet,
   PressableProps,
   ViewStyle,
@@ -20,6 +21,7 @@ interface ButtonProps extends PressableProps {
   variant?: ButtonVariant
   size?: ButtonSize
   isLoading?: boolean
+  leadingIcon?: React.ReactNode
   style?: StyleProp<ViewStyle>
 }
 
@@ -28,6 +30,7 @@ export const Button: React.FC<ButtonProps> = ({
   variant = "primary",
   size = "md",
   isLoading = false,
+  leadingIcon,
   disabled,
   style,
   ...props
@@ -64,9 +67,10 @@ export const Button: React.FC<ButtonProps> = ({
           color={variantStyles.text.color as string}
         />
       ) : (
-        <Text style={[baseStyles.text, sizeStyles.text, variantStyles.text]}>
-          {title}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 }}>
+          {leadingIcon}
+          <Text style={[baseStyles.text, sizeStyles.text, variantStyles.text]}>{title}</Text>
+        </View>
       )}
     </Pressable>
   )

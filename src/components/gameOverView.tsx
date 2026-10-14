@@ -1,5 +1,5 @@
 import React from "react"
-import { View, TextStyle, ViewStyle } from "react-native"
+import { View, TextStyle, ViewStyle, useWindowDimensions, PixelRatio } from "react-native"
 import CountdownTimer from "./countdownTimer"
 import Facts from "./facts"
 import PersonalizedStatsMessage from "./personalizedStatsMessage"
@@ -11,6 +11,7 @@ import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Card } from "./ui/card"
 import { Typography } from "./ui/typography"
 import ResultSummary from "./gameOver/resultSummary"
+import Animated, { FadeInDown, ReduceMotion } from "react-native-reanimated"
 
 interface GameOverViewProps {
   playerGame: PlayerGame
@@ -22,7 +23,11 @@ const GameOverView: React.FC<GameOverViewProps> = ({
   lastGuessResult,
 }) => {
   const styles = useStyles(themedStyles)
-  const resultTitle = playerGame.correctAnswer ? "You Got It!" : playerGame.gaveUp ? "Answer revealed" : "Out of guesses"
+  const { width } = useWindowDimensions()
+  const titleSize = PixelRatio.roundToNearestPixel(playerGame.gaveUp && !playerGame.correctAnswer
+    ? Math.min(57, width * 0.125)
+    : Math.min(69, width * 0.15))
+  const resultTitle = playerGame.correctAnswer ? "That's a wrap!" : playerGame.gaveUp ? "Answer revealed" : "Out of guesses"
   const resultMessage = playerGame.correctAnswer
     ? `You guessed it in ${playerGame.guesses.length} guess${
         playerGame.guesses.length > 1 ? "es" : ""
@@ -32,19 +37,16 @@ const GameOverView: React.FC<GameOverViewProps> = ({
     : `You used all ${playerGame.guessesMax} guesses. Here's today's movie.`
 
   return (
-    <View style={{ width: "100%" }}>
+    <Animated.View entering={FadeInDown.duration(650).reduceMotion(ReduceMotion.System)} style={{ width: "100%" }}>
       <Card style={styles.card}>
         <View style={styles.scrollContentContainer}>
-          <Typography accessibilityRole="header" variant="h2" style={styles.resultTitle}>
+          <Typography accessibilityRole="header" variant="h2" style={[styles.resultTitle, { fontSize: titleSize, lineHeight: PixelRatio.roundToNearestPixel(titleSize * 1.16) }]}>
             {resultTitle}
           </Typography>
-          <Typography variant="body" style={styles.subText}>
-            {resultMessage}
-          </Typography>
-
+          <Facts item={playerGame.triviaItem} isScrollEnabled={false}
+            headerFooter={<Typography variant="body" style={styles.subText}>{resultMessage}</Typography>}
+            posterFooter={<ShareResultButton playerGame={playerGame} />} />
           <ResultSummary game={playerGame} />
-          <ShareResultButton playerGame={playerGame} />
-          <Facts item={playerGame.triviaItem} isScrollEnabled={false} />
 
           <FullPlotSection overview={playerGame.triviaItem.description} />
         </View>
@@ -53,7 +55,7 @@ const GameOverView: React.FC<GameOverViewProps> = ({
       <GuessesContainer lastGuessResult={lastGuessResult} />
       <PersonalizedStatsMessage />
       <CountdownTimer />
-    </View>
+    </Animated.View>
   )
 }
 
@@ -66,22 +68,33 @@ interface GameOverStyles {
 
 const themedStyles = (theme: Theme): GameOverStyles => ({
   card: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    shadowOpacity: 0,
+    elevation: 0,
     width: "100%",
-    marginVertical: theme.spacing.medium,
+    marginVertical: 0,
     overflow: "hidden",
     backfaceVisibility: "hidden",
   },
   scrollContentContainer: {
-    padding: theme.spacing.large,
+    paddingHorizontal: 20,
+    paddingTop: 6,
+    paddingBottom: 20,
     alignItems: "center",
   },
   resultTitle: {
-    color: theme.colors.accentText,
+    color: theme.colors.textPrimary,
+    fontFamily: "PremiereDisplay-Bold",
+    fontSize: 58,
+    lineHeight: 68,
     textAlign: "center",
     marginBottom: theme.spacing.extraSmall,
   },
   subText: {
-    fontFamily: "Arvo-Italic",
+    fontFamily: "PremiereSans",
+    fontSize: 11,
+    letterSpacing: 2,
     textAlign: "center",
     marginBottom: theme.spacing.large,
   },

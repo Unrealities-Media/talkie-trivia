@@ -1,11 +1,10 @@
-import React, { memo, useEffect } from "react"
+import React, { memo, useEffect, useState } from "react"
 import {
   View,
   Text,
   Pressable,
   LayoutAnimation,
   Platform,
-  UIManager,
   ViewStyle,
   TextStyle,
   ImageStyle,
@@ -15,13 +14,7 @@ import { BasicTriviaItem, TriviaItem } from "../models/trivia"
 import { API_CONFIG } from "../config/constants"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { releaseYear as getReleaseYear } from "../utils/dateDisplay"
-
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true)
-}
+import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
 
 interface ItemProps {
   item: BasicTriviaItem
@@ -33,26 +26,28 @@ interface ItemProps {
   onLongPress: (item: BasicTriviaItem) => void
 }
 
-const defaultPoster = require("../../assets/movie_default.png")
+const defaultPoster = require("../../assets/premiere/theatre.png")
 
 const PickerItem = memo<ItemProps>(
   ({ item, detailedItem, isDisabled, isGuessed = false, isExpanded, onSelect, onLongPress }) => {
     const styles = useStyles(themedStyles)
+    const reduced = usePremiereMotion()
+    const [failedPoster, setFailedPoster] = useState<string | null>(null)
 
     useEffect(() => {
-      if (Platform.OS !== "web") {
+      if (Platform.OS !== "web" && !reduced) {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
       }
-    }, [isExpanded])
+    }, [isExpanded, reduced])
 
     const year = getReleaseYear(item.releaseDate)
     const releaseYear = year ? ` (${year})` : ""
     const titleWithYear = `${item.title}${releaseYear}`
 
-    const imageSource = item.posterPath
+    const imageSource = item.posterPath && failedPoster !== item.posterPath
       ? { uri: `${API_CONFIG.TMDB_IMAGE_BASE_URL_W92}${item.posterPath}` }
       : defaultPoster
-    const fullImageSource = item.posterPath
+    const fullImageSource = item.posterPath && failedPoster !== item.posterPath
       ? { uri: `${API_CONFIG.TMDB_IMAGE_BASE_URL_W500}${item.posterPath}` }
       : defaultPoster
 
@@ -78,6 +73,7 @@ const PickerItem = memo<ItemProps>(
               <Image
                 source={imageSource}
                 placeholder={defaultPoster}
+                onError={() => setFailedPoster(item.posterPath)}
                 style={styles.resultImage}
                 contentFit="cover"
               />
@@ -96,6 +92,7 @@ const PickerItem = memo<ItemProps>(
                 <Image
                   source={fullImageSource}
                   placeholder={defaultPoster}
+                  onError={() => setFailedPoster(item.posterPath)}
                   style={styles.expandedImage}
                   contentFit="cover"
                 />
@@ -198,7 +195,7 @@ const themedStyles = (theme: Theme): PickerItemStyles => ({
   expandedTitle: {
     ...theme.typography.bodyText,
     color: theme.colors.textPrimary,
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(16),
     marginBottom: theme.spacing.extraSmall,
   },
@@ -210,7 +207,7 @@ const themedStyles = (theme: Theme): PickerItemStyles => ({
   expandedHint: {
     ...theme.typography.caption,
     color: theme.colors.accentText,
-    fontFamily: "Arvo-Italic",
+    fontFamily: "PremiereSans",
   },
 })
 

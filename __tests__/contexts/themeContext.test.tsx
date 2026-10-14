@@ -51,8 +51,8 @@ describe("Theme persistence and native appearance", () => {
     getItem.mockResolvedValue("not-a-theme")
     mount()
     await flush()
-    expect(screen.getByTestId("current-theme")).toHaveTextContent(/^system:(light|dark)$/)
-    expect(appearance).toHaveBeenLastCalledWith("unspecified")
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("dark:dark")
+    expect(appearance).toHaveBeenLastCalledWith("dark")
   })
 
   it("does not let a delayed startup read replace a newer choice", async () => {

@@ -5,7 +5,9 @@ import {
   withRepeat,
   withTiming,
   Easing,
+  cancelAnimation,
 } from "react-native-reanimated"
+import { usePremiereMotion } from "./usePremiereMotion"
 
 export const useSkeletonAnimation = (
   initialValue = 1,
@@ -13,8 +15,13 @@ export const useSkeletonAnimation = (
   duration = 800
 ) => {
   const opacity = useSharedValue(initialValue)
+  const reduced = usePremiereMotion()
 
   useEffect(() => {
+    if (reduced) {
+      opacity.value = initialValue
+      return
+    }
     opacity.value = withRepeat(
       withTiming(finalValue, {
         duration: duration,
@@ -23,7 +30,8 @@ export const useSkeletonAnimation = (
       -1,
       true
     )
-  }, [opacity, initialValue, finalValue, duration])
+    return () => cancelAnimation(opacity)
+  }, [opacity, initialValue, finalValue, duration, reduced])
 
   const animatedStyle = useAnimatedStyle(() => {
     return {

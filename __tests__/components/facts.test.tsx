@@ -77,6 +77,14 @@ describe("Facts Component", () => {
   })
 
   describe("Content Rendering", () => {
+    it("replaces a failed poster and loads a different movie's poster", () => {
+      const { rerender } = renderWithTheme(<Facts item={mockTriviaItem} />)
+      fireEvent(screen.getAllByTestId("mock-expo-image")[0], "error")
+      expect(screen.getAllByTestId("mock-expo-image")[0].props.source).toBe(require("../../assets/premiere/theatre.png"))
+      rerender(<ThemeProvider><Facts item={{ ...mockTriviaItem, posterPath: "/next-film.jpg" }} /></ThemeProvider>)
+      expect(screen.getAllByTestId("mock-expo-image")[0].props["data-source"]).toContain("/next-film.jpg")
+    })
+
     it("should render all movie details correctly", () => {
       renderWithTheme(<Facts item={mockTriviaItem} />)
 

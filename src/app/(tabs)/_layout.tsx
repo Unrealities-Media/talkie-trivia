@@ -13,6 +13,11 @@ const TabLayout = () => {
   const insets = useSafeAreaInsets()
   const { colors, colorScheme } = useTheme()
   const [fontsLoaded, fontError] = useFonts({
+    "PremiereDisplay": require("../../../assets/fonts/PremiereDisplay.ttf"),
+    "PremiereDisplay-Bold": require("../../../assets/fonts/PremiereDisplay-Bold.ttf"),
+    "PremiereSerif": require("../../../assets/fonts/PremiereSerif.ttf"),
+    "PremiereClue": require("../../../assets/fonts/PremiereClue.ttf"),
+    "PremiereSans": require("../../../assets/fonts/PremiereSans.ttf"),
     "Arvo-Bold": require("../../../assets/fonts/Arvo-Bold.ttf"),
     "Arvo-Italic": require("../../../assets/fonts/Arvo-Italic.ttf"),
     "Arvo-Regular": require("../../../assets/fonts/Arvo-Regular.ttf"),
@@ -34,7 +39,8 @@ const TabLayout = () => {
       }}
       initialRouteName="game"
     >
-      <Tabs.Screen name="game" options={{ title: "Game" }} />
+      <Tabs.Screen name="game" options={{ title: "Play" }} />
+      <Tabs.Screen name="archive" options={{ title: "Archive" }} />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
       {/* Hide the index route from the tab bar */}
       <Tabs.Screen

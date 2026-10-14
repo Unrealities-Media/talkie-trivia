@@ -1,6 +1,7 @@
 import React, { memo } from "react"
 import { Text, View, ViewStyle, TextStyle, StyleSheet } from "react-native"
 import Animated from "react-native-reanimated"
+import { Image } from "expo-image"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import { BasicTriviaItem } from "../../models/trivia"
 import { Guess, HintInfo } from "../../models/game"
@@ -83,6 +84,12 @@ export const GuessRow = memo(
 
     return (
       <Animated.View style={[styles.guessTile, animatedTileStyle]}>
+        <Image source={require("../../../assets/premiere/ticket.png")} contentFit="fill" style={StyleSheet.absoluteFill} pointerEvents="none" />
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(35, 30, 24, 0.25)" }]} />
+        {Array.from({ length: 12 }, (_, notch) => <React.Fragment key={notch}>
+          <View pointerEvents="none" style={{ position: "absolute", left: -4, top: notch * 12 - 4, width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.background }} />
+          <View pointerEvents="none" style={{ position: "absolute", right: -4, top: notch * 12 - 4, width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.background }} />
+        </React.Fragment>)}
         {feedbackMessage && (
           <Animated.View
             style={[styles.feedbackOverlay, animatedFeedbackStyle]}
@@ -91,17 +98,13 @@ export const GuessRow = memo(
           </Animated.View>
         )}
         <Animated.View style={[styles.contentContainer, animatedContentStyle]}>
-          <Text style={styles.guessNumber}>{index + 1}</Text>
-          <Ionicons
-            name={isCorrect ? "checkmark-circle" : "close-circle"}
-            style={isCorrect ? styles.iconSuccess : styles.iconError}
-          />
           <View style={styles.guessTextContainer}>
             <Text
               style={styles.guessText}
             >
               {`${guessTitle}${releaseYear}`}
             </Text>
+            <Text style={styles.guessNumber}>GUESS {String(index + 1).padStart(2, "0")}</Text>
             {hintInfoList && hintInfoList.length > 0 && (
               <View style={styles.hintsWrapper}>
                 {hintInfoList.map((hint, idx) => (
@@ -117,6 +120,12 @@ export const GuessRow = memo(
                 ))}
               </View>
             )}
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginLeft: 8 }}>
+            <View style={{ width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: isCorrect ? "#8AD4B2" : "#FF8973" }}>
+              <Ionicons name={isCorrect ? "checkmark" : "close"} style={isCorrect ? styles.iconSuccess : styles.iconError} />
+            </View>
+            <Text style={{ fontFamily: "PremiereSans", fontSize: 15, color: isCorrect ? "#163D30" : "#542018" }}>{isCorrect ? "Correct" : "Incorrect"}</Text>
           </View>
         </Animated.View>
       </Animated.View>
@@ -144,10 +153,14 @@ const themedStyles = (theme: Theme): GuessRowStyles => ({
   guessTile: {
     ...u.flexRow,
     ...u.alignCenter,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.responsive.scale(8),
-    paddingHorizontal: theme.spacing.medium,
-    minHeight: theme.responsive.scale(44),
+    backgroundColor: "#DED7C9",
+    borderRadius: 3,
+    borderWidth: 0,
+    borderColor: theme.colors.border,
+    borderStyle: "dashed",
+    paddingHorizontal: 24,
+    minHeight: 86,
+    marginHorizontal: 5,
     marginBottom: theme.spacing.small,
     paddingVertical: theme.spacing.small,
     position: "relative",
@@ -164,7 +177,7 @@ const themedStyles = (theme: Theme): GuessRowStyles => ({
   },
   feedbackText: {
     color: theme.colors.onAccent,
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(14),
     textAlign: "center",
   },
@@ -174,20 +187,25 @@ const themedStyles = (theme: Theme): GuessRowStyles => ({
     ...u.wFull,
   },
   guessNumber: {
-    color: theme.colors.textSecondary,
-    fontFamily: "Arvo-Bold",
-    fontSize: theme.responsive.responsiveFontSize(14),
+    color: "#4F5354",
+    fontFamily: "PremiereSans",
+    fontSize: 8,
+    letterSpacing: 2.4,
+    marginTop: 8,
     marginRight: theme.spacing.small,
+    borderRightWidth: 0,
+    borderRightColor: theme.colors.border,
+    paddingRight: 12,
   },
   iconSuccess: {
-    marginRight: theme.spacing.medium,
+    marginRight: 0,
     fontSize: theme.responsive.responsiveFontSize(22),
     color: theme.colors.success,
   },
   iconError: {
-    marginRight: theme.spacing.medium,
+    marginRight: 0,
     fontSize: theme.responsive.responsiveFontSize(22),
-    color: theme.colors.error,
+    color: "#A3362E",
   },
   guessTextContainer: {
     flex: 1,
@@ -195,9 +213,10 @@ const themedStyles = (theme: Theme): GuessRowStyles => ({
   },
   guessText: {
     ...theme.typography.bodyText,
-    color: theme.colors.textPrimary,
-    fontSize: theme.responsive.responsiveFontSize(14),
-    lineHeight: theme.responsive.responsiveFontSize(18),
+    color: "#14232A",
+    fontFamily: "PremiereClue",
+    fontSize: 25,
+    lineHeight: 28,
   },
   hintsWrapper: {
     ...u.flexRow,
@@ -217,7 +236,7 @@ const themedStyles = (theme: Theme): GuessRowStyles => ({
   },
   guessHintText: {
     flexShrink: 1,
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(11),
     color: theme.colors.accentText,
   },

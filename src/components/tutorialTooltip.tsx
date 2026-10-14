@@ -84,7 +84,7 @@ const themedStyles = (theme: Theme): TutorialTooltipStyles => ({
     width: "100%",
   },
   text: {
-    fontFamily: "Arvo-Regular",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(15),
     color: theme.colors.onAccent,
     lineHeight: theme.responsive.responsiveFontSize(21),

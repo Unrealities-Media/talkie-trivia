@@ -1,4 +1,4 @@
-import React, { useCallback, memo } from "react"
+import React, { useCallback, useState, memo } from "react"
 import {
   Pressable,
   View,
@@ -7,8 +7,12 @@ import {
   ViewStyle,
   TextStyle,
   ImageStyle,
+  useWindowDimensions,
+  PixelRatio,
 } from "react-native"
 import { Image } from "expo-image"
+import { LinearGradient } from "expo-linear-gradient"
+import { useTheme } from "../contexts/themeContext"
 import { FontAwesome } from "@expo/vector-icons"
 import { TriviaItem } from "../models/trivia"
 import { analyticsService } from "../utils/analyticsService"
@@ -20,9 +24,11 @@ import Actors from "./actors"
 import { API_CONFIG } from "../config/constants"
 import { imdbPersonUrl, imdbTitleUrl } from "../utils/imdbLinks"
 import { releaseYear } from "../utils/dateDisplay"
+import PremierePosterGrade from "./premierePosterGrade"
+import PremierePosterNotes from "./premierePosterNotes"
 
 type ImageSource = { uri: string } | number
-const defaultItemImage = require("../../assets/movie_default.png")
+const defaultItemImage = require("../../assets/premiere/theatre.png")
 
 const InlineActors = ({ actors }: { actors: any[] }) => {
   const styles = useStyles(themedStyles)
@@ -44,14 +50,29 @@ const ItemHeader = memo(
     onPress,
     isLinkable,
     compact = false,
+    premiere = false,
   }: {
     title: string
     onPress: () => void
     isLinkable: boolean
     compact?: boolean
+    premiere?: boolean
   }) => {
     const styles = useStyles(themedStyles)
-    if (!isLinkable) return <Typography accessibilityRole="header" variant="h1" style={[styles.header, compact && styles.headerCompact]}>{title}</Typography>
+    const { width } = useWindowDimensions()
+    const premiereTitleSize = PixelRatio.roundToNearestPixel(Math.min(40, Math.max(30, width * 0.0866)))
+    if (premiere) {
+      const heading = <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 22, width: "100%" }}>
+        <View accessible={false} style={{ width: 32, height: 1, backgroundColor: "#FF7868", flexShrink: 1 }} />
+        <Typography accessibilityRole="header" variant="h1" style={[styles.header, styles.headerPremiere, { flexShrink: 1, fontSize: premiereTitleSize, lineHeight: PixelRatio.roundToNearestPixel(premiereTitleSize * 1.2) }]}>{title}</Typography>
+        <View accessible={false} style={{ width: 32, height: 1, backgroundColor: "#FF7868", flexShrink: 1 }} />
+      </View>
+      return isLinkable
+        ? <Pressable onPress={onPress} accessibilityRole="link" accessibilityLabel={`Open IMDb page for ${title}`}
+            style={({ pressed }) => [styles.headerPressable, { opacity: pressed ? 0.7 : 1 }]}>{heading}</Pressable>
+        : <View style={styles.headerPressable}>{heading}</View>
+    }
+    if (!isLinkable) return <Typography accessibilityRole="header" variant="h1" style={[styles.header, premiere && styles.headerPremiere, compact && styles.headerCompact]}>{title}</Typography>
     return (
       <Pressable
         onPress={onPress}
@@ -75,13 +96,14 @@ const ItemHeader = memo(
             variant="h1"
             style={[
               styles.header,
-              isLinkable && styles.linkText,
+              premiere && styles.headerPremiere,
+              isLinkable && !premiere && styles.linkText,
               compact && styles.headerCompact,
             ]}
           >
             {title}
           </Typography>
-          {isLinkable && (
+          {isLinkable && !premiere && (
             <FontAwesome
               name="external-link-square"
               size={compact ? 16 : styles.imdbIcon.fontSize}
@@ -101,6 +123,8 @@ interface FactsProps {
   error?: string
   isScrollEnabled?: boolean
   compact?: boolean
+  posterFooter?: React.ReactNode
+  headerFooter?: React.ReactNode
 }
 
 const Facts = memo(
@@ -110,11 +134,16 @@ const Facts = memo(
     error,
     isScrollEnabled = true,
     compact = false,
+    posterFooter,
+    headerFooter,
   }: FactsProps) => {
     const styles = useStyles(themedStyles)
+    const { colors } = useTheme()
+    const { width } = useWindowDimensions()
     const { openLink } = useExternalLink()
     const titleUrl = imdbTitleUrl(item.metadata.imdb_id)
     const year = releaseYear(item.releaseDate)
+    const [failedPoster, setFailedPoster] = useState<string | null>(null)
 
     const handleItemPress = useCallback(() => {
       if (titleUrl) {
@@ -149,7 +178,7 @@ const Facts = memo(
         </View>
       )
 
-    const imageSource = item.posterPath
+    const imageSource = item.posterPath && failedPoster !== item.posterPath
       ? { uri: `${API_CONFIG.TMDB_IMAGE_BASE_URL_W500}${item.posterPath}` }
       : defaultItemImage
 
@@ -162,6 +191,7 @@ const Facts = memo(
             style={styles.posterImageCompact}
             contentFit="contain"
             placeholder={defaultItemImage}
+            onError={() => setFailedPoster(item.posterPath)}
           />
 
           {/* RIGHT COLUMN: DETAILS */}
@@ -254,17 +284,22 @@ const Facts = memo(
           title={item.title}
           onPress={handleItemPress}
           isLinkable={!!titleUrl}
+          premiere={!!posterFooter}
         />
-        {item.metadata.tagline && (
+        {headerFooter}
+        {!posterFooter && item.metadata.tagline && (
           <Typography variant="caption" style={styles.tagline}>
             {item.metadata.tagline}
           </Typography>
         )}
-        <Image
-          source={imageSource}
-          style={styles.posterImage}
-          contentFit="cover"
-        />
+        {posterFooter ? <View style={{ alignSelf: "stretch", marginHorizontal: -20, height: Math.min(340, width * 0.8), overflow: "hidden" }}>
+          <Image source={imageSource} style={{ width: "100%", height: "100%" }} contentFit="cover" contentPosition={{ left: "50%", top: "25%" }} onError={() => setFailedPoster(item.posterPath)} />
+          <PremierePosterGrade />
+          <LinearGradient pointerEvents="none" colors={[colors.background, "transparent", "transparent", colors.background]} locations={[0, 0.14, 0.72, 1]} style={{ position: "absolute", inset: 0 }} />
+          <PremierePosterNotes />
+        </View> : <Image source={imageSource} style={styles.posterImage} contentFit="cover" onError={() => setFailedPoster(item.posterPath)} />}
+        {posterFooter}
+        {posterFooter && item.metadata.tagline && <Typography variant="caption" style={styles.tagline}>{item.metadata.tagline}</Typography>}
         {year && <Typography style={styles.director}>Released: {year}</Typography>}
         {item.hints.map((hint) => {
           if (hint.type === "actors" && Array.isArray(hint.value)) {
@@ -316,6 +351,7 @@ interface FactsStyles {
   headerContainer: ViewStyle
   headerContainerCompact: ViewStyle
   header: TextStyle
+  headerPremiere: TextStyle
   headerCompact: TextStyle
   imdbIcon: TextStyle & { fontSize: number }
   imdbIconCompact: TextStyle
@@ -359,9 +395,18 @@ const themedStyles = (theme: Theme): FactsStyles => ({
     textAlign: "center",
   },
   headerCompact: {
-    fontSize: theme.responsive.responsiveFontSize(20),
+    fontFamily: "PremiereDisplay",
+    fontSize: 24,
+    lineHeight: 30,
     paddingBottom: theme.spacing.extraSmall,
     textAlign: "left",
+  },
+  headerPremiere: {
+    fontFamily: "PremiereDisplay",
+    fontSize: 40,
+    lineHeight: 48,
+    paddingBottom: 4,
+    textAlign: "center",
   },
   linkText: {
     textDecorationLine: "underline",
@@ -377,7 +422,7 @@ const themedStyles = (theme: Theme): FactsStyles => ({
     marginLeft: theme.spacing.extraSmall,
   },
   tagline: {
-    fontFamily: "Arvo-Italic",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(14),
     textAlign: "center",
     width: "90%",
@@ -386,7 +431,7 @@ const themedStyles = (theme: Theme): FactsStyles => ({
     fontStyle: "italic",
   },
   director: {
-    fontFamily: "Arvo-Italic",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(14),
     textAlign: "center",
     width: "90%",
@@ -406,12 +451,12 @@ const themedStyles = (theme: Theme): FactsStyles => ({
     paddingBottom: theme.spacing.small,
   },
   posterImage: {
-    width: theme.responsive.scale(180),
+    width: theme.responsive.scale(240),
     maxWidth: "100%",
     height: undefined,
     aspectRatio: 2 / 3,
     marginBottom: theme.spacing.medium,
-    borderRadius: theme.responsive.scale(8),
+    borderRadius: 2,
   },
   headerPressable: {
     width: "100%",
@@ -439,7 +484,7 @@ const themedStyles = (theme: Theme): FactsStyles => ({
   posterImageCompact: {
     width: theme.responsive.scale(100),
     height: theme.responsive.scale(150),
-    borderRadius: theme.responsive.scale(8),
+    borderRadius: 3,
     marginRight: theme.spacing.medium,
     backgroundColor: theme.colors.surface,
   },
@@ -449,7 +494,7 @@ const themedStyles = (theme: Theme): FactsStyles => ({
     paddingTop: theme.spacing.extraSmall,
   },
   taglineCompact: {
-    fontFamily: "Arvo-Italic",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(11),
     color:
       theme.colorScheme === "dark" ? "#E0E0E0" : theme.colors.textSecondary,
@@ -460,13 +505,13 @@ const themedStyles = (theme: Theme): FactsStyles => ({
     marginBottom: theme.spacing.small,
   },
   metadataText: {
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(12),
     color: theme.colors.textPrimary,
     marginBottom: 2,
   },
   inlineActors: {
-    fontFamily: "Arvo-Regular",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(11),
     color:
       theme.colorScheme === "dark" ? "#CCCCCC" : theme.colors.textSecondary,

@@ -123,15 +123,15 @@ describe("GuessesContainer Component", () => {
       })
     })
 
-    it("should render a mix of GuessRows and EmptyGuessTiles based on current progress", () => {
+    it("renders submitted tickets and the remaining guess count", () => {
       renderWithTheme(<GuessesContainer lastGuessResult={null} />)
 
       // Mock game has 2 guesses out of 5 max
       const guesses = screen.getAllByTestId(/guess-row-/)
-      const empties = screen.getAllByTestId(/empty-tile-/)
+      const remaining = screen.getByText("3 GUESSES REMAINING")
 
       expect(guesses).toHaveLength(2)
-      expect(empties).toHaveLength(3) // 5 max - 2 used = 3 empty
+      expect(remaining).toBeTruthy()
     })
 
     it("should pass correct props to GuessRow components", () => {
@@ -212,14 +212,14 @@ describe("GuessesContainer Component", () => {
         />
       )
 
-      // Should respect the props: 1 guess, 2 empties (total 3)
+      // Respect the saved game limit, not the active game limit.
       expect(screen.getAllByTestId(/guess-row-/)).toHaveLength(1)
-      expect(screen.getAllByTestId(/empty-tile-/)).toHaveLength(2)
+      expect(screen.getByText("2 GUESSES REMAINING")).toBeTruthy()
     })
   })
 
   describe("Layout and Styling", () => {
-    it("renders all available slots for an unfinished game", () => {
+    it("reports the remaining count for an unfinished game", () => {
       setMockStoreState({
         loading: false,
         playerGame: { ...mockPlayerGame, guessesMax: 10 }, // 10 max guesses
@@ -228,11 +228,8 @@ describe("GuessesContainer Component", () => {
 
       renderWithTheme(<GuessesContainer lastGuessResult={null} />)
 
-      // We verify that the list renders 10 slots total (guesses + empty tiles).
-      const totalSlots =
-        screen.queryAllByTestId(/guess-row-/).length +
-        screen.queryAllByTestId(/empty-tile-/).length
-      expect(totalSlots).toBe(10)
+      expect(screen.getAllByTestId(/guess-row-/)).toHaveLength(2)
+      expect(screen.getByText("8 GUESSES REMAINING")).toBeTruthy()
     })
   })
 })

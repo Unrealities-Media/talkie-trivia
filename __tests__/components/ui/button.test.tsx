@@ -7,7 +7,7 @@ import {
 } from "@testing-library/react-native"
 import { ThemeProvider } from "../../../src/contexts/themeContext"
 import { Button } from "../../../src/components/ui/button"
-import { lightColors } from "../../../src/styles/themes"
+import { darkColors } from "../../../src/styles/themes"
 
 // Custom Render Helper
 const renderWithTheme = (ui: ReactElement, options?: RenderOptions) => {
@@ -34,7 +34,7 @@ describe("UI Component: Button", () => {
       // Check background color for primary
       expect(button.props.style).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ backgroundColor: lightColors.primary }),
+          expect.objectContaining({ backgroundColor: darkColors.primary }),
         ])
       )
     })
@@ -51,13 +51,13 @@ describe("UI Component: Button", () => {
         expect.arrayContaining([
           expect.objectContaining({
             backgroundColor: "transparent",
-            borderColor: lightColors.primary,
+            borderColor: darkColors.primary,
           }),
         ])
       )
       expect(text.props.style).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ color: lightColors.accentText }),
+          expect.objectContaining({ color: darkColors.accentText }),
         ])
       )
     })

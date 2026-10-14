@@ -43,6 +43,7 @@ describe("Hook: useHintLogic (Comprehensive)", () => {
         difficulty: difficulty as any,
         isInteractionsDisabled: false,
         loading: false,
+        syncStatus: "idle",
       } as any,
       true
     )
@@ -103,7 +104,7 @@ describe("Hook: useHintLogic (Comprehensive)", () => {
       const { result } = renderHook(() => useHintLogic())
       expect(result.current.isToggleDisabled).toBe(true)
       expect(result.current.hintLabelText).toBe(
-        "Hints are revealed by successful guesses!"
+        "Match an actor, director, genre or decade to reveal a hint."
       )
     })
 

@@ -48,6 +48,14 @@ describe("PickerItem Component", () => {
   })
 
   describe("Collapsed State (Default)", () => {
+    it("keeps a movie selectable when its poster download fails", () => {
+      renderWithTheme(<PickerItem item={mockBasicItem} detailedItem={null} isDisabled={false}
+        isExpanded={false} onSelect={mockOnSelect} onLongPress={mockOnLongPress} />)
+      fireEvent(screen.getByTestId("mock-expo-image"), "error")
+      expect(screen.getByTestId("mock-expo-image").props.source).toBe(require("../../assets/premiere/theatre.png"))
+      fireEvent.press(screen.getByRole("button", { name: /Select and guess: The Matrix/ }))
+      expect(mockOnSelect).toHaveBeenCalledWith(mockBasicItem)
+    })
     it("announces the release year and prevents selecting an already guessed movie", () => {
       renderWithTheme(<PickerItem item={mockBasicItem} detailedItem={null} isDisabled={false}
         isGuessed isExpanded={false} onSelect={mockOnSelect} onLongPress={mockOnLongPress} />)

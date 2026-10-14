@@ -7,6 +7,8 @@ import ConfettiCelebration from "../../src/components/confettiCelebration"
 
 // This mock function will allow us to check if the `start()` method was called.
 const mockStart = jest.fn()
+let mockReduced = false
+jest.mock("../../src/utils/hooks/usePremiereMotion", () => ({ usePremiereMotion: () => mockReduced }))
 
 jest.mock("react-native-confetti-cannon", () => {
   const React = require("react")
@@ -47,6 +49,7 @@ describe("ConfettiCelebration Component", () => {
     // Clear mocks before each test to ensure a clean state
     mockStart.mockClear()
     mockOnConfettiStop.mockClear()
+    mockReduced = false
   })
 
   it("should not render when startConfetti is false", () => {
@@ -56,6 +59,22 @@ describe("ConfettiCelebration Component", () => {
       </ThemeProvider>
     )
     expect(screen.queryByTestId("confetti-cannon")).toBeNull()
+  })
+
+  it("clears a requested celebration without motion when reduced motion is enabled", () => {
+    mockReduced = true
+    render(<ConfettiCelebration startConfetti onConfettiStop={mockOnConfettiStop} />)
+    expect(screen.queryByTestId("confetti-cannon")).toBeNull()
+    expect(mockStart).not.toHaveBeenCalled()
+    expect(mockOnConfettiStop).toHaveBeenCalledTimes(1)
+  })
+
+  it("stops rendering particles if reduced motion is enabled during a celebration", () => {
+    const { rerender } = render(<ConfettiCelebration startConfetti onConfettiStop={mockOnConfettiStop} />)
+    mockReduced = true
+    rerender(<ConfettiCelebration startConfetti onConfettiStop={mockOnConfettiStop} />)
+    expect(screen.queryByTestId("confetti-cannon")).toBeNull()
+    expect(mockOnConfettiStop).toHaveBeenCalledTimes(1)
   })
 
   it("should render and call the start method when startConfetti is true", () => {

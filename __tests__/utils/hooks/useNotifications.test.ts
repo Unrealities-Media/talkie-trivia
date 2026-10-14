@@ -1,89 +1,49 @@
-import { renderHook, waitFor } from "@testing-library/react-native"
+import { act, renderHook } from "@testing-library/react-native"
+import { AppState, AppStateStatus } from "react-native"
 import { useNotifications } from "../../../src/utils/hooks/useNotifications"
-import * as Notifications from "expo-notifications"
-import { useGameStore } from "../../../src/state/gameStore"
-import { defaultPlayerStats } from "../../../src/models/default"
-import { Platform } from "react-native"
+import { reminderService } from "../../../src/services/reminderService"
 
-// Mock expo-notifications
-jest.mock("expo-notifications", () => ({
-  setNotificationHandler: jest.fn(),
-  getPermissionsAsync: jest.fn(),
-  requestPermissionsAsync: jest.fn(),
-  cancelAllScheduledNotificationsAsync: jest.fn(),
-  scheduleNotificationAsync: jest.fn(),
+jest.mock("../../../src/services/reminderService", () => ({
+  reminderService: { refresh: jest.fn().mockResolvedValue(undefined) },
 }))
 
-describe("Hook: useNotifications", () => {
+describe("notification preference reconciliation", () => {
+  const remove = jest.fn()
+  let listener: (state: AppStateStatus) => void
   beforeEach(() => {
     jest.clearAllMocks()
-    // Reset store
-    useGameStore.setState({
-      playerStats: { ...defaultPlayerStats, currentStreak: 0 },
-    })
-    // Default permission mock
-    ;(Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-      status: "granted",
-    })
-    ;(Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValue({
-      status: "granted",
+    jest.spyOn(AppState, "addEventListener").mockImplementation((_event, callback) => {
+      listener = callback
+      return { remove }
     })
   })
+  afterEach(() => jest.restoreAllMocks())
 
-  it("should request permissions on mount", async () => {
-    ;(Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-      status: "undetermined",
-    })
-
-    renderHook(() => useNotifications())
-
-    await waitFor(() => {
-      expect(Notifications.getPermissionsAsync).toHaveBeenCalled()
-      expect(Notifications.requestPermissionsAsync).toHaveBeenCalled()
-    })
+  it("refreshes saved preferences on mount and foreground, with cleanup", () => {
+    const { unmount } = renderHook(() => useNotifications())
+    expect(reminderService.refresh).toHaveBeenCalledTimes(1)
+    act(() => listener("background"))
+    expect(reminderService.refresh).toHaveBeenCalledTimes(1)
+    act(() => listener("active"))
+    expect(reminderService.refresh).toHaveBeenCalledTimes(2)
+    unmount()
+    expect(remove).toHaveBeenCalledTimes(1)
   })
 
-  it("should schedule a generic notification if streak is 0", async () => {
-    renderHook(() => useNotifications())
-
-    await waitFor(() => {
-      expect(
-        Notifications.cancelAllScheduledNotificationsAsync
-      ).toHaveBeenCalled()
-      expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledWith(
-        expect.objectContaining({
-          content: expect.objectContaining({
-            body: expect.stringContaining("Start a new winning streak"),
-          }),
-        })
-      )
-    })
+  it("does not reconcile during suspended account operations", () => {
+    const { rerender } = renderHook<void, { suspended: boolean }>(({ suspended }) => useNotifications(suspended), { initialProps: { suspended: true } })
+    expect(reminderService.refresh).not.toHaveBeenCalled()
+    expect(AppState.addEventListener).not.toHaveBeenCalled()
+    rerender({ suspended: false })
+    expect(reminderService.refresh).toHaveBeenCalledTimes(1)
+    rerender({ suspended: true })
+    expect(remove).toHaveBeenCalledTimes(1)
   })
 
-  it("should schedule a specific streak notification if streak > 0", async () => {
-    useGameStore.setState({
-      playerStats: { ...defaultPlayerStats, currentStreak: 5 },
-    })
-
+  it("contains reconciliation failures without rejecting the render", async () => {
+    jest.mocked(reminderService.refresh).mockRejectedValueOnce(new Error("offline"))
     renderHook(() => useNotifications())
-
-    await waitFor(() => {
-      expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledWith(
-        expect.objectContaining({
-          content: expect.objectContaining({
-            body: expect.stringContaining("Keep your 5-day streak alive"),
-          }),
-        })
-      )
-    })
-  })
-
-  it("should NOT schedule if platform is Web", async () => {
-    Platform.OS = "web"
-    renderHook(() => useNotifications())
-
-    expect(Notifications.getPermissionsAsync).not.toHaveBeenCalled()
-
-    Platform.OS = "ios"
+    await act(async () => { await Promise.resolve() })
+    expect(reminderService.refresh).toHaveBeenCalledTimes(1)
   })
 })

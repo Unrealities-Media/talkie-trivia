@@ -48,7 +48,7 @@ beforeEach(() => {
 
 it("shows the saved challenge difficulty and an accessible heading when playable", () => {
   renderGame()
-  expect(screen.getByRole("header", { name: "Find the title!" })).toBeTruthy()
+  expect(screen.getByRole("header", { name: "TALKIE TRIVIA" })).toBeTruthy()
   expect(screen.getByText("Extreme · locked for today")).toBeTruthy()
 })
 

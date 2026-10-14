@@ -38,7 +38,7 @@ const themedStyles = (theme: Theme): SkeletonRowStyles => ({
   },
   guessNumber: {
     color: theme.colors.textSecondary,
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(14),
     marginRight: theme.spacing.small,
   },

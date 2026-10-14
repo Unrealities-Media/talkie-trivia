@@ -14,7 +14,6 @@ import LoadingIndicator from "../../components/loadingIndicator"
 import { useAuth } from "../../contexts/authContext"
 import { GameHistoryEntry } from "../../models/gameHistory"
 import ErrorMessage from "../../components/errorMessage"
-import { FontAwesome } from "@expo/vector-icons"
 import ProfileSection from "../../components/profileSection"
 import { useStyles, Theme } from "../../utils/hooks/useStyles"
 import { useTheme } from "../../contexts/themeContext"
@@ -98,7 +97,8 @@ const ProfileScreen: React.FC = () => {
           <Suspense fallback={<LoadingIndicator />}>
             <View style={styles.contentArea}>
               <View style={styles.header}>
-                <Text style={styles.title}>Welcome, {displayName}!</Text>
+                <Text accessibilityRole="header" style={styles.title}>Your profile</Text>
+                <Text style={styles.welcome}>Welcome, {displayName}!</Text>
               </View>
 
               {authLoading && <LoadingIndicator message="Opening your player account…" />}
@@ -107,12 +107,6 @@ const ProfileScreen: React.FC = () => {
               {!authLoading && !isUserAuthenticated && !deletion && !lostSession && !merge && !mergeProposal && <ErrorMessage message={authError || "Your player account could not be opened."} onRetry={retryAuthentication} />}
               {isUserAuthenticated && !isGoogleSignedIn && (
                 <View style={styles.signInPromptContainer}>
-                  <FontAwesome
-                    name="google"
-                    size={styles.signInPromptIcon.fontSize}
-                    color={styles.signInPromptIcon.color}
-                    style={u.mbMd}
-                  />
                   <Text style={styles.signInPromptTitle}>
                     Link Your Guest Account
                   </Text>
@@ -171,9 +165,9 @@ interface ProfileScreenStyles {
   contentArea: ViewStyle
   header: ViewStyle
   title: TextStyle
+  welcome: TextStyle
   divider: ViewStyle
   signInPromptContainer: ViewStyle
-  signInPromptIcon: TextStyle
   signInPromptTitle: TextStyle
   signInPromptText: TextStyle
   footer: ViewStyle
@@ -198,16 +192,25 @@ const themedStyles = (theme: Theme): ProfileScreenStyles => ({
     alignSelf: "center",
   },
   header: {
-    alignItems: "center",
-    marginBottom: theme.spacing.medium,
-    paddingBottom: theme.spacing.small,
+    alignItems: "flex-start",
+    marginBottom: 24,
+    paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
     width: "100%",
   },
   title: {
-    ...theme.typography.heading2,
+    fontFamily: "PremiereDisplay",
+    fontSize: 42,
+    lineHeight: 52,
     color: theme.colors.textPrimary,
+  },
+  welcome: {
+    fontFamily: "PremiereSans",
+    fontSize: 13,
+    lineHeight: 21,
+    color: theme.colors.textSecondary,
+    marginTop: 8,
   },
   divider: {
     height: 1,
@@ -217,21 +220,20 @@ const themedStyles = (theme: Theme): ProfileScreenStyles => ({
   signInPromptContainer: {
     alignItems: "center",
     justifyContent: "center",
-    padding: theme.spacing.large,
+    padding: 20,
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.responsive.scale(12),
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     width: "100%",
     maxWidth: theme.responsive.scale(500),
     marginBottom: theme.spacing.large,
   },
-  signInPromptIcon: {
-    fontSize: theme.responsive.scale(30),
-    color: theme.colors.accentText,
-  },
   signInPromptTitle: {
-    ...theme.typography.heading2,
-    color: theme.colors.accentText,
-    marginTop: theme.spacing.medium,
+    fontFamily: "PremiereDisplay",
+    fontSize: 28,
+    lineHeight: 36,
+    color: theme.colors.textPrimary,
     marginBottom: theme.spacing.small,
     textAlign: "center",
   },
@@ -261,7 +263,7 @@ const themedStyles = (theme: Theme): ProfileScreenStyles => ({
   linkText: {
     color: theme.colors.accentText,
     textDecorationLine: "underline",
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
   },
 })
 

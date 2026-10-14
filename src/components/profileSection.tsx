@@ -26,7 +26,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
           size={styles.icon.fontSize}
           color={styles.icon.color}
         />
-        <Typography variant="h2" style={styles.title}>
+        <Typography accessibilityRole="header" variant="h2" style={styles.title}>
           {title}
         </Typography>
       </View>
@@ -48,16 +48,18 @@ const themedStyles = (theme: Theme): ProfileSectionStyles => ({
     width: "100%",
     maxWidth: theme.responsive.scale(500),
     marginBottom: theme.spacing.large,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowOpacity: 0,
+    elevation: 0,
     overflow: "hidden", // Ensures children conform to border radius
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     padding: theme.spacing.medium,
-    backgroundColor:
-      theme.colorScheme === "dark"
-        ? "rgba(255,255,255,0.05)"
-        : "rgba(0,0,0,0.02)",
+    backgroundColor: "transparent",
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
@@ -66,8 +68,10 @@ const themedStyles = (theme: Theme): ProfileSectionStyles => ({
     color: theme.colors.accentText,
   },
   title: {
-    fontSize: theme.responsive.responsiveFontSize(18),
-    color: theme.colors.accentText,
+    fontFamily: "PremiereDisplay",
+    fontSize: 28,
+    lineHeight: 36,
+    color: theme.colors.textPrimary,
     marginLeft: theme.spacing.small,
   },
   content: {

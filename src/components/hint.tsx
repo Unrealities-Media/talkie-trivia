@@ -62,6 +62,7 @@ const MainHintComponent = () => {
     handleToggleHintOptions,
     handleHintSelection,
     displayedHintText,
+    displayedHintType,
     allHints,
   } = useHintLogic()
   const styles = useStyles(themedStyles)
@@ -85,7 +86,7 @@ const MainHintComponent = () => {
   return (
     <HintUI
       showHintOptions={showHintOptions}
-      displayedHintText={displayedHintText}
+      displayedHintText={displayedHintType === "genre" || displayedHintType === "decade" ? null : displayedHintText}
       hintLabelText={hintLabelText}
       isToggleDisabled={isToggleDisabled}
       hintsAvailable={playerStats?.hintsAvailable ?? 0}
@@ -158,7 +159,7 @@ const themedStyles = (theme: Theme): HintStyles => ({
   hintLabelDisabled: {
     ...theme.typography.caption,
     color: theme.colors.textSecondary,
-    fontFamily: "Arvo-Italic",
+    fontFamily: "PremiereSans",
     textAlign: "center",
     paddingVertical: theme.spacing.small,
   },
@@ -181,7 +182,7 @@ const themedStyles = (theme: Theme): HintStyles => ({
   },
   basicHintsLabel: {
     ...theme.typography.bodyText,
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereDisplay",
     color: theme.colors.textPrimary,
   },
   basicHintsValue: {

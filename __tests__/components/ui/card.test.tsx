@@ -3,7 +3,7 @@ import { Text } from "react-native"
 import { render, screen, RenderOptions } from "@testing-library/react-native"
 import { ThemeProvider } from "../../../src/contexts/themeContext"
 import { Card } from "../../../src/components/ui/card"
-import { lightColors } from "../../../src/styles/themes"
+import { darkColors } from "../../../src/styles/themes"
 
 const renderWithTheme = (ui: ReactElement, options?: RenderOptions) => {
   return render(<ThemeProvider>{ui}</ThemeProvider>, options)
@@ -33,7 +33,7 @@ describe("UI Component: Card", () => {
     expect(cardView.props.style).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          backgroundColor: lightColors.surface,
+          backgroundColor: darkColors.surface,
           // borderRadius is calculated using responsive.scale, so we just check it exists
           borderRadius: expect.any(Number),
         }),

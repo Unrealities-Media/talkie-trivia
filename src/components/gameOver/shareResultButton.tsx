@@ -6,6 +6,7 @@ import { Button } from "../ui/button"
 import { useStyles, Theme } from "../../utils/hooks/useStyles"
 import { u } from "../../styles/utils"
 import { savedScore } from "../../utils/resultSummary"
+import Svg, { Path } from "react-native-svg"
 
 interface ShareResultButtonProps {
   playerGame: PlayerGame
@@ -37,10 +38,11 @@ const ShareResultButton: React.FC<ShareResultButtonProps> = ({
     <View style={[u.wFull, u.alignCenter, styles.container]}>
       <Button
         title="Share Your Result"
+        leadingIcon={<Svg width={23} height={25} viewBox="0 0 24 26" fill="none" stroke="#061923" strokeWidth={1.7} aria-hidden={true}><Path d="M12 17V2M7 7l5-5 5 5M7 11H4v13h16V11h-3" /></Svg>}
         onPress={handleShare}
         isLoading={isSharing}
         disabled={savedScore(playerGame) === null}
-        variant="tertiary"
+        variant="primary"
         style={styles.button}
       />
     </View>
@@ -57,7 +59,9 @@ const themedStyles = (theme: Theme): ShareButtonStyles => ({
     paddingVertical: theme.spacing.medium,
   },
   button: {
-    width: "80%",
+    width: "100%",
+    maxWidth: 320,
+    borderRadius: 10,
   },
 })
 

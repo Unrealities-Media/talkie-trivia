@@ -9,6 +9,6 @@ export default function GameDifficultyToggle() {
   const difficulty = useGameStore(state => state.playerGame.difficulty)
   const label = DIFFICULTY_MODES[difficulty]?.label || "Medium"
   return <View accessible accessibilityLabel={`Today's difficulty: ${label}. Change your next challenge's difficulty in Profile.`}>
-    <Typography>{label} · locked for today</Typography>
+    <Typography variant="caption">{label} · locked for today</Typography>
   </View>
 }

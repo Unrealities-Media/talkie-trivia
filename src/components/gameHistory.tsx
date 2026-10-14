@@ -230,7 +230,7 @@ const themedStyles = (theme: Theme): any => ({
     marginLeft: theme.spacing.medium,
   },
   itemTitle: {
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(16),
     color: theme.colors.textPrimary,
     marginBottom: theme.spacing.extraSmall,
@@ -240,13 +240,13 @@ const themedStyles = (theme: Theme): any => ({
     marginBottom: theme.spacing.extraSmall,
   },
   difficultyText: {
-    fontFamily: "Arvo-Italic",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(12),
     color: theme.colors.accentText,
     marginBottom: theme.spacing.extraSmall,
   },
   resultText: {
-    fontFamily: "Arvo-Regular",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(14),
   },
   winText: {
@@ -261,12 +261,12 @@ const themedStyles = (theme: Theme): any => ({
     paddingLeft: theme.spacing.small,
   },
   scoreText: {
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(20),
     color: theme.colors.accentText,
   },
   scoreLabel: {
-    fontFamily: "Arvo-Regular",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(10),
     color: theme.colors.textSecondary,
     marginTop: -theme.spacing.extraSmall,
@@ -277,7 +277,7 @@ const themedStyles = (theme: Theme): any => ({
     padding: theme.spacing.large,
   },
   emptyText: {
-    fontFamily: "Arvo-Italic",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(16),
     color: theme.colors.textSecondary,
     textAlign: "center",

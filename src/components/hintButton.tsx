@@ -6,10 +6,12 @@ import Animated, {
   withTiming,
   withRepeat,
   withSequence,
+  cancelAnimation,
 } from "react-native-reanimated"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import { HintType } from "../models/game"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
+import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
 
 type HintStatus = "available" | "used" | "disabled"
 
@@ -34,21 +36,23 @@ const HintButton: React.FC<HintButtonProps> = ({
 }) => {
   const styles = useStyles(themedStyles)
   const highlightAnimation = useSharedValue(0)
+  const reduced = usePremiereMotion()
 
   useEffect(() => {
-    if (isHighlighted) {
+    if (isHighlighted && !reduced) {
       highlightAnimation.value = withRepeat(
         withSequence(
           withTiming(1, { duration: 500 }),
           withTiming(0, { duration: 800 })
         ),
-        -1,
+        2,
         true
       )
     } else {
-      highlightAnimation.value = withTiming(0)
+      highlightAnimation.value = 0
     }
-  }, [isHighlighted, highlightAnimation])
+    return () => cancelAnimation(highlightAnimation)
+  }, [isHighlighted, highlightAnimation, reduced])
 
   const animatedStyle = useAnimatedStyle(() => {
     return {

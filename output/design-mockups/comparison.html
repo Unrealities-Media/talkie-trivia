@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Midnight Premiere — reference comparison</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:32px;background:#03131c;color:#f8e7ca;font:15px/1.6 system-ui,sans-serif}main{max-width:1500px;margin:auto}h1{font:48px/1.1 Georgia,serif;margin:0 0 16px}p{max-width:900px;color:#b9c0c3}button,select{background:#102630;color:#f8e7ca;border:1px solid #647e87;padding:10px 16px;border-radius:6px;font:inherit}button[aria-pressed=true]{background:#ff7868;color:#03131c}nav{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}label{display:flex;align-items:center;gap:12px;margin:16px 0}input{accent-color:#ff7868;width:260px}.panels{display:flex;gap:24px;overflow-x:auto;padding:0 0 24px}.panel{flex:none;width:462px}h2{font-size:14px;font-weight:500;letter-spacing:2px;text-transform:uppercase}.phone{position:relative;width:462px;height:801px;overflow:hidden;border:1px solid #647e87;border-radius:12px;background:#03131c}.reference{position:absolute;width:1536px;height:1024px;max-width:none;left:-440px;top:-6px}.result .reference{left:-940px}.actual{position:absolute;width:462px;height:801px;inset:0}.overlay .actual{opacity:var(--mix,.5)}.legend{font-size:13px;color:#b9c0c3}a{color:#ff7868}footer{border-top:1px solid #29414a;padding-top:20px;margin-top:20px}
+@media(max-width:600px){body{padding:16px}h1{font-size:34px}}
+</style>
+<main>
+<h1>Midnight Premiere</h1>
+<p>Compare the approved board with rendered app captures at the reference phone’s 462 × 801 size. Use the overlay to inspect typography, alignment, and spacing. Content differences are documented below; this is a review aid, not a claim of pixel-perfect completion.</p>
+<nav aria-label="Scene"><button id="play" aria-pressed="true">Gameplay</button><button id="result" aria-pressed="false">Result</button></nav>
+<label for="mix">Overlay: reference <input id="mix" type="range" min="0" max="100" value="50"> app <output id="value">50%</output></label>
+<div class="panels">
+ <section class="panel"><h2>Approved reference</h2><div class="phone"><img class="reference" src="01-midnight-premiere.png" alt="Approved Midnight Premiere board, cropped to the selected phone"></div></section>
+ <section class="panel"><h2>Rendered app</h2><div class="phone"><img class="actual" src="reference-equivalent-play.png" alt="Rendered gameplay presentation fixture"></div></section>
+ <section class="panel"><h2>Overlay comparison</h2><div class="phone overlay"><img class="reference" src="01-midnight-premiere.png" alt=""><img class="actual" src="reference-equivalent-play.png" alt="App capture over the reference"></div></section>
+</div>
+<p id="notes" class="legend"></p>
+<footer>
+ <p>Gameplay uses the reference’s seven-word clue, fully revealed through a local presentation override while retaining the playing screen. It is not a valid game outcome or a gameplay test; remaining-guess feedback differs for that reason. The result fixture uses the current demo movie, Finding Nemo, rather than the board’s illustrative Inception artwork. Its Share button is disabled because the fixture does not fabricate a processed score. Live saved results and transitions were verified separately.</p>
+ <p>Additional functionality remains available: remaining guesses, difficulty, help, and giving up. Real clue lengths and movie titles change the layout. Archive, Profile, recovery, and error screens have no exact counterparts in this board.</p>
+ <p><a href="premiere-qa-reveal.mp4">Native reveal recording</a> · <a href="premiere-qa-result-complete.png">Native saved result</a> · <a href="verification.md">Verification evidence</a></p>
+</footer>
+</main>
+<script>
+const notes={play:'Compare the screen edges, clue lettering, theater seats, ticket and search field. The original seats and projector beams are reused directly. The fixture has one valid genre, a date instead of an invented issue number, and the app’s actual hint count.',result:'Compare the masthead, outcome title, movie-title rules, poster captions and share placement. Different poster content prevents a meaningful pixel-difference score; inspect layout separately from movie artwork.'};
+function scene(name){document.body.classList.toggle('result',name==='result');for(const id of ['play','result'])document.getElementById(id).setAttribute('aria-pressed',String(id===name));document.querySelectorAll('.actual').forEach(img=>{img.src=name==='play'?'reference-equivalent-play.png':'result-notes-462.png';img.alt=`Rendered ${name} presentation fixture`});document.getElementById('notes').textContent=notes[name]}
+document.getElementById('play').onclick=()=>scene('play');document.getElementById('result').onclick=()=>scene('result');document.getElementById('mix').oninput=e=>{document.documentElement.style.setProperty('--mix',e.target.value/100);document.getElementById('value').value=e.target.value+'%'};scene('play');
+</script>
+</html>

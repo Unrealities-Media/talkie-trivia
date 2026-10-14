@@ -17,8 +17,8 @@ import { PlayerGame } from "../../src/models/game"
 // FIX: require dependencies inside the mock factory to avoid out-of-scope errors.
 jest.mock("../../src/components/facts", () => {
   const { View } = require("react-native")
-  return (props: { item: any }) => (
-    <View testID="mock-facts" data-itemid={props.item.id} />
+  return (props: { item: any; posterFooter?: React.ReactNode; headerFooter?: React.ReactNode }) => (
+    <View testID="mock-facts" data-itemid={props.item.id}>{props.headerFooter}{props.posterFooter}</View>
   )
 })
 jest.mock("../../src/components/gameOver/fullPlotSection", () => {
@@ -127,7 +127,7 @@ describe("GameOverView Component", () => {
     })
 
     it("should display the win title and message", () => {
-      expect(screen.getByText("You Got It!")).toBeTruthy()
+      expect(screen.getByText("That's a wrap!")).toBeTruthy()
       expect(screen.getByText("You guessed it in 2 guesses!")).toBeTruthy()
       expect(screen.getByText("Saved score: 423 points")).toBeTruthy()
       expect(screen.getByText("2026-10-13 (UTC day)")).toBeTruthy()

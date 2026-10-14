@@ -4,12 +4,16 @@ import {
   screen,
   act,
   RenderOptions,
+  fireEvent,
 } from "@testing-library/react-native"
 import { ThemeProvider } from "../../src/contexts/themeContext"
 import RevealSequence from "../../src/components/revealSequence"
 import { useGameStore } from "../../src/state/gameStore"
 import { defaultPlayerGame } from "../../src/models/default"
 import { API_CONFIG } from "../../src/config/constants"
+import { usePremiereMotion } from "../../src/utils/hooks/usePremiereMotion"
+
+jest.mock("../../src/utils/hooks/usePremiereMotion", () => ({ usePremiereMotion: jest.fn(() => false) }))
 
 // --- Mocks ---
 
@@ -61,6 +65,7 @@ describe("RevealSequence Component", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     jest.useFakeTimers()
+    jest.mocked(usePremiereMotion).mockReturnValue(false)
 
     setMockStoreState({
       playerGame: {
@@ -81,10 +86,9 @@ describe("RevealSequence Component", () => {
 
     expect(screen.getByText("The Matrix")).toBeTruthy()
 
-    const image = screen.getByTestId("mock-expo-image")
-    expect(image.props["data-source"]).toBe(
-      `${API_CONFIG.TMDB_IMAGE_BASE_URL_W500}${mockTriviaItem.posterPath}`
-    )
+    for (const image of screen.getAllByTestId("mock-expo-image")) {
+      expect(image.props["data-source"]).toBe(`${API_CONFIG.TMDB_IMAGE_BASE_URL_W500}${mockTriviaItem.posterPath}`)
+    }
   })
 
   it("should render fallback image if posterPath is missing", () => {
@@ -99,9 +103,8 @@ describe("RevealSequence Component", () => {
       <RevealSequence onAnimationComplete={onAnimationCompleteMock} />
     )
 
-    const image = screen.getByTestId("mock-expo-image")
-    // Fallback require returns 1 in Jest
-    expect(image.props.source).toBe(1)
+    // Both the sharp poster and its soft-focus layer use the local fallback.
+    for (const image of screen.getAllByTestId("mock-expo-image")) expect(image.props.source).toBe(1)
   })
 
   it("should call onAnimationComplete after the sequence finishes", () => {
@@ -109,20 +112,33 @@ describe("RevealSequence Component", () => {
       <RevealSequence onAnimationComplete={onAnimationCompleteMock} />
     )
 
-    // The component has multiple animations chained with delays.
-    // The final callback is inside a `setTimeout` within the `withTiming` completion callback.
-    // 1. Initial delay + animation duration
-    // 2. setTimeout of 1000ms
-
-    // Since we mocked `withTiming` to execute the callback immediately,
-    // we just need to advance the timer for the setTimeout(..., 1000).
-
     expect(onAnimationCompleteMock).not.toHaveBeenCalled()
 
     act(() => {
-      jest.advanceTimersByTime(2000) // Advance past 1000ms
+      jest.advanceTimersByTime(3200)
     })
 
+    expect(onAnimationCompleteMock).toHaveBeenCalledTimes(1)
+  })
+
+  it("lets the player skip without completing again when the timer expires", () => {
+    renderWithTheme(<RevealSequence onAnimationComplete={onAnimationCompleteMock} />)
+    fireEvent.press(screen.getByRole("button", { name: "Skip reveal and view results" }))
+    act(() => jest.advanceTimersByTime(5000))
+    expect(onAnimationCompleteMock).toHaveBeenCalledTimes(1)
+  })
+
+  it("cancels completion when unmounted during the reveal", () => {
+    const { unmount } = renderWithTheme(<RevealSequence onAnimationComplete={onAnimationCompleteMock} />)
+    unmount()
+    act(() => jest.advanceTimersByTime(5000))
+    expect(onAnimationCompleteMock).not.toHaveBeenCalled()
+  })
+
+  it("completes the still reduced-motion reveal without waiting for worklets", () => {
+    jest.mocked(usePremiereMotion).mockReturnValue(true)
+    renderWithTheme(<RevealSequence onAnimationComplete={onAnimationCompleteMock} />)
+    act(() => jest.advanceTimersByTime(1800))
     expect(onAnimationCompleteMock).toHaveBeenCalledTimes(1)
   })
 })

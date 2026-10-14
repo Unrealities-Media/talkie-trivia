@@ -168,6 +168,8 @@ const themedStyles = (theme: Theme): DifficultySelectorStyles => ({
   },
   row: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
     justifyContent: "space-between",
     alignItems: "center",
     width: "100%",
@@ -175,13 +177,15 @@ const themedStyles = (theme: Theme): DifficultySelectorStyles => ({
   labelContainer: {
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 1,
   },
   icon: {
     fontSize: theme.responsive.responsiveFontSize(16),
     color: theme.colors.textSecondary,
   },
   title: {
-    fontFamily: "Arvo-Bold",
+    flexShrink: 1,
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(16),
     color: theme.colors.textPrimary,
     marginLeft: theme.spacing.small,
@@ -195,7 +199,7 @@ const themedStyles = (theme: Theme): DifficultySelectorStyles => ({
     borderColor: theme.colors.border,
   },
   selectedOptionTextDisplay: {
-    fontFamily: "Arvo-Regular",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(14),
     color: theme.colors.textSecondary,
   },
@@ -221,12 +225,12 @@ const themedStyles = (theme: Theme): DifficultySelectorStyles => ({
     backgroundColor: theme.colors.primary,
   },
   optionText: {
-    fontFamily: "Arvo-Regular",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(14),
     color: theme.colors.textPrimary,
   },
   selectedOptionText: {
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     color: theme.colors.onAccent,
   },
   descriptionContainer: {
@@ -236,7 +240,7 @@ const themedStyles = (theme: Theme): DifficultySelectorStyles => ({
     justifyContent: "center",
   },
   descriptionText: {
-    fontFamily: "Arvo-Regular",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(12),
     color: theme.colors.textSecondary,
     textAlign: "center",

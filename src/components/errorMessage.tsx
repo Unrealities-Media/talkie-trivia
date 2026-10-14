@@ -40,10 +40,17 @@ interface ErrorMessageStyles {
 
 const themedStyles = (theme: Theme): ErrorMessageStyles => ({
   errorContainer: {
-    flex: 1,
+    width: "100%",
+    maxWidth: 460,
+    alignSelf: "center",
+    minHeight: 200,
+    marginVertical: theme.spacing.large,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.backgroundLight,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 3,
     padding: theme.spacing.large,
   },
   errorText: {

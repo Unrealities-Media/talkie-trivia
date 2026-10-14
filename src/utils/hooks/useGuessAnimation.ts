@@ -7,7 +7,9 @@ import Animated, {
   withDelay,
   interpolate,
   Easing,
+  cancelAnimation,
 } from "react-native-reanimated"
+import { usePremiereMotion } from "./usePremiereMotion"
 import { Theme } from "./useStyles"
 import { HintInfo } from "../../models/game"
 
@@ -39,6 +41,7 @@ export const useGuessAnimation = ({
   theme,
 }: UseGuessAnimationProps) => {
   const { colors } = theme
+  const reduced = usePremiereMotion()
 
   // --- Shared Values for Animations ---
   const rotate = useSharedValue(0)
@@ -49,7 +52,15 @@ export const useGuessAnimation = ({
   // --- Animation Trigger Effect ---
   useEffect(() => {
     // Reveal animation for every guess row
-    rotate.value = withTiming(1, { duration: 600 })
+    if (reduced) {
+      rotate.value = 1
+      shakeX.value = 0
+      feedbackAnim.value = 0
+      backgroundColor.value = colors.surface
+      return
+    }
+    rotate.value = 0
+    rotate.value = withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) })
 
     // Only run the success/failure animations for the most recent guess
     if (isLastGuess && lastGuessResult) {
@@ -68,18 +79,22 @@ export const useGuessAnimation = ({
         )
         // 2. After feedback, shake the tile and flash error color
         shakeX.value = withSequence(
-          withDelay(2800, withTiming(-15, { duration: 60 })),
-          withTiming(15, { duration: 120 }),
-          withTiming(-15, { duration: 120 }),
+          withDelay(700, withTiming(-3, { duration: 60 })),
+          withTiming(3, { duration: 120 }),
+          withTiming(-2, { duration: 120 }),
           withTiming(0, { duration: 60 })
         )
-        backgroundColor.value = withSequence(
-          withDelay(2700, withTiming(colors.error, { duration: 150 })),
-          withTiming(colors.surface, { duration: 800 })
-        )
+        backgroundColor.value = colors.surface
       }
     }
+    return () => {
+      cancelAnimation(rotate)
+      cancelAnimation(shakeX)
+      cancelAnimation(backgroundColor)
+      cancelAnimation(feedbackAnim)
+    }
   }, [
+    reduced,
     isLastGuess,
     lastGuessResult,
     isCorrect,
@@ -92,12 +107,11 @@ export const useGuessAnimation = ({
 
   // --- Animated Style Definitions ---
   const animatedTileStyle = useAnimatedStyle(() => {
-    const rotateY = interpolate(rotate.value, [0, 1], [180, 360])
     return {
       backgroundColor: backgroundColor.value,
       transform: [
-        { perspective: 1000 },
-        { rotateY: `${rotateY}deg` },
+        { translateY: interpolate(rotate.value, [0, 1], [28, 0]) },
+        { rotateZ: `${interpolate(rotate.value, [0, 1], [-3, 0])}deg` },
         { translateX: shakeX.value },
       ],
     }

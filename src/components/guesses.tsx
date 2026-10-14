@@ -1,11 +1,10 @@
 import React, { memo, useMemo, useCallback } from "react"
-import { View, ViewStyle } from "react-native"
+import { Text, View, ViewStyle } from "react-native"
 import { BasicTriviaItem } from "../models/trivia"
 import { useGameStore } from "../state/gameStore"
 import { HintInfo, PlayerGame, Guess } from "../models/game"
 import { useShallow } from "zustand/react/shallow"
 import { GuessRow } from "./guess/guessRow"
-import { EmptyGuessTile } from "./guess/emptyGuessTile"
 import { SkeletonRow } from "./guess/skeletonRow"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { isCompletedGame } from "../utils/resultSummary"
@@ -25,7 +24,6 @@ interface GuessesContainerProps {
 
 type ListItem =
   | { type: "guess"; guess: Guess; index: number }
-  | { type: "empty"; index: number }
   | { type: "skeleton"; index: number }
 
 const GuessesContainer = memo(
@@ -60,17 +58,7 @@ const GuessesContainer = memo(
         }))
       }
 
-      if (completed) return guesses.map((guess, index) => ({ type: "guess", guess, index }))
-
-      const listItems: ListItem[] = []
-      for (let i = 0; i < max; i++) {
-        if (guesses[i]) {
-          listItems.push({ type: "guess", guess: guesses[i], index: i })
-        } else {
-          listItems.push({ type: "empty", index: i })
-        }
-      }
-      return listItems
+      return guesses.map((guess, index) => ({ type: "guess", guess, index }))
     }, [isDataLoading, guesses, guessesMax, completed])
 
     const renderListItem = useCallback(
@@ -78,8 +66,6 @@ const GuessesContainer = memo(
         switch (item.type) {
           case "skeleton":
             return <SkeletonRow index={item.index} />
-          case "empty":
-            return <EmptyGuessTile index={item.index} />
           case "guess": {
             const isLastGuess =
               !!lastGuessResult &&
@@ -108,6 +94,7 @@ const GuessesContainer = memo(
     return (
       <View style={[styles.listWrapper, styles.container]}>
         {listData.map(item => <React.Fragment key={item.index}>{renderListItem(item)}</React.Fragment>)}
+        {!completed && !isDataLoading && <Text accessibilityLiveRegion="polite" style={{ fontFamily: "PremiereSans", fontSize: 9, letterSpacing: 2, color: "#85959A", textAlign: "center", marginTop: 4 }}>{Math.max(0, (guessesMax || 5) - guesses.length)} GUESSES REMAINING</Text>}
       </View>
     )
   }
@@ -123,7 +110,8 @@ const themedStyles = (theme: Theme): GuessesContainerStyles => ({
     width: "100%",
   },
   container: {
-    paddingVertical: theme.spacing.small,
+    paddingTop: 12,
+    paddingBottom: theme.spacing.small,
   },
 })
 

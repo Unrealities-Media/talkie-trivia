@@ -64,7 +64,8 @@ describe("HintUI Component", () => {
         />
       )
 
-      expect(screen.getByText("Need a Hint?")).toBeTruthy()
+      expect(screen.getByText("Hint · 3 left")).toBeTruthy()
+      expect(screen.getByLabelText("Need a Hint?")).toBeTruthy()
     })
 
     it("should render the correct number of HintButtons based on allHints prop", () => {
@@ -125,7 +126,7 @@ describe("HintUI Component", () => {
         />
       )
 
-      fireEvent.press(screen.getByText("Click Me"))
+      fireEvent.press(screen.getByLabelText("Click Me"))
       expect(mockHandleToggle).toHaveBeenCalledTimes(1)
     })
 

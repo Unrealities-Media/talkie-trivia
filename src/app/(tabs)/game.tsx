@@ -1,14 +1,12 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef } from "react"
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, TextInput, View, ViewStyle } from "react-native"
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View, ViewStyle } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { LinearGradient } from "expo-linear-gradient"
 import LoadingIndicator from "../../components/loadingIndicator"
 import { useTheme } from "../../contexts/themeContext"
 import { useGameStore } from "../../state/gameStore"
-import TitleHeader from "../../components/titleHeader"
 import { useStyles, Theme } from "../../utils/hooks/useStyles"
 import { u } from "../../styles/utils"
-import { GAME_MODE_CONFIG } from "../../config/difficulty"
 import { useAuth } from "../../contexts/authContext"
 import { useNetwork } from "../../contexts/networkContext"
 import ErrorMessage from "../../components/errorMessage"
@@ -17,6 +15,8 @@ import SessionRecovery from "../../components/sessionRecovery"
 import AccountMerge from "../../components/accountMerge"
 import GameDifficultyToggle from "../../components/gameDifficultyToggle"
 import HowToPlay from "../../components/howToPlay"
+import PremiereMasthead from "../../components/premiereMasthead"
+import { useThemeTokens } from "../../utils/hooks/useStyles"
 
 const GameplayContainer = lazy(
   () => import("../../components/gameplayContainer")
@@ -26,10 +26,19 @@ const ConfettiCelebration = lazy(
 )
 const FlashMessages = lazy(() => import("../../components/flashMessages"))
 const GameLayout = ({ children, showDifficulty }: { children: React.ReactNode; showDifficulty: boolean }) => {
-  const gameMode = useGameStore((state) => state.gameMode)
   const styles = useStyles(themedStyles)
+  const { colors } = useThemeTokens()
   const insets = useSafeAreaInsets()
   const scroll = useRef<ScrollView>(null)
+  const gameStatus = useGameStore(state => state.gameStatus)
+  useEffect(() => {
+    if (gameStatus !== "gameOver" && gameStatus !== "revealing") return
+    Keyboard.dismiss()
+    // The result replaces a potentially long, scrolled list of guess tickets.
+    // Begin the premiere at its masthead rather than retaining the search offset.
+    const frame = requestAnimationFrame(() => scroll.current?.scrollTo({ y: 0, animated: false }))
+    return () => cancelAnimationFrame(frame)
+  }, [gameStatus])
   const pendingFrame = useRef<number | null>(null)
   const revealSearch = useCallback(() => {
     if (Platform.OS !== "android" || !Keyboard.isVisible() || pendingFrame.current !== null) return
@@ -70,6 +79,7 @@ const GameLayout = ({ children, showDifficulty }: { children: React.ReactNode; s
     <ScrollView
       ref={scroll}
       onLayout={revealSearch}
+      onContentSizeChange={revealSearch}
       contentContainerStyle={styles.scrollContentContainer}
       style={u.flex}
       showsVerticalScrollIndicator={false}
@@ -77,11 +87,12 @@ const GameLayout = ({ children, showDifficulty }: { children: React.ReactNode; s
       automaticallyAdjustKeyboardInsets
     >
       <View style={styles.headerContainer}>
-        <TitleHeader title={GAME_MODE_CONFIG[gameMode].title} />
-        {showDifficulty && <GameDifficultyToggle />}
-        <HowToPlay />
+        <PremiereMasthead />
       </View>
       {children}
+      <View style={[styles.headerContainer, { paddingHorizontal: 20 }]}>
+        <HowToPlay summary={showDifficulty ? <GameDifficultyToggle /> : undefined} />
+      </View>
     </ScrollView>
     </KeyboardAvoidingView>
   )
@@ -140,7 +151,7 @@ interface GameScreenStyles {
 
 const themedStyles = (theme: Theme): GameScreenStyles => ({
   scrollContentContainer: {
-    paddingTop: theme.spacing.large,
+    paddingTop: 0,
     paddingBottom: theme.spacing.extraLarge,
     alignItems: "center",
     flexGrow: 1,
@@ -148,9 +159,10 @@ const themedStyles = (theme: Theme): GameScreenStyles => ({
   headerContainer: {
     alignItems: "stretch",
     width: "100%",
-    paddingHorizontal: theme.spacing.small,
-    paddingBottom: theme.spacing.small,
-    borderBottomWidth: 1,
+    maxWidth: 460,
+    paddingHorizontal: 0,
+    paddingBottom: 0,
+    borderBottomWidth: 0,
     borderBottomColor: theme.colors.border,
     zIndex: 1,
   },

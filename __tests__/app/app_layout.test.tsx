@@ -1,6 +1,9 @@
 import React from "react"
 import { render, screen, waitFor } from "@testing-library/react-native"
 import { useFonts } from "expo-font"
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}))
 
 // Fixed mock for expo-font
 jest.mock("expo-font", () => ({

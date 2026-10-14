@@ -1,6 +1,8 @@
-import React, { useRef, useEffect, useCallback, useMemo } from "react"
+import React, { useRef, useEffect, useCallback } from "react"
 import ConfettiCannon from "react-native-confetti-cannon"
-import { useTheme } from "../contexts/themeContext"
+import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
+
+const confettiColors = ["#FF7868", "#F8E7CA", "#AF9B84"]
 
 interface ConfettiCelebrationProps {
   startConfetti: boolean
@@ -10,31 +12,23 @@ const ConfettiCelebration: React.FC<ConfettiCelebrationProps> = ({
   startConfetti,
   onConfettiStop,
 }) => {
-  const { colors } = useTheme()
+  const reduced = usePremiereMotion()
   const confettiRef = useRef<any>(null)
 
   const start = useCallback(() => confettiRef.current?.start(), [])
   const stop = useCallback(() => onConfettiStop?.(), [onConfettiStop])
 
   useEffect(() => {
-    if (startConfetti) start()
-  }, [startConfetti, start])
+    if (!startConfetti) return
+    if (reduced) stop()
+    else start()
+  }, [startConfetti, reduced, start, stop])
 
-  const confettiColors = useMemo(
-    () => [
-      colors.primary,
-      colors.secondary,
-      colors.tertiary,
-      colors.quinary,
-      colors.success,
-    ],
-    [colors]
-  )
-
-  return startConfetti ? (
+  return startConfetti && !reduced ? (
     <ConfettiCannon
       testID="confetti-cannon"
-      count={250}
+      count={80}
+      autoStart={false}
       origin={{ x: -100, y: 0 }}
       colors={confettiColors}
       fallSpeed={2000}

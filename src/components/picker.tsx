@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react"
-import { View, Platform, UIManager } from "react-native"
+import { View } from "react-native"
 import { ListRenderItemInfo } from "@shopify/flash-list"
 import {
   useAnimatedStyle,
@@ -26,13 +26,6 @@ import TutorialTooltip from "./tutorialTooltip"
 import { useShallow } from "zustand/react/shallow"
 import { createMovieSearch } from "../utils/movieSearch"
 import { GAME_MODE_CONFIG } from "../config/difficulty"
-
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true)
-}
 
 const PickerContainer: FC = memo(() => {
   const {
@@ -203,7 +196,7 @@ const PickerContainer: FC = memo(() => {
     <View style={{ width: "100%" }}>
       <TutorialTooltip
         isVisible={tutorialState.showGuessInputTip}
-        text="Search by movie title or title and year. Tap a result to submit your guess immediately. Open How to play above for the rules and a practice example."
+        text="Search by movie title or title and year. Tap a result to submit your guess immediately. Open How to play for the rules and a practice example."
         onDismiss={dismissGuessInputTip}
       />
       <PickerUI

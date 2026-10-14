@@ -38,7 +38,7 @@ const themedStyles = (theme: Theme): CountdownStyles => ({
   },
   text: {
     ...theme.typography.caption,
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     color: theme.colors.textSecondary,
     fontSize: theme.responsive.responsiveFontSize(14),
   },

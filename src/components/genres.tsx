@@ -85,13 +85,13 @@ const themedStyles = (theme: Theme): GenresStyles => ({
   },
   genreText: {
     color: theme.colors.textPrimary,
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(14),
     textAlign: "center",
   },
   noGenresText: {
     color: theme.colors.accentText,
-    fontFamily: "Arvo-Italic",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(12),
     textAlign: "center",
     marginVertical: theme.spacing.small,

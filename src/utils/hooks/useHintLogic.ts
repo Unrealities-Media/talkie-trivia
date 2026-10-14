@@ -1,18 +1,11 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react"
-import { LayoutAnimation, Platform, UIManager } from "react-native"
+import { LayoutAnimation } from "react-native"
 import { useGameStore } from "../../state/gameStore"
 import { hapticsService } from "../hapticsService"
 import { analyticsService } from "../analyticsService"
 import { useShallow } from "zustand/react/shallow"
 import { DIFFICULTY_MODES } from "../../config/difficulty"
 import { Hint } from "../../models/trivia"
-
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true)
-}
 
 type HintStatus = "available" | "used" | "disabled"
 
@@ -220,6 +213,7 @@ export function useHintLogic() {
   return {
     showHintOptions,
     displayedHintText,
+    displayedHintType: displayedHintText ? selectedHint?.type : null,
     hintLabelText,
     isToggleDisabled,
     hintStatuses,

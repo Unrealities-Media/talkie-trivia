@@ -2,7 +2,7 @@ import React, { ReactElement } from "react"
 import { render, screen, RenderOptions } from "@testing-library/react-native"
 import { ThemeProvider } from "../../../src/contexts/themeContext"
 import { Typography } from ",./../../src/components/ui/typography"
-import { lightColors } from "../../../src/styles/themes"
+import { darkColors } from "../../../src/styles/themes"
 
 const renderWithTheme = (ui: ReactElement, options?: RenderOptions) => {
   return render(<ThemeProvider>{ui}</ThemeProvider>, options)
@@ -18,12 +18,12 @@ describe("UI Component: Typography", () => {
     renderWithTheme(<Typography>Body Text</Typography>)
     const text = screen.getByText("Body Text")
 
-    // Body text usually has Arvo-Regular
+    // Body text usually has PremiereSans
     expect(text.props.style).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          fontFamily: "Arvo-Regular",
-          color: lightColors.textSecondary,
+          fontFamily: "PremiereSans",
+          color: darkColors.textSecondary,
         }),
       ])
     )
@@ -36,8 +36,8 @@ describe("UI Component: Typography", () => {
     expect(text.props.style).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          fontFamily: "Arvo-Bold",
-          color: lightColors.textPrimary,
+          fontFamily: "PremiereDisplay-Bold",
+          color: darkColors.textPrimary,
         }),
       ])
     )
@@ -49,7 +49,7 @@ describe("UI Component: Typography", () => {
 
     expect(text.props.style).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ color: lightColors.error }),
+        expect.objectContaining({ color: darkColors.error }),
       ])
     )
   })

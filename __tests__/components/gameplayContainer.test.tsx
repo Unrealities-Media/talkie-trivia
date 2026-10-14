@@ -19,7 +19,7 @@ jest.mock("../../src/components/clues", () => {
 })
 jest.mock("../../src/components/gameplayView", () => {
   const { View } = require("react-native")
-  return () => <View testID="mock-gameplay-view" />
+  return ({ children }: { children: React.ReactNode }) => <View testID="mock-gameplay-view">{children}</View>
 })
 jest.mock("../../src/components/gameOverView", () => {
   const { View } = require("react-native")
@@ -90,10 +90,11 @@ describe("GameplayContainer Component", () => {
   })
 
   describe('when gameStatus is "revealing"', () => {
-    it("should render gameplay components AND the RevealSequence", () => {
+    it("prepares the completed result beneath the reveal for a seamless handoff", () => {
       setMockStoreState("revealing")
       renderWithTheme(<GameplayContainer />)
-      expect(screen.getByTestId("mock-clues")).toBeTruthy()
+      expect(screen.queryByTestId("mock-clues")).toBeNull()
+      expect(screen.getByTestId("mock-game-over-view")).toBeTruthy()
       expect(screen.getByTestId("mock-reveal-sequence")).toBeTruthy()
     })
 

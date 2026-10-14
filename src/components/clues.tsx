@@ -13,26 +13,26 @@ import {
   Pressable,
   ViewStyle,
   TextStyle,
+  useWindowDimensions,
+  PixelRatio,
+  Platform,
 } from "react-native"
 import Animated, {
   useSharedValue,
   withTiming,
   useAnimatedStyle,
-  runOnJS,
-  withSequence,
   withDelay,
-  interpolateColor,
-  useAnimatedReaction,
   cancelAnimation,
   Easing,
 } from "react-native-reanimated"
 import { hapticsService } from "../utils/hapticsService"
-import { ANIMATION_CONSTANTS } from "../config/constants"
 import { useGameStore } from "../state/gameStore"
 import { useShallow } from "zustand/react/shallow"
 import { DIFFICULTY_MODES } from "../config/difficulty"
-import { useStyles, useThemeTokens, Theme } from "../utils/hooks/useStyles"
+import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { useSkeletonAnimation } from "../utils/hooks/useSkeletonAnimation"
+import PremiereStage, { premiere } from "./premiereStage"
+import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
 
 const CluesSkeleton = memo(() => {
   const styles = useStyles(themedStyles)
@@ -80,7 +80,8 @@ const CountContainer = memo(
 
 const CluesContainer = memo(() => {
   const styles = useStyles(themedStyles)
-  const theme = useThemeTokens()
+  const { width } = useWindowDimensions()
+  const reducedMotion = usePremiereMotion()
 
   const {
     correctAnswer,
@@ -105,33 +106,24 @@ const CluesContainer = memo(() => {
     [itemDescription]
   )
   const [revealedClues, setRevealedClues] = useState<string[]>([])
-  const [typewriterText, setTypewriterText] = useState("")
-  const fullClueShared = useSharedValue("")
-
-  const highlightProgress = useSharedValue(0)
-  const typewriterProgress = useSharedValue(0)
+  const revealProgress = useSharedValue(1)
   const scrollViewRef = useRef<ScrollView>(null)
   const oldCluesText = revealedClues.slice(0, -1).join(" ")
+  const visibleWordCount = revealedClues.join(" ").split(/\s+/).filter(Boolean).length
+  const shortClue = visibleWordCount <= 12
+  const clueSize = PixelRatio.roundToNearestPixel(shortClue
+    ? Math.max(28, Math.min(42, width * (width < 360 ? 0.088 : 0.091)))
+    : Math.max(30, Math.min(34, width * 0.082)))
 
   const handleSkipAnimation = useCallback(() => {
-    cancelAnimation(typewriterProgress)
-    setTypewriterText(fullClueShared.value)
+    cancelAnimation(revealProgress)
+    revealProgress.value = 1
     hapticsService.light()
-  }, [typewriterProgress, fullClueShared])
-
-  useAnimatedReaction(
-    () => Math.floor(typewriterProgress.value),
-    (currentValue, previousValue) => {
-      if (currentValue !== previousValue) {
-        const text = fullClueShared.value.substring(0, currentValue)
-        runOnJS(setTypewriterText)(text)
-      }
-    },
-    [typewriterProgress, fullClueShared]
-  )
+  }, [revealProgress])
 
   useEffect(() => {
     if (loading) return
+    let scrollTimer: ReturnType<typeof setTimeout> | undefined
 
     let numCluesToReveal
     const hintStrategy = DIFFICULTY_MODES[difficulty]?.hintStrategy
@@ -151,42 +143,24 @@ const CluesContainer = memo(() => {
     if (numCluesToReveal > revealedClues.length) {
       hapticsService.light()
       const newRevealedClues = clues.slice(0, numCluesToReveal)
-      const lastClue = newRevealedClues[newRevealedClues.length - 1] || ""
-
-      fullClueShared.value = lastClue
-
-      highlightProgress.value = 0
-      typewriterProgress.value = 0
-      setTypewriterText(process.env.NODE_ENV === "test" ? lastClue : "")
-
-      const typewriterDuration =
-        lastClue.length * ANIMATION_CONSTANTS.TYPEWRITER_CHAR_DURATION
-      highlightProgress.value = withSequence(
-        withTiming(1, { duration: 400 }),
-        withDelay(typewriterDuration + 200, withTiming(0, { duration: 500 }))
-      )
-      typewriterProgress.value = withDelay(
-        200,
-        withTiming(lastClue.length, {
-          duration: typewriterDuration,
-          easing: Easing.linear,
-        })
-      )
+      // Lay out the complete clue before the projector illuminates it.
+      // Revealing characters individually made the paper jump between line breaks.
+      revealProgress.value = reducedMotion ? 1 : 0
+      if (!reducedMotion) revealProgress.value = withDelay(120,
+        withTiming(1, { duration: 850, easing: Easing.out(Easing.cubic) }))
       setRevealedClues(newRevealedClues)
-      setTimeout(
-        () => scrollViewRef.current?.scrollToEnd({ animated: true }),
+      scrollTimer = setTimeout(
+        () => scrollViewRef.current?.scrollToEnd({ animated: !reducedMotion }),
         100
       )
     } else if (numCluesToReveal < revealedClues.length) {
       setRevealedClues(clues.slice(0, numCluesToReveal))
-      const lastClue = clues[numCluesToReveal - 1] || ""
-      setTypewriterText(lastClue)
-      fullClueShared.value = lastClue
+      revealProgress.value = 1
     }
 
     return () => {
-      cancelAnimation(typewriterProgress)
-      cancelAnimation(highlightProgress)
+      clearTimeout(scrollTimer)
+      cancelAnimation(revealProgress)
     }
   }, [
     loading,
@@ -195,26 +169,24 @@ const CluesContainer = memo(() => {
     guesses.length,
     clues,
     difficulty,
-    fullClueShared,
+    revealProgress,
   ])
 
+  useEffect(() => {
+    if (reducedMotion) {
+      cancelAnimation(revealProgress)
+      revealProgress.value = 1
+    }
+  }, [reducedMotion, revealProgress])
+
   const animatedHighlightStyle = useAnimatedStyle(() => {
-    const backgroundColor = interpolateColor(
-      highlightProgress.value,
-      [0, 1],
-      ["transparent", theme.colors.primary]
-    )
-    const color = interpolateColor(
-      highlightProgress.value,
-      [0, 1],
-      [theme.colors.textPrimary, theme.colors.background]
-    )
-    return { backgroundColor, color }
+    return { opacity: 0.2 + revealProgress.value * 0.8 }
   })
 
   const isGameOver = correctAnswer || isInteractionsDisabled
 
   return (
+    <PremiereStage cue={guesses.length}>
     <View style={styles.container}>
       {loading ? (
         <CluesSkeleton />
@@ -234,8 +206,8 @@ const CluesContainer = memo(() => {
                 !isGameOver ? "Tap to reveal the full clue immediately" : ""
               }
             >
-              <View style={styles.cluesBox}>
-                <Text style={styles.text}>
+              <Animated.View style={[styles.cluesBox, animatedHighlightStyle]}>
+                <Text style={[styles.text, { fontSize: clueSize, lineHeight: PixelRatio.roundToNearestPixel(clueSize * (Platform.OS === "android" ? 1.22 : 1.08)) }, shortClue && { width: "100%", maxWidth: 320, alignSelf: "center" }]}>
                   {oldCluesText}
                   {oldCluesText ? " " : ""}
                   {isGameOver ? (
@@ -243,12 +215,12 @@ const CluesContainer = memo(() => {
                       {clues.slice(revealedClues.length - 1).join(" ")}
                     </Text>
                   ) : (
-                    <Animated.Text style={animatedHighlightStyle}>
-                      {typewriterText}
-                    </Animated.Text>
+                    <Text>
+                      {revealedClues[revealedClues.length - 1] || ""}
+                    </Text>
                   )}
                 </Text>
-              </View>
+              </Animated.View>
             </Pressable>
           </ScrollView>
           <CountContainer
@@ -260,6 +232,7 @@ const CluesContainer = memo(() => {
         </>
       )}
     </View>
+    </PremiereStage>
   )
 })
 
@@ -278,19 +251,20 @@ interface CluesStyles {
 
 const themedStyles = (theme: Theme): CluesStyles => ({
   container: {
-    flex: 1,
     justifyContent: "flex-start",
     marginVertical: theme.spacing.extraSmall,
-    minHeight: theme.responsive.scale(160),
+    minHeight: 100,
     paddingHorizontal: theme.spacing.small,
     width: "100%",
     alignSelf: "stretch",
   },
   countContainer: {
+    height: 0,
+    overflow: "hidden",
     alignSelf: "flex-end",
     marginBottom: theme.responsive.scale(4),
     marginRight: theme.spacing.large,
-    marginTop: theme.spacing.small,
+    marginTop: 0,
   },
   scrollView: {
     flexGrow: 1,
@@ -318,20 +292,22 @@ const themedStyles = (theme: Theme): CluesStyles => ({
     width: "70%",
   },
   cluesBox: {
-    paddingHorizontal: theme.spacing.medium,
-    paddingVertical: theme.spacing.medium,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
     width: "100%",
   },
   text: {
     ...theme.typography.bodyText,
-    fontSize: theme.responsive.responsiveFontSize(14),
-    lineHeight: theme.responsive.responsiveFontSize(20),
-    color: theme.colors.textPrimary,
+    fontFamily: "PremiereClue",
+    fontSize: 34,
+    lineHeight: 35,
+    color: premiere.ink,
+    textAlign: "center",
   },
   wordCountText: {
     ...theme.typography.caption,
     fontSize: theme.responsive.responsiveFontSize(11),
-    color: theme.colors.accentText,
+    color: "#534A3C",
     textAlign: "right",
   },
 })

@@ -17,7 +17,8 @@ const GameplayContainer: React.FC = () => {
   )
   const styles = useStyles(themedStyles)
 
-  const showGameOverView = gameStatus === "gameOver"
+  // Prepare the result and its artwork underneath the modal for its final dissolve.
+  const showGameOverView = gameStatus === "gameOver" || gameStatus === "revealing"
 
   return (
     <View style={styles.container}>
@@ -28,9 +29,10 @@ const GameplayContainer: React.FC = () => {
         />
       ) : (
         <>
-          <CluesContainer />
-          <GameplayView />
-          <GuessesContainer lastGuessResult={lastGuessResult} />
+          <CluesContainer key={playerGame.id} />
+          <GameplayView>
+            <GuessesContainer lastGuessResult={lastGuessResult} />
+          </GameplayView>
         </>
       )}
 
@@ -50,10 +52,10 @@ const themedStyles = (theme: Theme): GameplayContainerStyles => ({
     alignItems: "center",
     flexGrow: 1,
     width: "100%",
-    maxWidth: theme.responsive.scale(600),
+    maxWidth: 460,
     alignSelf: "center",
     marginBottom: theme.spacing.extraLarge,
-    paddingHorizontal: theme.spacing.small,
+    paddingHorizontal: 0,
   },
 })
 

@@ -6,7 +6,7 @@ exports[`Guess Component: SkeletonRow should render the skeleton text container 
     [
       {
         "alignItems": "center",
-        "backgroundColor": "#E0E0E0",
+        "backgroundColor": "#102732",
         "borderRadius": 8,
         "flexDirection": "row",
         "marginBottom": 8,
@@ -23,8 +23,8 @@ exports[`Guess Component: SkeletonRow should render the skeleton text container 
   <Text
     style={
       {
-        "color": "#757575",
-        "fontFamily": "Arvo-Bold",
+        "color": "#AFBCC1",
+        "fontFamily": "PremiereSans",
         "fontSize": 14,
         "marginRight": 8,
       }
@@ -35,7 +35,7 @@ exports[`Guess Component: SkeletonRow should render the skeleton text container 
   <View
     style={
       {
-        "backgroundColor": "#BDBDBD",
+        "backgroundColor": "#647E87",
         "borderRadius": 4,
         "flex": 1,
         "overflow": "hidden",

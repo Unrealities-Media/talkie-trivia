@@ -5,11 +5,12 @@ import {
   cleanup,
   within,
   RenderOptions,
+  fireEvent,
 } from "@testing-library/react-native"
-import { Platform } from "react-native"
+import { Animated, Platform } from "react-native"
 import { ThemeProvider } from "../../src/contexts/themeContext"
 import CustomLoadingIndicator from "../../src/components/customLoadingIndicator"
-import { lightColors } from "../../src/styles/themes"
+import { darkColors } from "../../src/styles/themes"
 import { responsive } from "../../src/styles/global"
 
 // Mock react-native-svg to test its props without actual rendering
@@ -38,14 +39,8 @@ describe("CustomLoadingIndicator Component", () => {
   // Store original Platform.OS to restore it after tests
   const originalPlatformOS = Platform.OS
 
-  beforeEach(() => {
-    jest.useFakeTimers()
-  })
-
   afterEach(() => {
     cleanup()
-    jest.runOnlyPendingTimers()
-    jest.useRealTimers()
     // Restore original Platform.OS after each test
     Object.defineProperty(Platform, "OS", {
       get: () => originalPlatformOS,
@@ -85,6 +80,24 @@ describe("CustomLoadingIndicator Component", () => {
       Object.defineProperty(Platform, "OS", { get: () => "ios" })
     })
 
+    it("starts after native layout and stops its loop when removed", () => {
+      const start = jest.fn()
+      const stop = jest.fn()
+      const loop = jest.spyOn(Animated, "loop").mockReturnValue({ start, stop, reset: jest.fn() })
+      try {
+        const { unmount } = renderWithTheme(<CustomLoadingIndicator />)
+        expect(start).not.toHaveBeenCalled()
+        fireEvent(screen.getByTestId("loading-ring"), "layout", {
+          nativeEvent: { layout: { x: 0, y: 0, width: 50, height: 50 } },
+        })
+        expect(start).toHaveBeenCalledTimes(1)
+        unmount()
+        expect(stop).toHaveBeenCalledTimes(1)
+      } finally {
+        loop.mockRestore()
+      }
+    })
+
     it("can switch to the standard indicator after mounting", () => {
       const { rerender } = renderWithTheme(<CustomLoadingIndicator />)
 
@@ -117,7 +130,7 @@ describe("CustomLoadingIndicator Component", () => {
 
     it("should have correctly calculated props on the Circle components", () => {
       renderWithTheme(<CustomLoadingIndicator />)
-      const colors = lightColors
+      const colors = darkColors
 
       // Replicate the calculations from the component to verify props
       const size = responsive.scale(50)

@@ -25,18 +25,18 @@ const themedStyles = (theme: Theme): EmptyGuessTileStyles => ({
   emptyGuessTile: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     borderRadius: theme.responsive.scale(8),
-    paddingHorizontal: theme.spacing.medium,
+    paddingHorizontal: 4,
     minHeight: theme.responsive.scale(44),
     marginBottom: theme.spacing.small,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: theme.colors.border,
     borderStyle: "dashed",
   },
   guessNumber: {
     color: theme.colors.textSecondary,
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(14),
-    marginRight: theme.spacing.small,
   },
 })

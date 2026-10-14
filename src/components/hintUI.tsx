@@ -6,6 +6,7 @@ import HintButton from "./hintButton"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Typography } from "./ui/typography"
 import { Hint } from "../models/trivia"
+import Animated, { FadeInDown, ReduceMotion } from "react-native-reanimated"
 
 type HintStatus = "available" | "used" | "disabled"
 
@@ -14,6 +15,7 @@ const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
   decade: "calendar-outline",
   director: "film-outline",
   actor: "person-outline",
+  actors: "people-outline",
   genre: "folder-open-outline",
   developer: "game-controller-outline",
   platform: "hardware-chip-outline",
@@ -59,6 +61,7 @@ const HintUI: React.FC<HintUIProps> = memo(
           accessibilityLabel={hintLabelText}
           style={styles.toggle}
         >
+          <Ionicons name="bulb-outline" size={20} color={styles.hintLabel.color} />
           <Typography
             variant="body"
             style={[
@@ -66,11 +69,11 @@ const HintUI: React.FC<HintUIProps> = memo(
               isToggleDisabled && styles.hintLabelDisabled,
             ]}
           >
-            {hintLabelText}
+            {hintsAvailable > 0 ? `Hint · ${hintsAvailable} left` : hintLabelText}
           </Typography>
         </Pressable>
 
-        {showHintOptions && <View style={styles.hintButtonsContainer}>
+        {showHintOptions && <Animated.View entering={FadeInDown.duration(300).reduceMotion(ReduceMotion.System)} style={styles.hintButtonsContainer}>
           <View style={styles.hintButtonArea}>
             {allHints.map((hint) => (
               <HintButton
@@ -85,17 +88,17 @@ const HintUI: React.FC<HintUIProps> = memo(
               />
             ))}
           </View>
-        </View>}
+        </Animated.View>}
 
         {displayedHintText && (
-          <View style={styles.displayedHintContainer}>
+          <Animated.View testID="revealed-hint-chip" key={displayedHintText} entering={FadeInDown.duration(450).reduceMotion(ReduceMotion.System)} style={styles.displayedHintContainer}>
             <View style={styles.displayedHintContent}>
               <Ionicons name="bulb-outline" style={styles.displayedHintIcon} />
               <Typography style={styles.hintText} accessibilityLiveRegion="polite">
                 {displayedHintText}
               </Typography>
             </View>
-          </View>
+          </Animated.View>
         )}
       </View>
     )
@@ -123,14 +126,23 @@ const themedStyles = (theme: Theme): HintUIStyles => ({
     width: "100%",
   },
   toggle: {
-    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.textPrimary,
+    borderRadius: 28,
+    alignSelf: "center",
+    minHeight: 44,
+    minWidth: 188,
     justifyContent: "center",
-    paddingHorizontal: theme.spacing.small,
+    paddingHorizontal: 24,
   },
   hintLabel: {
     ...theme.typography.bodyText,
-    fontFamily: "Arvo-Bold",
-    fontSize: theme.responsive.responsiveFontSize(14),
+    fontFamily: "PremiereSans",
+    color: theme.colors.textPrimary,
+    fontSize: 15,
     marginVertical: theme.responsive.scale(4),
     textAlign: "center",
     paddingVertical: theme.responsive.scale(4),
@@ -152,29 +164,29 @@ const themedStyles = (theme: Theme): HintUIStyles => ({
   displayedHintContainer: {
     marginTop: theme.spacing.small,
     padding: theme.responsive.scale(2),
-    backgroundColor: theme.colors.tertiary,
-    borderRadius: theme.responsive.scale(10),
-    width: "90%",
+    backgroundColor: "#E5DCC3",
+    borderRadius: 24,
+    maxWidth: "100%",
     alignSelf: "center",
   },
   displayedHintContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.responsive.scale(8),
+    backgroundColor: "transparent",
+    borderRadius: 24,
     paddingVertical: theme.spacing.small,
     paddingHorizontal: theme.spacing.medium,
   },
   displayedHintIcon: {
-    color: theme.colors.accentText,
+    color: "#14232A",
     fontSize: theme.responsive.responsiveFontSize(18),
     marginRight: theme.spacing.small,
   },
   hintText: {
     flexShrink: 1,
-    color: theme.colors.accentText,
-    fontFamily: "Arvo-Bold",
+    color: "#14232A",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(16),
     textAlign: "center",
   },

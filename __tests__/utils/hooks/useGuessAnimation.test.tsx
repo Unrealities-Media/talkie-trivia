@@ -8,6 +8,7 @@ jest.mock("react-native-reanimated", () => {
   const Reanimated = jest.requireActual("react-native-reanimated/mock")
   return {
     ...Reanimated,
+    useReducedMotion: () => false,
     withTiming: (toValue: number, config: any, callback: any) => {
       // Return the value so we can inspect it in tests, simpler than full simulation
       if (callback) setTimeout(() => callback(true), config.duration || 0)

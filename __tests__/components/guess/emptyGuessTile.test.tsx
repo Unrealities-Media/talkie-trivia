@@ -29,7 +29,7 @@ describe("Guess Component: EmptyGuessTile", () => {
     expect(container.props.style).toEqual(
       expect.objectContaining({
         borderStyle: "dashed",
-        borderWidth: 2,
+        borderWidth: 1,
       })
     )
   })

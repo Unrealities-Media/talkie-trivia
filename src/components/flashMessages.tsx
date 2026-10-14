@@ -70,7 +70,7 @@ const themedStyles = (theme: Theme): FlashMessageStyles => ({
   messageText: {
     color: theme.colors.onAccent,
     fontSize: theme.responsive.responsiveFontSize(16),
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     textAlign: "center",
     paddingVertical: theme.spacing.small,
     paddingHorizontal: theme.spacing.medium,

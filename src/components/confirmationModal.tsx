@@ -4,6 +4,7 @@ import { hapticsService } from "../utils/hapticsService"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Button } from "./ui/button"
 import { Typography } from "./ui/typography"
+import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
 
 interface ConfirmationModalProps {
   isVisible: boolean
@@ -26,6 +27,7 @@ const ConfirmationModal = memo(
     onCancel,
   }: ConfirmationModalProps) => {
     const styles = useStyles(themedStyles)
+    const reduced = usePremiereMotion()
 
     const handleConfirm = () => {
       hapticsService.heavy()
@@ -38,7 +40,7 @@ const ConfirmationModal = memo(
 
     return (
       <Modal
-        animationType="fade"
+        animationType={reduced ? "none" : "fade"}
         transparent={true}
         visible={isVisible}
         onRequestClose={handleCancel}
@@ -49,7 +51,7 @@ const ConfirmationModal = memo(
             testID="confirmation-modal-container"
           >
             <View style={styles.modalView}>
-              <Typography variant="h2" style={styles.title}>
+              <Typography accessibilityRole="header" variant="h2" style={styles.title}>
                 {title}
               </Typography>
 
@@ -97,14 +99,18 @@ const themedStyles = (theme: Theme): ModalStyles => ({
   },
   modalView: {
     backgroundColor: theme.colors.background,
-    borderRadius: theme.responsive.scale(10),
+    borderColor: theme.colors.border,
+    borderWidth: 1,
+    borderRadius: 3,
     padding: theme.responsive.scale(20),
     width: "80%",
     maxWidth: theme.responsive.scale(400),
     ...theme.shadows.medium,
   },
   title: {
-    fontSize: theme.responsive.responsiveFontSize(20),
+    fontFamily: "PremiereDisplay",
+    fontSize: 32,
+    lineHeight: 38,
     marginBottom: theme.spacing.small,
     textAlign: "center",
   },

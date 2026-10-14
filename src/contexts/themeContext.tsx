@@ -35,7 +35,7 @@ export const ThemeContext = createContext<ThemeContextType | undefined>(
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const systemColorScheme = useRNColorScheme() ?? "light"
-  const [theme, setThemeState] = useState<Theme>("system")
+  const [theme, setThemeState] = useState<Theme>("dark")
   const [saveError, setSaveError] = useState<string | null>(null)
   const preferenceRevision = useRef(0)
   const writeQueue = useRef(Promise.resolve())

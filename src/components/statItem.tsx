@@ -43,13 +43,13 @@ const themedStyles = (theme: Theme): StatItemStyles => ({
   },
   label: {
     ...theme.typography.bodyText,
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     color: theme.colors.textSecondary,
     fontSize: theme.responsive.responsiveFontSize(16),
   },
   value: {
     ...theme.typography.bodyText,
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     color: theme.colors.quinary,
     fontSize: theme.responsive.responsiveFontSize(16),
   },

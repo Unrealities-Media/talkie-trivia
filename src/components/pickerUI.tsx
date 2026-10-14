@@ -1,9 +1,10 @@
-import React, { memo, useState } from "react"
+import React, { memo, useState, useRef } from "react"
 import {
   ActivityIndicator,
   Text,
   TextInput,
   Platform,
+  Pressable,
   View,
   ViewStyle,
   TextStyle,
@@ -11,6 +12,8 @@ import {
 } from "react-native"
 import { FlashList, ListRenderItem } from "@shopify/flash-list"
 import Animated from "react-native-reanimated"
+import { LinearGradient } from "expo-linear-gradient"
+import Svg, { Circle, Path } from "react-native-svg"
 import { BasicTriviaItem } from "../models/trivia"
 import { useStyles, Theme, useThemeTokens } from "../utils/hooks/useStyles"
 
@@ -39,6 +42,7 @@ export const PickerUI: React.FC<PickerUIProps> = memo(
     placeholder,
   }) => {
     const styles = useStyles(themedStyles)
+    const searchRef = useRef<TextInput>(null)
     const theme = useThemeTokens()
     const { fontScale } = useWindowDimensions()
     const [measuredContent, setMeasuredContent] = useState<{
@@ -58,8 +62,15 @@ export const PickerUI: React.FC<PickerUIProps> = memo(
     return (
       <View style={styles.container}>
         <Animated.View style={animatedInputStyle}>
-          <View style={styles.inputContainer}>
+          <LinearGradient colors={["#FF826E", "#FA5B56"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.inputContainer}>
+            <View pointerEvents="none" accessible={false} style={{ position: "absolute", left: 17, top: 15 }}>
+              <Svg width={30} height={30} viewBox="0 0 30 30">
+                <Circle cx={12} cy={12} r={10} fill="none" stroke="#14232A" strokeWidth={2} />
+                <Path d="M19 19L28 28" stroke="#14232A" strokeWidth={2} strokeLinecap="round" />
+              </Svg>
+            </View>
             <TextInput
+              ref={searchRef}
               testID="search-input"
               accessible
               accessibilityRole={Platform.OS === "web" ? undefined : "search"}
@@ -78,6 +89,11 @@ export const PickerUI: React.FC<PickerUIProps> = memo(
               editable={!isInteractionsDisabled}
               autoCorrect={false}
             />
+            {!isSearching && <Pressable accessibilityRole="button" accessibilityLabel="Focus movie search" disabled={isInteractionsDisabled} onPress={() => searchRef.current?.focus()} style={{ position: "absolute", right: 8, top: 8, width: 44, height: 44, borderRadius: 22, backgroundColor: "#B84D4299", alignItems: "center", justifyContent: "center" }}>
+              <Svg width={28} height={28} viewBox="0 0 28 28" aria-hidden={true}>
+                <Path d="M4 14H23M15 6L23 14L15 22" fill="none" stroke="#FFE9CB" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+            </Pressable>}
             {isSearching && (
               <ActivityIndicator
                 size="small"
@@ -85,8 +101,9 @@ export const PickerUI: React.FC<PickerUIProps> = memo(
                 style={styles.activityIndicator}
               />
             )}
-          </View>
+          </LinearGradient>
         </Animated.View>
+        {!showResults && <Text style={{ fontFamily: "PremiereSans", fontSize: 8, letterSpacing: 2, textAlign: "center", color: theme.colors.textSecondary, marginTop: 12 }}>SEARCH A TITLE. MAKE YOUR GUESS.</Text>}
 
         {showResults && (
           <View style={styles.resultsContainer}>
@@ -142,28 +159,30 @@ interface PickerUIStyles {
 const themedStyles = (theme: Theme): PickerUIStyles => ({
   container: {
     width: "100%",
-    marginTop: theme.spacing.medium,
+    marginTop: 8,
     marginBottom: theme.spacing.medium,
   },
   inputContainer: {
+    borderRadius: 10,
+    overflow: "hidden",
     flexDirection: "row",
     position: "relative",
     width: "100%",
   },
   input: {
     flex: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.responsive.scale(8),
-    borderWidth: 2,
-    backgroundColor: theme.colors.surface,
-    color: theme.colors.textPrimary,
-    fontFamily: "Arvo-Regular",
-    fontSize: theme.responsive.responsiveFontSize(14),
-    paddingHorizontal: theme.spacing.medium,
-    paddingVertical: theme.responsive.scale(12),
+    borderColor: theme.colors.primary,
+    borderRadius: 10,
+    borderWidth: 0,
+    backgroundColor: "transparent",
+    color: theme.colors.onAccent,
+    fontFamily: "PremiereSans",
+    fontSize: 17,
+    paddingLeft: 62,
+    paddingVertical: 18,
     textAlign: "left",
-    paddingRight: theme.responsive.scale(40),
-    placeholderTextColor: theme.colors.textSecondary,
+    paddingRight: 62,
+    placeholderTextColor: "#493137",
   },
   disabledInput: {
     backgroundColor: theme.colors.border,
@@ -202,7 +221,7 @@ const themedStyles = (theme: Theme): PickerUIStyles => ({
     width: "100%",
   },
   previewHintText: {
-    fontFamily: "Arvo-Italic",
+    fontFamily: "PremiereSans",
     fontSize: theme.responsive.responsiveFontSize(11),
     color: theme.colors.onAccent,
   },

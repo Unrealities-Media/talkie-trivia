@@ -49,30 +49,30 @@ export const responsive = {
 
 export const getTypography = (colors: typeof lightColors) => ({
   heading1: {
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereDisplay-Bold",
     fontSize: responsive.responsiveFontSize(28),
     lineHeight: responsive.responsiveFontSize(34),
     color: colors.textPrimary,
   },
   heading2: {
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSerif",
     fontSize: responsive.responsiveFontSize(22),
     lineHeight: responsive.responsiveFontSize(28),
     color: colors.textPrimary,
   },
   bodyText: {
-    fontFamily: "Arvo-Regular",
+    fontFamily: "PremiereSans",
     fontSize: responsive.responsiveFontSize(16),
     lineHeight: responsive.responsiveFontSize(22),
     color: colors.textSecondary,
   },
   button: {
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     fontSize: responsive.responsiveFontSize(16),
     color: colors.onAccent,
   },
   caption: {
-    fontFamily: "Arvo-Regular",
+    fontFamily: "PremiereSans",
     fontSize: responsive.responsiveFontSize(12),
     lineHeight: responsive.responsiveFontSize(16),
     color: colors.textSecondary,
@@ -122,7 +122,7 @@ export const getButtonStyles = (colors: ThemeColors) => ({
     ...shadows.light,
   },
   text: {
-    fontFamily: "Arvo-Bold",
+    fontFamily: "PremiereSans",
     fontSize: responsive.responsiveFontSize(16),
     textAlign: "center" as const,
   },

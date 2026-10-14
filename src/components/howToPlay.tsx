@@ -28,18 +28,23 @@ function PracticeExample() {
   </View>
 }
 
-export default function HowToPlay() {
+export default function HowToPlay({ summary }: { summary?: React.ReactNode } = {}) {
   const [expanded, setExpanded] = useState(false)
   const [practice, setPractice] = useState(false)
   const { colors } = useTheme()
   const close = () => { setExpanded(false); setPractice(false) }
   return <View style={{ width: "100%", paddingVertical: 8, gap: 12 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+    {summary && <View style={{ flex: 1 }}>{summary}</View>}
     <Button
       title={expanded ? "Hide instructions" : "How to play"}
       variant="secondary"
+      size="sm"
+      style={{ borderWidth: 1, borderRadius: 24, flexShrink: 0, paddingHorizontal: 16 }}
       accessibilityState={{ expanded }}
       onPress={() => expanded ? close() : setExpanded(true)}
     />
+    </View>
     {expanded && <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, gap: 16 }}>
       <Typography variant="h2" accessibilityRole="header">One movie each day</Typography>
       <Typography>Read the plot clue and find the movie. Search by title or title and year. Tapping a search result immediately submits a guess. Long-press a result to preview its title, year and poster first.</Typography>

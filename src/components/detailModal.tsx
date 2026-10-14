@@ -13,6 +13,7 @@ import { savedScore } from "../utils/resultSummary"
 import { hapticsService } from "../utils/hapticsService"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Button } from "./ui/button"
+import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
 
 interface DetailModalProps {
   playerGame?: PlayerGame | null
@@ -28,6 +29,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
   children,
 }) => {
   const styles = useStyles(themedStyles)
+  const reducedMotion = usePremiereMotion()
   const [isSharing, setIsSharing] = useState(false)
 
   const handleShare = async () => {
@@ -49,7 +51,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
 
   return (
     <Modal
-      animationType="fade"
+      animationType={reducedMotion ? "none" : "fade"}
       transparent={true}
       visible={show}
       onRequestClose={handleClose}
@@ -114,9 +116,11 @@ const themedStyles = (theme: Theme): ModalStyles => ({
     width: "90%",
     maxHeight: "85%",
     maxWidth: theme.responsive.scale(500),
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.responsive.scale(15),
-    padding: theme.spacing.large,
+    backgroundColor: theme.colors.backgroundLight,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 20,
     ...theme.shadows.medium,
     display: "flex",
     flexDirection: "column",
@@ -128,7 +132,7 @@ const themedStyles = (theme: Theme): ModalStyles => ({
   },
   buttonContainer: {
     flexDirection: "row",
-    justifyContent: "space-evenly",
+    gap: 12,
     width: "100%",
     marginTop: theme.spacing.medium,
     flexGrow: 0,
@@ -136,7 +140,6 @@ const themedStyles = (theme: Theme): ModalStyles => ({
   },
   button: {
     flex: 1,
-    marginHorizontal: theme.spacing.small,
   },
 })
 
