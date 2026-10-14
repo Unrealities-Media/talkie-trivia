@@ -40,11 +40,16 @@ export function generateImplicitHint(
     let isMatch = false
 
     if (Array.isArray(correctHint.value)) {
+      const identity = (item: any): string | null => {
+        if (Number.isSafeInteger(item?.id) && item.id > 0) return `id:${item.id}`
+        const name = typeof item?.name === "string" ? item.name.normalize("NFKC").trim().toLocaleLowerCase("en-US") : ""
+        return name && !["n/a", "unknown"].includes(name) ? `name:${name}` : null
+      }
       const correctIds = new Set(
-        (correctHint.value || []).map((item: any) => item.id)
+        correctHint.value.map(identity).filter(Boolean)
       )
       const guessedIds = new Set(
-        (guessedHintValue || []).map((item: any) => item.id)
+        (Array.isArray(guessedHintValue) ? guessedHintValue : []).map(identity).filter(Boolean)
       )
       if (correctIds.size > 0 && guessedIds.size > 0) {
         for (const id of correctIds) {
@@ -57,7 +62,7 @@ export function generateImplicitHint(
     } else if (typeof correctHint.value === "object" && correctHint.value?.id) {
       isMatch = guessedHintValue?.id === correctHint.value.id
     } else {
-      isMatch = guessedHintValue === correctHint.value
+      isMatch = !!correctHint.value && !["N/A", "Unknown"].includes(correctHint.value) && guessedHintValue === correctHint.value
     }
 
     if (isMatch) {

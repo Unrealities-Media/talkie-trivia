@@ -1,0 +1,24 @@
+{
+  "cli": { "version": "24.13.0", "appVersionSource": "remote" },
+  "build": {
+    "development": {
+      "prebuildCommand": "prebuild --template expo-template-bare-minimum@57.0.30",
+      "distribution": "internal", "environment": "development", "node": "24.21.0",
+      "env": { "APP_VARIANT": "development" },
+      "android": { "gradleCommand": ":app:assembleDebug", "withoutCredentials": true },
+      "ios": { "simulator": true, "buildConfiguration": "Debug" }
+    },
+    "preview": {
+      "prebuildCommand": "prebuild --template expo-template-bare-minimum@57.0.30",
+      "distribution": "internal", "environment": "preview", "node": "24.21.0", "autoIncrement": true,
+      "env": { "APP_VARIANT": "preview" },
+      "android": { "buildType": "apk" }
+    },
+    "production": {
+      "prebuildCommand": "prebuild --template expo-template-bare-minimum@57.0.30",
+      "distribution": "store", "environment": "production", "node": "24.21.0", "autoIncrement": true,
+      "env": { "APP_VARIANT": "production" },
+      "android": { "buildType": "app-bundle" }
+    }
+  }
+}

@@ -6,7 +6,7 @@ import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Typography } from "./ui/typography"
 
 const ThemeSelector = () => {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, saveError } = useTheme()
   const styles = useStyles(themedStyles)
 
   const options: { label: string; value: ThemeType }[] = [
@@ -16,39 +16,47 @@ const ThemeSelector = () => {
   ]
 
   return (
-    <View style={styles.container}>
-      <View style={styles.labelContainer}>
-        <FontAwesome
-          name="paint-brush"
-          size={styles.icon.fontSize}
-          color={styles.icon.color}
-        />
-        <Typography style={styles.title}>Theme</Typography>
-      </View>
-      <View style={styles.optionsContainer}>
-        {options.map((option) => (
-          <Pressable
-            key={option.value}
-            onPress={() => setTheme(option.value)}
-            style={[
-              styles.option,
-              theme === option.value && styles.selectedOption,
-            ]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: theme === option.value }}
-            accessibilityLabel={`Set theme to ${option.label}`}
-          >
-            <Typography
+    <View style={{ width: "100%" }}>
+      <View style={styles.container}>
+        <View style={styles.labelContainer}>
+          <FontAwesome
+            name="paint-brush"
+            size={styles.icon.fontSize}
+            color={styles.icon.color}
+            accessible={false}
+          />
+          <Typography style={styles.title}>Theme</Typography>
+        </View>
+        <View style={styles.optionsContainer}>
+          {options.map((option) => (
+            <Pressable
+              key={option.value}
+              onPress={() => setTheme(option.value)}
               style={[
-                styles.optionText,
-                theme === option.value && styles.selectedOptionText,
+                styles.option,
+                theme === option.value && styles.selectedOption,
               ]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: theme === option.value }}
+              accessibilityLabel={`Set theme to ${option.label}`}
             >
-              {option.label}
-            </Typography>
-          </Pressable>
-        ))}
+              <Typography
+                style={[
+                  styles.optionText,
+                  theme === option.value && styles.selectedOptionText,
+                ]}
+              >
+                {option.label}
+              </Typography>
+            </Pressable>
+          ))}
+        </View>
       </View>
+      {saveError ? (
+        <Typography accessibilityRole="alert" accessibilityLiveRegion="polite">
+          {saveError}
+        </Typography>
+      ) : null}
     </View>
   )
 }
@@ -68,6 +76,8 @@ interface ThemeSelectorStyles {
 const themedStyles = (theme: Theme): ThemeSelectorStyles => ({
   container: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    gap: theme.spacing.small,
     justifyContent: "space-between",
     alignItems: "center",
     width: "100%",
@@ -88,6 +98,8 @@ const themedStyles = (theme: Theme): ThemeSelectorStyles => ({
   },
   optionsContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    maxWidth: "100%",
     backgroundColor: theme.colors.background,
     borderRadius: theme.responsive.scale(8),
     padding: theme.spacing.extraSmall,
@@ -95,6 +107,10 @@ const themedStyles = (theme: Theme): ThemeSelectorStyles => ({
     borderColor: theme.colors.border,
   },
   option: {
+    minHeight: 48,
+    minWidth: 48,
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: theme.spacing.small,
     paddingHorizontal: theme.spacing.small,
     borderRadius: theme.responsive.scale(6),
@@ -109,7 +125,7 @@ const themedStyles = (theme: Theme): ThemeSelectorStyles => ({
   },
   selectedOptionText: {
     fontFamily: "Arvo-Bold",
-    color: theme.colors.background,
+    color: theme.colors.onAccent,
   },
 })
 

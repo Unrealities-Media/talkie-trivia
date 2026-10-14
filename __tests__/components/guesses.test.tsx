@@ -42,25 +42,6 @@ jest.mock("../../src/components/guess/skeletonRow", () => {
   }
 })
 
-// 2. Mock FlashList to render a simple View with children
-jest.mock("@shopify/flash-list", () => {
-  const React = require("react")
-  const { View } = require("react-native")
-  return {
-    FlashList: ({ data, renderItem }: any) => {
-      return (
-        <View testID="flash-list">
-          {data.map((item: any, index: number) => (
-            <React.Fragment key={index}>
-              {renderItem({ item, index })}
-            </React.Fragment>
-          ))}
-        </View>
-      )
-    },
-  }
-})
-
 // 3. Mock the Game Store
 jest.mock("../../src/state/gameStore")
 const mockUseGameStore = useGameStore as unknown as jest.Mock
@@ -194,6 +175,22 @@ describe("GuessesContainer Component", () => {
   })
 
   describe("Profile/History View Rendering", () => {
+    it("shows only submitted guesses after a win, including when viewing a saved game", () => {
+      setMockStoreState({ loading: true, playerGame: defaultPlayerGame })
+      renderWithTheme(<GuessesContainer lastGuessResult={null}
+        gameForDisplay={{ ...mockPlayerGame, correctAnswer: true }} allItemsForDisplay={mockBasicItems} />)
+      expect(screen.getAllByTestId(/guess-row-/)).toHaveLength(2)
+      expect(screen.queryByTestId(/empty-tile-/)).toBeNull()
+      expect(screen.queryByTestId(/skeleton-row-/)).toBeNull()
+    })
+
+    it("does not show unused guess slots after giving up without a guess", () => {
+      setMockStoreState({ loading: false, playerGame: { ...mockPlayerGame, gaveUp: true, guesses: [] }, basicItems: [] })
+      renderWithTheme(<GuessesContainer lastGuessResult={null} />)
+      expect(screen.queryByTestId(/guess-row-/)).toBeNull()
+      expect(screen.queryByTestId(/empty-tile-/)).toBeNull()
+    })
+
     it("should render correctly using passed props (gameForDisplay)", () => {
       const historicGame: PlayerGame = {
         ...mockPlayerGame,
@@ -222,7 +219,7 @@ describe("GuessesContainer Component", () => {
   })
 
   describe("Layout and Styling", () => {
-    it("should calculate container height based on guessesMax", () => {
+    it("renders all available slots for an unfinished game", () => {
       setMockStoreState({
         loading: false,
         playerGame: { ...mockPlayerGame, guessesMax: 10 }, // 10 max guesses

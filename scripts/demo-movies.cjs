@@ -1,0 +1,11 @@
+// Original demo clues, for emulator play only; not an editorial approval list.
+module.exports = [
+  { title: 'Finding Nemo', year: '2003', clue: 'An anxious father ventures far beyond his familiar home to search for his missing son. A forgetful stranger becomes his guide through dangerous waters, while the youngster plots an escape from a dentist’s fish tank.' },
+  { title: 'Back to the Future', year: '1985', clue: 'A teenager accidentally travels to the time when his parents were young. After disrupting their first meeting, he must bring them together and help an eccentric inventor find enough power to send him home.' },
+  { title: 'Spirited Away', year: '2001', clue: 'A girl enters an unfamiliar world after her family takes a wrong turn. To rescue her transformed parents, she accepts work in a bathhouse for spirits and fights to remember the name that connects her to home.' },
+  { title: 'Jurassic Park', year: '1993', clue: 'Visitors arrive on a remote island to inspect an extraordinary new attraction. When the security systems fail during a storm, scientists and children must survive among prehistoric animals brought back through genetic engineering.' },
+  { title: 'The Truman Show', year: '1998', clue: 'An ordinary man starts noticing strange coincidences in his seemingly perfect seaside town. His search for answers challenges everyone he trusts, as he discovers that his entire life has been entertainment for an unseen audience.' },
+  { title: 'Toy Story', year: '1995', clue: 'A beloved cowboy fears losing his place when a flashy newcomer arrives in a child’s bedroom. Their rivalry leaves both stranded far from home, forcing them to cooperate before their owner moves away.' },
+  { title: 'The Matrix', year: '1999', clue: 'A computer programmer follows a mysterious invitation and discovers that his everyday world is an elaborate illusion. Guided by rebels, he learns to bend its rules while confronting the machines that hold humanity captive.' },
+  { title: 'Ratatouille', year: '2007', clue: 'An unlikely aspiring chef finds a way into a celebrated restaurant by secretly guiding a clumsy kitchen worker. Their partnership must survive suspicious colleagues and a demanding critic, while challenging who is allowed to create great food.' },
+]

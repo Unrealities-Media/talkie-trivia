@@ -45,7 +45,7 @@ const themedStyles = (theme: Theme): NetworkStyles => ({
   },
   notConnectedText: {
     ...theme.typography.button,
-    color: theme.colors.background,
+    color: theme.colors.onError,
     fontSize: theme.responsive.responsiveFontSize(14),
   },
 })

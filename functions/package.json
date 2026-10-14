@@ -1,8 +1,8 @@
 {
     "name": "functions",
     "scripts": {
-        "lint": "echo 'No linting configured yet'",
-        "build": "tsc",
+        "build": "node ../scripts/prepare-catalog.cjs && tsc",
+        "pretest": "node ../scripts/prepare-catalog.cjs",
         "serve": "npm run build && firebase emulators:start --only functions",
         "shell": "npm run build && firebase functions:shell",
         "start": "npm run shell",
@@ -11,7 +11,7 @@
         "test": "jest"
     },
     "engines": {
-        "node": "22"
+        "node": "24"
     },
     "main": "lib/index.js",
     "dependencies": {

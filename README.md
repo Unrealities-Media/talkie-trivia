@@ -1,178 +1,141 @@
-# Talkie Trivia 🎬
+# Talkie Trivia
 
-Talkie Trivia is an engaging daily trivia game built with **React Native** and **Expo**. The goal is simple yet challenging: guess the movie based on a progressively revealing plot summary.
+A daily movie guessing game built with React Native, Expo, Firebase and Go.
+Players identify a movie from progressively revealed clues. The intended launch
+is movie-only, with a worldwide UTC reset, three hints per Easy game, no paid
+features, and guest play with optional account sync.
 
-## ✨ Features
+**Release preparation is in progress.** The [40-finding audit](docs/audits/2026-10-13-release-readiness.md)
+and [remediation tracker](docs/audits/remediation-status.md) distinguish implemented
+changes from missing device, infrastructure, migration and store evidence. No
+production migration or deployment has been performed as part of this work.
 
-* **Daily Challenges:** A new movie to guess every day, synced globally via Cloud Schedule.
-* **Smart Search:** Instant, offline-ready fuzzy search using a local index.
-* **Hybrid Data Architecture:**
-  * **Fast:** Search logic runs instantly on-device (~1.5MB footprint).
-  * **Rich:** Full movie details (high-res images, full plots) are fetched from the cloud only when needed.
-* **Difficulty Levels:** From Basic (all hints revealed) to Extreme (no hints, fewer guesses).
-* **Player Statistics:** Tracks streaks, win rates, and scores securely in Firestore.
-* **Authentication:** Anonymous and Google Sign-In support.
+Start the next work session with the [continuation checklist](docs/CONTINUING.md):
+current status, prioritized release gates, open playtest improvements and acceptance criteria.
 
-## 🛠 Tech Stack
+## Architecture
 
-### Frontend
+- `src/app`, `src/components`: Expo Router screens and React Native UI.
+- `src/state`: Zustand presentation state; the server owns game outcomes and scores.
+- `src/services/gameService.ts`: authenticated commands and durable, account-scoped retry outbox.
+- `src/data/searchIndex.json`: released on-device movie search catalog.
+- `functions/src`: authenticated, versioned game commands with transactional game,
+  statistics and history updates. New games use immutable reviewed schedule content.
+- `firestore.rules`: owner reads and restricted profile writes; game/statistics/history
+  writes require the backend. Authorization contracts pass local emulator tests;
+  deployed rules and indexes still require staging verification.
+- `utils/pipeline`: Go source importer, candidate catalog generator and reviewed
+  daily publisher. See [the content runbook](docs/content-pipeline.md).
+- `content`: editorial publication input and review instructions.
+- `integration`: real Auth/Firestore/Functions emulator contract tests and Go
+  publication tests. See [the emulator runbook](docs/emulator-testing.md).
 
-* **Framework:** React Native (Expo Managed Workflow)
-* **Language:** TypeScript
-* **State Management:** Zustand (w/ Immer)
-* **Navigation:** Expo Router
-* **Styling:** Custom hook-based theming system
-* **Animations:** React Native Reanimated
+Difficulty is fixed when a daily game starts. Profile preferences apply to the
+next challenge. A failed network save retains the exact action for retry; confirmed
+actions are saved on the server. Cold-start/full offline play is not implemented.
+Do not describe the app as supporting offline gameplay just because search is local.
+The server supplies the daily UTC reset; the app refreshes on foreground, reconnect,
+and expiry. Content failures remain on the Game screen, with retry, while profile
+settings and independently loaded statistics/history remain reachable. Automatic
+startup notification permission requests are disabled. Reminders use explicit
+Profile opt-in; broader native acceptance remains open.
 
-### Backend & Data
+## Local development
 
-* **Database:** Google Firestore
-* **Auth:** Firebase Authentication
-* **Compute:** Cloud Functions (Score verification & Stats updates)
-* **Data Pipeline:** Single Go CLI tool for fetching, optimizing, and scheduling data.
+Use Node.js 24.21.0 (`.nvmrc`), the Go version in `utils/pipeline/go.mod`, and Java 21.
+The emulator CLI is pinned in `integration/package-lock.json`. Android and iOS development also require the corresponding
+native SDKs. Native projects are generated from the pinned Expo template and app
+config; see [native builds and environments](docs/native-builds.md). Clean iOS,
+signed release and device validation remain release gates.
+The [dependency security review](docs/dependency-security.md) records remaining
+advisories, scoped overrides, the decoder backport, and clean-install evidence.
+The native runbook also records unresolved ARM64 RELRO alignment failures.
+Local Firebase commands default to a demo project. No live staging alias is
+configured; cloud operations must name a separately configured project explicitly.
 
-## 📂 Project Structure
-
-```text
-src/
-├── components/ # Reusable UI components
-├── data/       # Local index (searchIndex.json - Generated)
-├── services/   # Hybrid Data Services (Firestore + Local Fallbacks)
-├── state/      # Zustand global store
-├── app/        # Expo Router screens
-└── utils/      # Helper functions and hooks
-
-utils/
-├── data-source/ # Ignored by Git. Contains raw heavy JSON.
-├── pipeline/    # Unified Go CLI tool.
-├── secrets.json # API Keys (Ignored)
-└── serviceAccountKey.json # Firebase Creds (Ignored)
+```sh
+npm ci
+npm --prefix functions ci
+npm --prefix integration ci
+npm run dev
 ```
 
-## ⚙️ Data Pipeline (Unified CLI)
+Open **http://localhost:8081** after the terminal reports that the demo is ready.
+This command builds Functions, starts the pinned local backend, seeds eight
+playable demo days, restores saved local data, and starts Expo web. It uses only
+`demo-talkie-trivia`; no Firebase account or Google credentials are needed.
+Type `q` then Enter (or Ctrl+C) to save an emulator snapshot and stop.
 
-The project uses a single, robust Go tool located in `utils/pipeline` to manage the entire data lifecycle. It handles fetching from TMDB, generating app assets, populating Firestore, and scheduling games.
+Use `.env.example` for the Firebase and OAuth values consumed by `app.config.js`;
+never commit API secrets or service-account credentials. Preview and production
+must use distinct explicitly configured Firebase projects and OAuth registrations.
+The existing development Firebase client connects to local Auth, Firestore and
+Functions emulators (Android emulator host `10.0.2.2`, otherwise `localhost`).
+For the default local demo project, use `APP_VARIANT=development` and
+`FIREBASE_PROJECTID_DEV=demo-talkie-trivia` with emulator-only Firebase config;
+do not point development at a live project. The separate integration suite
+supplies its own demo configuration automatically.
+For physical devices, configure `FIREBASE_EMULATOR_HOST` and trusted LAN routing as
+described in the native runbook. Separate live staging still requires setup.
 
-### Prerequisites
-
-1. **Secrets:** `utils/secrets.json` containing `{"TMDBKey": "your_key"}`.
-2. **Firebase Access:** `utils/serviceAccountKey.json`.
-
-### CLI Usage
-
-Navigate to the directory:
-
-```bash
-cd utils/pipeline
+```sh
+npm run dev:day -- next       # Another UTC challenge; reload the browser
+npm run dev:day -- midnight   # 30 seconds before reset; reload, then watch it roll over
+npm run dev:day -- 2026-11-01 # A specific fake day at noon UTC
+npm run dev:day -- reset      # Return to real time; existing games are retained
 ```
 
-The script defaults to **Development Mode** (targeting Firebase Emulators at `localhost:8080`) unless you pass the `-prod` flag.
+Use **Sign in to local demo** in the browser's Profile to link a fake named
+account. Reuse that name after an emulator restart. A lost local guest can use
+**Link and restore local guest** to preserve its UID and games in a fake account.
+See [local development and playtesting](docs/local-development.md) for the full
+workflow, native limitations, persistence, and account-error troubleshooting.
+`npm run web` alone starts only the frontend; it still needs a running backend.
 
-#### 1. Full Reset (Fetch Fresh Data + Reset Dev DB)
+For real publication, seed a reviewed schedule using the [content pipeline instructions](docs/content-pipeline.md).
+The production approval list remains empty. Demo clues are separate and are never
+published by the production pipeline.
+Legacy games/statistics/history and daily schedules need a verified migration
+before deploying the new contract to any existing user population.
 
-Fetches ~2,000 movies from TMDB, processes them, uploads to Emulator, and schedules games.
+Guest-to-new-Google-account linking preserves the guest UID. Returning-account
+merging and Apple sign-in remain unfinished release blockers. In-app account
+deletion includes confirmation, reauthentication and durable completion receipts;
+native verification, the public deletion route and production operations remain
+open. See the [account-deletion runbook](docs/account-deletion.md).
+Optional remote analytics, performance monitoring and crash/replay collection are
+disabled pending privacy disclosures and controls.
 
-```bash
-go run main.go -all
-```
+## Validation
 
-#### 2. Deploy to Production (Live)
-
-Uses existing local data (skips fetch) to update the Live Database.
-**Warning:** This writes to the real Firestore project.
-
-```bash
-go run main.go -prod -process -upload -schedule
-```
-
-#### Available Flags
-
-| Flag | Description |
-| :--- | :--- |
-| `-fetch` | Download fresh data from TMDB API (Slow). |
-| `-process` | Generate `src/data/searchIndex.json` (Required for App Bundle). |
-| `-upload` | Upload full movie details to Firestore `movies` collection. |
-| `-schedule` | Assign movies to dates in `dailyGames`. Smart-appends to existing schedule. |
-| `-all` | Run all steps in sequence. |
-| `-prod` | **Target Production.** If omitted, targets Local Emulator. |
-
-## 🚀 Getting Started (Development)
-
-1. **Install dependencies:**
-
-    ```bash
-    npm install
-    ```
-
-2. **Start Emulators:**
-
-    ```bash
-    firebase emulators:start
-    ```
-
-3. **Seed Data (First Time Only):**
-
-    ```bash
-    cd utils/pipeline && go run main.go -all
-    ```
-
-4. **Run the App:**
-
-    ```bash
-    npx expo start
-    ```
-
-## 🤝 Maintenance Guide
-
-### Dependencies and validation
-
-Use Node.js 22 for the app and Cloud Functions, and Go 1.26 or newer for the
-pipeline. Install both JavaScript dependency sets with `npm ci` and
-`npm --prefix functions ci`; no legacy peer-dependency flag is needed.
-
-```bash
+```sh
 npm run typecheck
-npm test -- --ci --runInBand
+npm run test:config
+npm test -- --ci --runInBand --coverage=false
 npm --prefix functions run build
-npm --prefix functions test -- --ci --runInBand
+npm --prefix functions test -- --ci --runInBand --coverage=false
 cd utils/pipeline
 go test ./...
 go vet ./...
 ```
 
-`npm test` runs once; use `npm run test:watch` for watch mode. The pipeline has
-no Go test files yet, so `go test` currently checks compilation.
+Use `npm run test:watch` during development. Go tests exercise failed HTTP/JSON
+responses, editorial gates, UTC planning, catalog checks, gap filling and idempotent
+bounded scheduling. App and Functions tests currently mock significant Firebase
+behavior. Run `npm --prefix integration ci` then `npm --prefix integration test`
+for real Auth/Firestore/Functions and publisher transaction tests; see the
+[emulator runbook](docs/emulator-testing.md). Native-device and staging verification
+remain separate release requirements.
 
-Keep React and native packages aligned with Expo SDK 57 using
-`npx expo install --check`. Some packages intentionally remain below their npm
-`latest` tag: Expo's preset uses Babel 7, Jest 29 and React 19.2; the existing
-synchronous component tests use React Native Testing Library 13; and the
-Functions transformer (`ts-jest`) requires TypeScript below 7. Both projects
-currently use TypeScript 6. Upgrade these together with their consumers.
+When updating native dependencies, follow the [Expo SDK upgrade guide](https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/)
+and run `npx expo install --check`. Use the SDK-compatible versions together rather
+than independently upgrading every package to its latest release.
 
-The checked-in Android and iOS projects still need native configuration
-synchronization and platform builds after the Expo upgrade. Unit tests and
-TypeScript checks do not validate those native builds. Follow the
-[Expo SDK upgrade guide](https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/)
-when updating the native projects.
+## Content operations
 
-### Extending the Schedule (Yearly)
-
-Run the scheduler against production. It automatically detects the last scheduled game and appends 365 new days.
-
-```bash
-go run main.go -prod -schedule
-```
-
-### Fixing Spoilers (Manual Override)
-
-If a plot summary is too obvious:
-
-1. Go to Firebase Console > Firestore > `movies`.
-2. Find the document.
-3. Add field: `manual_overview` (string).
-4. Enter the sanitized text. The app prioritizes this field immediately.
-
-## 📄 License
-
-MIT License
+Run `go run . -fetch -process` from `utils/pipeline` with `TMDB_API_KEY` in the
+environment to generate drafts. Source refreshes do not change the released
+catalog or published clues. Review content, preview a fixed UTC publication window,
+then explicitly apply it to the intended project. All flags, environment setup,
+GitHub identity configuration, migration constraints and incident handling are in
+the [publishing runbook](docs/content-pipeline.md).

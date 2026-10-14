@@ -46,16 +46,16 @@ describe("State: UI Slice", () => {
 
   it("should handle confetti stop", () => {
     const { result } = renderHook(() => useGameStore())
-    useGameStore.setState({ showConfetti: true })
+    act(() => useGameStore.setState({ showConfetti: true }))
     act(() => result.current.handleConfettiStop())
     expect(result.current.showConfetti).toBe(false)
   })
 
   it("should dismiss guess input tip and persist to storage", () => {
     const { result } = renderHook(() => useGameStore())
-    useGameStore.setState({
+    act(() => useGameStore.setState({
       tutorialState: { showGuessInputTip: true, showResultsTip: false },
-    })
+    }))
 
     act(() => result.current.dismissGuessInputTip())
 
@@ -66,19 +66,29 @@ describe("State: UI Slice", () => {
     )
   })
 
-  it("should dismiss results tip, track analytics, and persist", () => {
+  it("dismisses the results tip without claiming the player completed onboarding", () => {
     const { result } = renderHook(() => useGameStore())
-    useGameStore.setState({
+    act(() => useGameStore.setState({
       tutorialState: { showGuessInputTip: false, showResultsTip: true },
-    })
+    }))
 
     act(() => result.current.dismissResultsTip())
 
     expect(result.current.tutorialState.showResultsTip).toBe(false)
-    expect(analyticsService.trackOnboardingCompleted).toHaveBeenCalled()
+    expect(analyticsService.trackOnboardingCompleted).not.toHaveBeenCalled()
     expect(AsyncStorage.setItem).toHaveBeenCalledWith(
       ASYNC_STORAGE_KEYS.TUTORIAL_RESULTS_SEEN,
       "true"
     )
+  })
+
+  it("keeps both tips dismissed if optional preference writes fail", async () => {
+    ;(AsyncStorage.setItem as jest.Mock).mockRejectedValueOnce(new Error("Storage unavailable"))
+      .mockRejectedValueOnce(new Error("Storage unavailable"))
+    useGameStore.setState({ tutorialState: { showGuessInputTip: true, showResultsTip: true } })
+    useGameStore.getState().dismissGuessInputTip()
+    useGameStore.getState().dismissResultsTip()
+    await Promise.resolve()
+    expect(useGameStore.getState().tutorialState).toEqual({ showGuessInputTip: false, showResultsTip: false })
   })
 })

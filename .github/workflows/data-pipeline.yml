@@ -1,56 +1,80 @@
-name: Data Pipeline & Scheduling
+name: Publish Reviewed Daily Challenges
 
 on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Protected deployment environment
+        type: choice
+        options: [staging, production]
+        default: staging
+      apply:
+        description: Apply missing future dates after reviewing the preview
+        type: boolean
+        default: false
   schedule:
-    # Run every Sunday at midnight UTC
-    - cron: "0 0 * * 0"
-  workflow_dispatch: # Allows manual triggering from GitHub UI
+    - cron: "0 6 * * 0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-content-${{ inputs.environment || 'staging' }}
+  cancel-in-progress: false
 
 jobs:
-  update-game-data:
+  publish:
+    # Scheduled writes are staging-only and require an explicit repository opt-in.
+    if: github.event_name == 'workflow_dispatch' || vars.ENABLE_STAGING_SCHEDULE == 'true'
+    environment: ${{ inputs.environment || 'staging' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
     defaults:
       run:
-        working-directory: utils
-
+        working-directory: utils/pipeline
+    env:
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+      RELEASED_CATALOG_SHA256: ${{ vars.RELEASED_CATALOG_SHA256 }}
+      APPLY_CHANGES: ${{ inputs.apply || github.event_name == 'schedule' }}
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
         with:
           go-version-file: utils/pipeline/go.mod
           cache-dependency-path: utils/pipeline/go.sum
-
-      # 1. Create Credential Files from Secrets
-      # The Go scripts expect these files to exist in the 'utils/' directory
-      - name: Create Secrets Files
+      - name: Validate configuration and released catalog
+        shell: bash
         run: |
-          echo '${{ secrets.TMDB_API_KEY_JSON }}' > secrets.json
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > serviceAccountKey.json
-
-      # 2. Run Data Pipeline (Fetch Movies from TMDB)
-      # This generates src/data/popularMovies.json and src/data/basicMovies.json
-      - name: Run Data Generation Pipeline
-        working-directory: utils/data-pipeline
-        run: go run main.go
-
-      # 3. Populate Firestore (Upload Movies)
-      # Reads the JSON generated in step 2 and uploads to 'movies' collection
-      - name: Populate Firestore Movies
-        working-directory: utils/populate-firestore
-        run: go run main.go
-
-      # 4. Schedule Games (Assign Dates)
-      # Assigns daily games in 'dailyGames' collection
-      - name: Schedule Daily Games
-        working-directory: utils/schedule-games
-        run: go run main.go
-
-      # 5. Clean up credentials (Good practice, though runner destroys them anyway)
-      - name: Cleanup Secrets
-        if: always()
+          set -euo pipefail
+          test -n "$FIREBASE_PROJECT_ID"
+          test -n "$RELEASED_CATALOG_SHA256"
+          actual=$(sha256sum ../../src/data/searchIndex.json | cut -d ' ' -f 1)
+          test "$actual" = "$RELEASED_CATALOG_SHA256"
+      - name: Test pipeline before obtaining credentials
+        run: go test ./... && go vet ./...
+      - uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.FIREBASE_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.PIPELINE_SERVICE_ACCOUNT }}
+      - name: Preview or publish reviewed challenges
+        shell: bash
         run: |
-          rm secrets.json
-          rm serviceAccountKey.json
+          set -euo pipefail
+          args=(-schedule -live -project "$FIREBASE_PROJECT_ID" -horizon-days 30)
+          if [ "$APPLY_CHANGES" = "true" ]; then
+            args+=(-apply -confirm-project "$FIREBASE_PROJECT_ID")
+          fi
+          go run . "${args[@]}"
+      - name: Save private publication report
+        uses: actions/upload-artifact@v4
+        with:
+          name: schedule-plan-${{ inputs.environment || 'staging' }}
+          path: utils/data-source/schedule-plan.json
+          retention-days: 7
+          if-no-files-found: error

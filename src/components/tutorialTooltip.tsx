@@ -55,11 +55,10 @@ const TutorialTooltip: React.FC<TutorialTooltipProps> = ({
           title="Got it"
           onPress={handleDismiss}
           size="sm"
-          variant="secondary"
-          style={{alignSelf: 'center', backgroundColor: 'white'}} 
+          variant="primary"
+          style={{ alignSelf: "center" }}
         />
       </View>
-      <View style={styles.pointer} />
     </Animated.View>
   )
 }
@@ -68,13 +67,11 @@ interface TutorialTooltipStyles {
   container: ViewStyle
   tooltipBox: ViewStyle
   text: TextStyle
-  pointer: ViewStyle
 }
 
 const themedStyles = (theme: Theme): TutorialTooltipStyles => ({
   container: {
-    position: "absolute",
-    zIndex: 100,
+    marginVertical: theme.spacing.small,
     alignItems: "center",
     width: "90%",
     alignSelf: "center",
@@ -89,23 +86,10 @@ const themedStyles = (theme: Theme): TutorialTooltipStyles => ({
   text: {
     fontFamily: "Arvo-Regular",
     fontSize: theme.responsive.responsiveFontSize(15),
-    color: theme.colors.background,
+    color: theme.colors.onAccent,
     lineHeight: theme.responsive.responsiveFontSize(21),
     textAlign: "center",
     marginBottom: theme.spacing.medium,
-  },
-  pointer: {
-    width: 0,
-    height: 0,
-    backgroundColor: "transparent",
-    borderStyle: "solid",
-    borderLeftWidth: theme.responsive.scale(10),
-    borderRightWidth: theme.responsive.scale(10),
-    borderBottomWidth: theme.responsive.scale(10),
-    borderLeftColor: "transparent",
-    borderRightColor: "transparent",
-    borderBottomColor: theme.colors.tertiary,
-    transform: [{ rotate: "180deg" }],
   },
 })
 

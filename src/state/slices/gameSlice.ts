@@ -1,298 +1,128 @@
 import { StateCreator } from "zustand"
-import { produce } from "immer"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { GameStoreState, GameSlice } from "../storeTypes"
-import {
-  defaultPlayerGame,
-  defaultPlayerStats,
-  generateDateId,
-} from "../../models/default"
-import { gameService } from "../../services/gameService"
-import { getGameDataService } from "../../services/gameServiceFactory"
+import { defaultPlayerGame, defaultPlayerStats } from "../../models/default"
+import { ActionInput, GameResponse, gameService } from "../../services/gameService"
+import { MovieDataService } from "../../services/movieDataService"
 import { ASYNC_STORAGE_KEYS } from "../../config/constants"
 import { analyticsService } from "../../utils/analyticsService"
-import { calculateScore } from "../../utils/scoreUtils"
 import { generateImplicitHint } from "../../utils/guessFeedbackUtils"
-import {
-  DEFAULT_DIFFICULTY,
-  DIFFICULTY_MODES,
-  DifficultyLevel,
-} from "../../config/difficulty"
-import { Guess } from "../../models/game"
+import { DEFAULT_DIFFICULTY, DIFFICULTY_MODES, DifficultyLevel } from "../../config/difficulty"
 
-export const createGameSlice: StateCreator<
-  GameStoreState,
-  [],
-  [],
-  GameSlice
-> = (set, get) => ({
-  playerGame: defaultPlayerGame,
-  playerStats: defaultPlayerStats,
-  gameStatus: "playing",
-  isInteractionsDisabled: true,
-  lastGuessResult: null,
+const finished = (game: GameResponse["game"]) => game.correctAnswer || game.gaveUp || game.guesses.length >= game.guessesMax
+const message = (error: unknown) => error instanceof Error ? error.message : "Please check your connection and try again."
+const emptyGame = () => ({ ...defaultPlayerGame, guesses: [], hintsUsed: {} })
+const emptyStats = () => ({ ...defaultPlayerStats, wins: [...defaultPlayerStats.wins] })
 
-  initializeGame: async (player) => {
+export const createGameSlice: StateCreator<GameStoreState, [], [], GameSlice> = (set, get) => {
+  let generation = 0
+  let loadingUid: string | null = null
+  const accept = (result: GameResponse, reveal = false) => {
+    const over = finished(result.game)
     set({
-      loading: true,
-      error: null,
-      isInteractionsDisabled: true,
-      gameStatus: "playing",
+      playerGame: result.game,
+      playerStats: { ...result.stats, hintsAvailable: result.game.difficulty === "LEVEL_2" ? Math.max(0, 3 - Object.values(result.game.hintsUsed || {}).filter(Boolean).length) : 0 },
+      difficulty: result.game.difficulty,
+      isInteractionsDisabled: over,
+      gameStatus: over ? (reveal ? "revealing" : "gameOver") : "playing",
+      syncStatus: "idle", syncError: null,
+      resetDeadline: result.receivedAtMonotonic + Math.max(0, Date.parse(result.resetAt) - Date.parse(result.serverNow)),
     })
-
-    try {
-      const { gameMode } = get()
-      const dataService = getGameDataService(gameMode)
-
-      const [
-        { dailyItem, fullItems, basicItems },
-        storedDifficultyResult,
-        hasSeenGuessInputTip,
-        hasSeenResultsTip,
-      ] = await Promise.all([
-        dataService.getDailyTriviaItemAndLists(),
-        AsyncStorage.getItem(ASYNC_STORAGE_KEYS.DIFFICULTY_SETTING),
-        AsyncStorage.getItem(ASYNC_STORAGE_KEYS.TUTORIAL_GUESS_INPUT_SEEN),
-        AsyncStorage.getItem(ASYNC_STORAGE_KEYS.TUTORIAL_RESULTS_SEEN),
-      ])
-
-      set({ fullItems, basicItems })
-
-      let difficulty =
-        (storedDifficultyResult as DifficultyLevel) || DEFAULT_DIFFICULTY
-      if (!DIFFICULTY_MODES[difficulty]) difficulty = DEFAULT_DIFFICULTY
-
-      set(
-        produce((state: GameStoreState) => {
-          if (hasSeenGuessInputTip === null) {
-            state.tutorialState.showGuessInputTip = true
-            analyticsService.trackOnboardingStarted()
-          }
-          if (hasSeenResultsTip === null) {
-            state.tutorialState.showResultsTip = true
-          }
-        })
-      )
-
-      const dateId = generateDateId(new Date())
-      const guessesMax = DIFFICULTY_MODES[difficulty].guessesMax
-
-      const [initialPlayerGame, initialPlayerStats] = await Promise.all([
-        gameService.fetchOrCreatePlayerGame(
-          player.id,
-          dateId,
-          dailyItem,
-          guessesMax
-        ),
-        gameService.fetchOrCreatePlayerStats(player.id),
-      ])
-
-      initialPlayerGame.difficulty = difficulty
-
-      const isGameOver =
-        initialPlayerGame.correctAnswer ||
-        initialPlayerGame.gaveUp ||
-        initialPlayerGame.guesses.length >= initialPlayerGame.guessesMax
-
-      set({
-        difficulty,
-        playerGame: initialPlayerGame,
-        playerStats: initialPlayerStats,
-        loading: false,
-        isInteractionsDisabled: isGameOver,
-        gameStatus: isGameOver ? "gameOver" : "playing",
-      })
-    } catch (e: any) {
-      console.error("GameSlice: Failed to initialize game:", e)
-      set({
-        error: `Failed to load game: ${e.message}`,
-        loading: false,
-        isInteractionsDisabled: true,
-      })
-    }
-  },
-
-  makeGuess: (selectedItem) => {
-    const { playerGame, fullItems, difficulty, processGameOver } = get()
-    if (playerGame.correctAnswer || playerGame.gaveUp) return
-
-    const correctItem = playerGame.triviaItem
-    const isCorrectAnswer = correctItem.id === selectedItem.id
-    const fullGuessedItem = fullItems.find(
-      (item) => item.id === selectedItem.id
-    )
-    const hintStrategy = DIFFICULTY_MODES[difficulty].hintStrategy
-
-    let hintResult = {
-      feedback: null as string | null,
-      revealedHints: {} as any,
-      hintInfo: null as any,
-    }
-
-    if (
-      !isCorrectAnswer &&
-      fullGuessedItem &&
-      hintStrategy === "IMPLICIT_FEEDBACK"
-    ) {
-      hintResult = generateImplicitHint(
-        fullGuessedItem,
-        correctItem,
-        playerGame.hintsUsed
-      )
-    } else if (!isCorrectAnswer) {
-      hintResult.feedback = "Not quite! Try again."
-    }
-
-    analyticsService.trackGuessMade(
-      playerGame.guesses.length + 1,
-      isCorrectAnswer,
-      Number(selectedItem.id),
-      selectedItem.title
-    )
-
-    const canMakeGuess = playerGame.guesses.length < playerGame.guessesMax
-
-    set(
-      produce((state: GameStoreState) => {
-        if (canMakeGuess) {
-          const newGuess: Guess = {
-            itemId: selectedItem.id,
-            hintInfo: hintResult.hintInfo,
-          }
-          state.playerGame.guesses.push(newGuess)
-          state.playerGame.correctAnswer = isCorrectAnswer
-
-          if (Object.keys(hintResult.revealedHints).length > 0) {
-            state.playerGame.hintsUsed = {
-              ...state.playerGame.hintsUsed,
-              ...hintResult.revealedHints,
-            }
-          }
-          state.lastGuessResult = {
-            itemId: selectedItem.id,
-            correct: isCorrectAnswer,
-            feedback: hintResult.feedback,
-            hintInfo: hintResult.hintInfo,
-          }
-        }
-      })
-    )
-
-    if (isCorrectAnswer) set({ showConfetti: true })
-
-    processGameOver().catch((error) => {
-      console.error("Failed to process game over after guess:", error)
-      set({ flashMessage: "Could not save progress. Check connection." })
-    })
-  },
-
-  useHint: (hintType) => {
-    const { playerGame, playerStats, difficulty } = get()
-    const isUserSpendStrategy =
-      DIFFICULTY_MODES[difficulty].hintStrategy === "USER_SPEND"
-
-    if (
-      !isUserSpendStrategy ||
-      playerGame.hintsUsed?.[hintType] ||
-      (playerStats?.hintsAvailable ?? 0) <= 0
-    ) {
+  }
+  const perform = async (action: ActionInput) => {
+    const current = get()
+    if (current.syncStatus !== "idle" || current.loading || finished(current.playerGame)) return
+    // Duplicate guesses never spend an attempt or enter the durable retry queue.
+    if (action.type === "guess" && current.playerGame.guesses.some(guess => guess.itemId === action.itemId)) return
+    if (current.resetDeadline !== null && performance.now() >= current.resetDeadline) {
+      await get().initializeGame({ id: current.playerGame.playerID, name: "Player" })
       return
     }
-
-    analyticsService.trackHintUsed(
-      hintType,
-      playerGame.guesses.length,
-      playerStats.hintsAvailable - 1
-    )
-
-    set(
-      produce((state: GameStoreState) => {
-        state.playerGame.hintsUsed = {
-          ...state.playerGame.hintsUsed,
-          [hintType]: true,
-        }
-        if (state.playerStats) {
-          state.playerStats.hintsAvailable = Math.max(
-            0,
-            state.playerStats.hintsAvailable - 1
-          )
-          state.playerStats.hintsUsedCount =
-            (state.playerStats.hintsUsedCount || 0) + 1
-        }
-      })
-    )
-  },
-
-  giveUp: () => {
-    const { playerGame, processGameOver } = get()
-    analyticsService.trackGameGiveUp(
-      playerGame.guesses.length,
-      Object.keys(playerGame.hintsUsed || {}).length
-    )
-
-    set(
-      produce((state: GameStoreState) => {
-        state.playerGame.gaveUp = true
-      })
-    )
-
-    processGameOver().catch((error) => {
-      console.error("Failed to process game over after giving up:", error)
-      set({ flashMessage: "Could not save progress. Check connection." })
-    })
-  },
-
-  processGameOver: async () => {
-    const { playerGame, playerStats } = get()
-    const isGameOver =
-      playerGame.correctAnswer ||
-      playerGame.gaveUp ||
-      playerGame.guesses.length >= playerGame.guessesMax
-
-    if (!isGameOver || playerGame.statsProcessed) return
-
-    set({ isInteractionsDisabled: true })
-    setTimeout(() => {
-      set({ gameStatus: "revealing" })
-    }, 1200)
-
-    // OPTIMISTIC UI UPDATE
-    const calculatedScore = calculateScore(playerGame)
-    const updatedStats = produce(playerStats, (draft) => {
-      draft.games = (draft.games || 0) + 1
-      draft.allTimeScore = (draft.allTimeScore || 0) + calculatedScore
-      if (playerGame.correctAnswer) {
-        draft.currentStreak = (draft.currentStreak || 0) + 1
-        draft.maxStreak = Math.max(draft.currentStreak, draft.maxStreak || 0)
-        const guessCount = playerGame.guesses.length
-        if (guessCount > 0 && guessCount <= 5) {
-          draft.wins[guessCount - 1] = (draft.wins[guessCount - 1] || 0) + 1
-        }
-      } else {
-        draft.currentStreak = 0
-      }
-    })
-
-    set(
-      produce((state: GameStoreState) => {
-        state.playerGame.statsProcessed = true
-        state.playerStats = updatedStats
-      })
-    )
-
+    const token = generation
+    const before = current.playerGame
+    set({ syncStatus: "saving", syncError: null })
     try {
-      await gameService.submitGameResult(playerGame)
-    } catch (e: any) {
-      console.error("Cloud function submission failed", e)
-      set({ error: `Failed to save progress: ${e.message}` })
-      throw e
+      const result = await gameService.applyAction(before, action)
+      if (generation !== token) return
+      accept(result, true)
+      if (action.type === "hint") analyticsService.trackHintUsed(action.hintType, result.game.guesses.length, get().playerStats.hintsAvailable)
+      if (action.type === "giveUp") analyticsService.trackGameGiveUp(result.game.guesses.length, Object.values(result.game.hintsUsed || {}).filter(Boolean).length)
+      if (action.type === "guess") {
+        const guessed = get().fullItems.find(item => item.id === action.itemId)
+        const feedback = guessed && before.difficulty === "LEVEL_3" && !result.game.correctAnswer
+          ? generateImplicitHint(guessed, result.game.triviaItem, before.hintsUsed)
+          : { feedback: result.game.correctAnswer ? "Correct!" : "Not quite! Try again.", hintInfo: null }
+        set({ lastGuessResult: { itemId: action.itemId, correct: result.game.correctAnswer, feedback: feedback.feedback, hintInfo: feedback.hintInfo }, showConfetti: result.game.correctAnswer })
+        analyticsService.trackGuessMade(result.game.guesses.length, result.game.correctAnswer, action.itemId, guessed?.title || "")
+      }
+    } catch (error) {
+      if (generation !== token) return
+      set({ syncStatus: "pending", syncError: message(error) })
     }
-  },
-
-  completeRevealSequence: () => {
-    set({ gameStatus: "gameOver" })
-    setTimeout(() => {
-      set({ showModal: true })
-    }, 500)
-  },
-})
+  }
+  return {
+    playerGame: emptyGame(), playerStats: emptyStats(),
+    gameStatus: "playing", isInteractionsDisabled: true, lastGuessResult: null,
+    syncStatus: "idle", syncError: null, resetDeadline: null,
+    resetSession: () => {
+      // Invalidate in-flight work immediately, before another account is loaded.
+      generation++
+      loadingUid = null
+      set({ playerGame: emptyGame(), playerStats: emptyStats(), gameStatus: "playing",
+        loading: false, error: null, isInteractionsDisabled: true, lastGuessResult: null,
+        showModal: false, showConfetti: false, flashMessage: null, syncStatus: "idle", syncError: null, resetDeadline: null })
+    },
+    initializeGame: async player => {
+      if (get().loading && loadingUid === player.id) return
+      loadingUid = player.id
+      const token = ++generation
+      const sameAccount = get().playerGame.playerID === player.id
+      set({ loading: true, error: null, isInteractionsDisabled: true, lastGuessResult: null, showModal: false, showConfetti: false, syncStatus: "idle", syncError: null,
+        ...(sameAccount ? {} : { playerGame: emptyGame(), playerStats: emptyStats(), resetDeadline: null }) })
+      try {
+        const [storedDifficulty, inputTip, resultsTip] = await Promise.all([
+          AsyncStorage.getItem(ASYNC_STORAGE_KEYS.DIFFICULTY_SETTING),
+          // Optional teaching preferences must not block the daily game.
+          AsyncStorage.getItem(ASYNC_STORAGE_KEYS.TUTORIAL_GUESS_INPUT_SEEN).catch(() => null),
+          AsyncStorage.getItem(ASYNC_STORAGE_KEYS.TUTORIAL_RESULTS_SEEN).catch(() => null),
+        ])
+        const preference = storedDifficulty && Object.hasOwn(DIFFICULTY_MODES, storedDifficulty) ? storedDifficulty as DifficultyLevel : DEFAULT_DIFFICULTY
+        const result = await gameService.startGame(player.id, preference)
+        if (generation !== token) return
+        const lists = new MovieDataService().getCatalogLists()
+        set({ ...lists, nextDifficulty: preference, loading: false,
+          tutorialState: { showGuessInputTip: inputTip === null, showResultsTip: resultsTip === null } })
+        accept(result)
+      } catch (error) {
+        if (generation !== token) return
+        set({ error: message(error), loading: false, isInteractionsDisabled: true })
+      } finally {
+        if (generation === token) loadingUid = null
+      }
+    },
+    makeGuess: async selected => { await perform({ type: "guess", itemId: Number(selected.id) }) },
+    useHint: async hintType => { await perform({ type: "hint", hintType }) },
+    giveUp: async () => { await perform({ type: "giveUp" }) },
+    retryPendingAction: async () => {
+      const uid = get().playerGame.playerID
+      if (!uid || get().syncStatus === "saving") return
+      const token = generation
+      set({ syncStatus: "saving", syncError: null })
+      try {
+        const result = await gameService.resumePendingAction(uid)
+        const restored = result || await gameService.startGame(uid, get().nextDifficulty)
+        if (generation !== token) return
+        accept(restored, true)
+      } catch (error) {
+        if (generation === token) set({ syncStatus: "pending", syncError: message(error) })
+      }
+    },
+    // Completion is part of the server action transaction, never a second write.
+    processGameOver: async () => {
+      if (get().syncStatus === "pending") await get().retryPendingAction()
+    },
+    completeRevealSequence: () => {
+      if (finished(get().playerGame)) set({ gameStatus: "gameOver", showModal: true })
+    },
+  }
+}

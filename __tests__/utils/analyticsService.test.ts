@@ -51,7 +51,7 @@ describe("Utils: analyticsService", () => {
       })
     })
 
-    it("should catch and log errors from Firebase", async () => {
+    it("does not expose SDK error payloads in logs", async () => {
       jest.resetModules()
 
       jest.doMock("../../src/config/firebase", () => ({ analytics: {} }))
@@ -72,10 +72,7 @@ describe("Utils: analyticsService", () => {
 
       await freshService.trackGameStart(1, "Test Movie")
 
-      expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining("Error logging event"),
-        expect.any(Error)
-      )
+      expect(mockConsoleError).not.toHaveBeenCalled()
     })
   })
 
@@ -85,11 +82,16 @@ describe("Utils: analyticsService", () => {
       expect(setUserId).toHaveBeenCalledWith(expect.anything(), "user-123")
     })
 
-    it("should set user properties if provided", () => {
-      analyticsService.identifyUser("user-123", { method: "google" })
+    it("only forwards an allowlisted sign-in method, never profile properties", () => {
+      analyticsService.identifyUser("user-123", { sign_in_method: "google", name: "Private Name", email: "private@example.com" })
       expect(setUserProperties).toHaveBeenCalledWith(expect.anything(), {
-        method: "google",
+        sign_in_method: "google",
       })
+    })
+    it("clears the user ID and method on sign-out", async () => {
+      await analyticsService.trackSignOut()
+      expect(setUserId).toHaveBeenCalledWith(expect.anything(), null)
+      expect(setUserProperties).toHaveBeenCalledWith(expect.anything(), { sign_in_method: null })
     })
   })
 
@@ -156,29 +158,27 @@ describe("Utils: analyticsService", () => {
       )
     })
 
-    it("trackGoogleSignInFailure sanitizes error length", async () => {
-      const longError = "a".repeat(200)
+    it("never sends arbitrary auth error text", async () => {
+      const longError = "private@example.com " + "a".repeat(200)
       await analyticsService.trackGoogleSignInFailure(longError)
 
       expect(logEvent).toHaveBeenCalledWith(
         expect.anything(),
         "google_signin_failure",
         {
-          error_message: expect.stringMatching(/^a{100}$/), // Should be truncated to 100 chars
+          error_code: "unknown",
         }
       )
     })
 
-    it("trackErrorBoundary sanitizes error length", async () => {
+    it("never sends raw error-boundary messages", async () => {
       const longError = "e".repeat(200)
       await analyticsService.trackErrorBoundary(longError)
 
       expect(logEvent).toHaveBeenCalledWith(
         expect.anything(),
         "error_boundary_triggered",
-        {
-          error_message: expect.stringMatching(/^e{100}$/),
-        }
+        undefined
       )
     })
   })

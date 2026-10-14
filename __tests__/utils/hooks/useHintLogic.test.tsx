@@ -38,6 +38,8 @@ describe("Hook: useHintLogic", () => {
       // Explicitly set Difficulty to LEVEL_2 which maps to USER_SPEND strategy
       difficulty: "LEVEL_2",
       isInteractionsDisabled: false,
+      syncStatus: "idle",
+      useHint: jest.fn().mockResolvedValue(undefined),
     })
   })
 
@@ -94,7 +96,42 @@ describe("Hook: useHintLogic", () => {
     // 3. Verify action was called
     expect(spyUseHint).toHaveBeenCalledWith("genre")
 
-    // 4. Verify display text updated (logic hook sets this state locally on selection)
+    // Selecting must not reveal content before authoritative acknowledgment.
+    expect(result.current.displayedHintText).toBeNull()
+    act(() => useGameStore.setState(state => ({ playerGame: { ...state.playerGame, hintsUsed: { genre: true } } })))
     expect(result.current.displayedHintText).toBe("Action")
+  })
+
+  it("keeps a pending hint hidden until retry returns an acknowledged hint", () => {
+    const { result } = renderHook(() => useHintLogic())
+    act(() => result.current.handleHintSelection("genre"))
+    act(() => useGameStore.setState({ syncStatus: "pending" }))
+    expect(result.current.displayedHintText).toBeNull()
+    expect(result.current.isToggleDisabled).toBe(true)
+    act(() => result.current.handleHintSelection("director"))
+    expect(useGameStore.getState().useHint).toHaveBeenCalledTimes(1)
+    act(() => useGameStore.setState(state => ({ syncStatus: "idle", playerGame: { ...state.playerGame, hintsUsed: { genre: true } } })))
+    expect(result.current.displayedHintText).toBe("Action")
+  })
+
+  it("does not reveal disabled or unknown hints or reuse a selection for another account", () => {
+    const { result } = renderHook(() => useHintLogic())
+    act(() => result.current.handleHintSelection("unknown"))
+    expect(useGameStore.getState().useHint).not.toHaveBeenCalled()
+    act(() => useGameStore.setState({ isInteractionsDisabled: true }))
+    act(() => result.current.handleHintSelection("genre"))
+    expect(useGameStore.getState().useHint).not.toHaveBeenCalled()
+    act(() => useGameStore.setState({ isInteractionsDisabled: false }))
+    act(() => result.current.handleHintSelection("genre"))
+    act(() => useGameStore.setState(state => ({ playerGame: { ...state.playerGame, playerID: "another-account", hintsUsed: { genre: true } } })))
+    expect(result.current.displayedHintText).toBeNull()
+  })
+
+  it("reopens an already acknowledged hint without another server action", () => {
+    useGameStore.setState(state => ({ playerGame: { ...state.playerGame, hintsUsed: { genre: true } } }))
+    const { result } = renderHook(() => useHintLogic())
+    act(() => result.current.handleHintSelection("genre"))
+    expect(result.current.displayedHintText).toBe("Action")
+    expect(useGameStore.getState().useHint).not.toHaveBeenCalled()
   })
 })

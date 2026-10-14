@@ -25,7 +25,7 @@ const BasicHints = memo(() => {
   const { getHintText } = useHintLogic()
   const styles = useStyles(themedStyles)
 
-  const hintTypes: HintType[] = ["decade", "director", "actor", "genre"]
+  const hintTypes: HintType[] = ["decade", "director", "actors", "genre"]
 
   return (
     <View style={styles.basicHintsContainer}>
@@ -71,8 +71,7 @@ const MainHintComponent = () => {
   // Implicit Feedback mode only shows the label.
   if (
     DIFFICULTY_MODES[useGameStore.getState().difficulty].hintStrategy ===
-      "IMPLICIT_FEEDBACK" &&
-    !isToggleDisabled
+      "IMPLICIT_FEEDBACK"
   ) {
     return (
       <View style={styles.container}>
@@ -158,7 +157,7 @@ const themedStyles = (theme: Theme): HintStyles => ({
   },
   hintLabelDisabled: {
     ...theme.typography.caption,
-    color: theme.colors.textDisabled,
+    color: theme.colors.textSecondary,
     fontFamily: "Arvo-Italic",
     textAlign: "center",
     paddingVertical: theme.spacing.small,
@@ -172,14 +171,12 @@ const themedStyles = (theme: Theme): HintStyles => ({
   },
   basicHintsTitle: {
     fontSize: theme.responsive.responsiveFontSize(16),
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
     textAlign: "center",
     marginBottom: theme.spacing.medium,
   },
   basicHintsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "stretch",
     paddingVertical: theme.spacing.extraSmall,
   },
   basicHintsLabel: {
@@ -189,9 +186,6 @@ const themedStyles = (theme: Theme): HintStyles => ({
   },
   basicHintsValue: {
     ...theme.typography.bodyText,
-    flex: 1,
-    textAlign: "right",
-    marginLeft: theme.spacing.small,
   },
 })
 

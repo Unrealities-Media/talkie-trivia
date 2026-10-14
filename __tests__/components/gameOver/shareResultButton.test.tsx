@@ -21,7 +21,7 @@ const renderWithTheme = (ui: ReactElement, options?: RenderOptions) => {
 }
 
 describe("GameOver Component: ShareResultButton", () => {
-  const mockPlayerGame = { ...defaultPlayerGame, id: "test-game-1" }
+  const mockPlayerGame = { ...defaultPlayerGame, id: "test-game-1", gaveUp: true, statsProcessed: true, score: 0 }
   let consoleErrorSpy: jest.SpyInstance
 
   beforeEach(() => {
@@ -36,6 +36,13 @@ describe("GameOver Component: ShareResultButton", () => {
   it("should render the share button", () => {
     renderWithTheme(<ShareResultButton playerGame={mockPlayerGame} />)
     expect(screen.getByText("Share Your Result")).toBeTruthy()
+  })
+
+  it("does not offer sharing for an unacknowledged result", () => {
+    renderWithTheme(<ShareResultButton playerGame={{ ...mockPlayerGame, statsProcessed: false }} />)
+    fireEvent.press(screen.getByRole("button"))
+    expect(screen.getByRole("button")).toBeDisabled()
+    expect(shareGameResult).not.toHaveBeenCalled()
   })
 
   it("should call shareGameResult with playerGame when pressed", async () => {

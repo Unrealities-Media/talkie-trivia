@@ -2,13 +2,16 @@ import React from "react"
 import { Tabs } from "expo-router"
 import { useFonts } from "expo-font"
 import LoadingIndicator from "../../components/loadingIndicator"
-import ErrorMessage from "../../components/errorMessage"
 import { FontAwesome } from "@expo/vector-icons"
+import TextTabBar from "../../components/textTabBar"
+import { View } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { StatusBar } from "expo-status-bar"
 import { useTheme } from "../../contexts/themeContext"
 
 const TabLayout = () => {
-  const { colors } = useTheme()
-
+  const insets = useSafeAreaInsets()
+  const { colors, colorScheme } = useTheme()
   const [fontsLoaded, fontError] = useFonts({
     "Arvo-Bold": require("../../../assets/fonts/Arvo-Bold.ttf"),
     "Arvo-Italic": require("../../../assets/fonts/Arvo-Italic.ttf"),
@@ -16,44 +19,18 @@ const TabLayout = () => {
     ...FontAwesome.font,
   })
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded && !fontError) {
     return <LoadingIndicator />
   }
 
-  if (fontError) {
-    return <ErrorMessage message={fontError.message} />
-  }
-
   return (
+    <View testID="tabs-safe-area" style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.background }}>
+    <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
     <Tabs
+      tabBar={props => <TextTabBar {...props} fontsLoaded={fontsLoaded} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarActiveBackgroundColor: colors.surface,
-        tabBarItemStyle: {
-          marginVertical: 5,
-          marginHorizontal: 10,
-          borderRadius: 10,
-          paddingVertical: 5,
-          justifyContent: "center",
-          alignItems: "center",
-        },
-        tabBarLabelStyle: {
-          fontFamily: "Arvo-Bold",
-          fontSize: 16,
-          margin: 0,
-          padding: 0,
-        },
-        tabBarIconStyle: {
-          display: "none",
-        },
-        tabBarStyle: {
-          paddingHorizontal: 20,
-          backgroundColor: colors.background,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-        },
+        sceneStyle: { paddingLeft: insets.left, paddingRight: insets.right },
       }}
       initialRouteName="game"
     >
@@ -67,6 +44,7 @@ const TabLayout = () => {
         }}
       />
     </Tabs>
+    </View>
   )
 }
 

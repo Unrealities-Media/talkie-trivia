@@ -1,16 +1,15 @@
-import React, { ReactNode } from "react"
+import React, { ReactNode, useState } from "react"
 import {
   Modal,
   Pressable,
   View,
-  Share,
   Alert,
   ViewStyle,
   StyleSheet,
 } from "react-native"
 import { PlayerGame } from "../models/game"
-import { generateShareMessage } from "../utils/shareUtils"
-import { analyticsService } from "../utils/analyticsService"
+import { shareGameResult } from "../utils/shareUtils"
+import { savedScore } from "../utils/resultSummary"
 import { hapticsService } from "../utils/hapticsService"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Button } from "./ui/button"
@@ -29,32 +28,17 @@ const DetailModal: React.FC<DetailModalProps> = ({
   children,
 }) => {
   const styles = useStyles(themedStyles)
+  const [isSharing, setIsSharing] = useState(false)
 
   const handleShare = async () => {
-    if (!playerGame) return
-    hapticsService.medium()
+    if (!playerGame || isSharing) return
+    setIsSharing(true)
     try {
-      let outcome: "win" | "lose" | "give_up" = "lose"
-      if (playerGame.correctAnswer) {
-        outcome = "win"
-      } else if (playerGame.gaveUp) {
-        outcome = "give_up"
-      }
-
-      analyticsService.trackShareResults(outcome)
-
-      const message = generateShareMessage(playerGame)
-      await Share.share(
-        {
-          message,
-          title: "Talkie Trivia Results",
-        },
-        {
-          dialogTitle: "Share your Talkie Trivia results!",
-        }
-      )
-    } catch (error: any) {
-      Alert.alert("Share Error", error.message)
+      await shareGameResult(playerGame)
+    } catch {
+      Alert.alert("Sharing Failed", "Your result could not be shared. Please try again.")
+    } finally {
+      setIsSharing(false)
     }
   }
 
@@ -91,11 +75,12 @@ const DetailModal: React.FC<DetailModalProps> = ({
               onPress={handleClose}
               style={styles.button}
             />
-            {playerGame && (
+            {playerGame && savedScore(playerGame) !== null && (
               <Button
                 title="Share"
                 variant="primary"
                 onPress={handleShare}
+                isLoading={isSharing}
                 style={styles.button}
               />
             )}

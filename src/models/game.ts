@@ -16,6 +16,9 @@ export interface Guess {
 }
 
 export interface PlayerGame {
+  challengeId?: string
+  revision?: number
+  score?: number
   id: string
   playerID: string
   triviaItem: TriviaItem

@@ -4,7 +4,8 @@ import React, { ReactElement } from "react"
 import {
   render,
   screen,
-  cleanup,
+  cleanupAsync,
+  act,
   RenderOptions,
 } from "@testing-library/react-native"
 import { ThemeProvider } from "../../src/contexts/themeContext"
@@ -60,6 +61,9 @@ const mockPlayerGameWin: PlayerGame = {
   ...defaultPlayerGame,
   id: "win-game-1",
   correctAnswer: true,
+  score: 423,
+  statsProcessed: true,
+  challengeId: "2026-10-13",
   guesses: [{ itemId: 1 }, { itemId: 2 }],
   triviaItem: {
     ...defaultPlayerGame.triviaItem,
@@ -98,7 +102,19 @@ const mockPlayerGameGiveUp: PlayerGame = {
 const mockLastGuess = { itemId: 2, correct: true }
 
 describe("GameOverView Component", () => {
-  afterEach(cleanup)
+  beforeEach(() => jest.useFakeTimers())
+
+  afterEach(async () => {
+    // Flush the cancelled animation's queued frame before Jest tears down.
+    try {
+      await cleanupAsync()
+      await act(async () => {
+        await jest.runOnlyPendingTimersAsync()
+      })
+    } finally {
+      jest.useRealTimers()
+    }
+  })
 
   describe("Win Scenario", () => {
     beforeEach(() => {
@@ -113,6 +129,8 @@ describe("GameOverView Component", () => {
     it("should display the win title and message", () => {
       expect(screen.getByText("You Got It!")).toBeTruthy()
       expect(screen.getByText("You guessed it in 2 guesses!")).toBeTruthy()
+      expect(screen.getByText("Saved score: 423 points")).toBeTruthy()
+      expect(screen.getByText("2026-10-13 (UTC day)")).toBeTruthy()
     })
 
     it("should render all child components", () => {
@@ -145,8 +163,8 @@ describe("GameOverView Component", () => {
       renderWithTheme(
         <GameOverView playerGame={mockPlayerGameLoss} lastGuessResult={null} />
       )
-      expect(screen.getByText("So Close!")).toBeTruthy()
-      expect(screen.getByText("Better luck next time.")).toBeTruthy()
+      expect(screen.getByText("Out of guesses")).toBeTruthy()
+      expect(screen.getByText("You used all 3 guesses. Here's today's movie.")).toBeTruthy()
     })
   })
 
@@ -158,9 +176,9 @@ describe("GameOverView Component", () => {
           lastGuessResult={null}
         />
       )
-      expect(screen.getByText("So Close!")).toBeTruthy()
+      expect(screen.getByText("Answer revealed")).toBeTruthy()
       expect(
-        screen.getByText("Sometimes you just know when to fold 'em.")
+        screen.getByText("You ended this game after 1 guess.")
       ).toBeTruthy()
     })
   })

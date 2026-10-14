@@ -16,8 +16,8 @@ import { BasicTriviaItem } from "../../src/models/trivia"
 jest.mock("@shopify/flash-list", () => {
   const { View } = require("react-native")
   return {
-    FlashList: ({ data, renderItem }: any) => (
-      <View testID="flash-list">
+    FlashList: ({ data, renderItem, onContentSizeChange }: any) => (
+      <View testID="flash-list" onContentSizeChange={onContentSizeChange}>
         {data.map((item: any, index: number) => (
           <View key={item.id}>{renderItem({ item, index })}</View>
         ))}
@@ -148,6 +148,22 @@ describe("PickerUI Component", () => {
   })
 
   describe("Results List", () => {
+    it("grows for measured wrapped/expanded content and shrinks when it collapses", () => {
+      renderWithTheme(<PickerUI query="Mo" isSearching={false} results={mockResults}
+        showResults animatedInputStyle={{}} isInteractionsDisabled={false}
+        handleInputChange={mockHandleInputChange} renderItem={mockRenderItem} placeholder="Search..." />)
+      fireEvent(screen.getByTestId("flash-list"), "contentSizeChange", 350, 180)
+      expect(screen.getByTestId("search-results-viewport")).toHaveStyle({ height: 180 })
+      fireEvent(screen.getByTestId("flash-list"), "contentSizeChange", 350, 120)
+      expect(screen.getByTestId("search-results-viewport")).toHaveStyle({ height: 120 })
+      fireEvent(screen.getByTestId("flash-list"), "contentSizeChange", 350, 10000)
+      const boundedHeight = screen.getByTestId("search-results-viewport").props.style.height
+      expect(boundedHeight).toBeGreaterThan(180)
+      expect(boundedHeight).toBeLessThan(10000)
+      fireEvent(screen.getByTestId("flash-list"), "contentSizeChange", 350, 0)
+      expect(screen.getByTestId("search-results-viewport")).toHaveStyle({ height: boundedHeight })
+    })
+
     it("should NOT render results container if showResults is false", () => {
       renderWithTheme(
         <PickerUI
@@ -204,10 +220,10 @@ describe("PickerUI Component", () => {
         />
       )
 
-      expect(screen.getByText('No titles found for "Zxywq"')).toBeTruthy()
+      expect(screen.getByText(/No titles found for "Zxywq"/)).toBeTruthy()
     })
 
-    it("should render nothing if results are empty but query is too short (< 2)", () => {
+    it("explains an empty result even for a single character", () => {
       renderWithTheme(
         <PickerUI
           query="Z"
@@ -223,7 +239,7 @@ describe("PickerUI Component", () => {
         />
       )
 
-      expect(screen.queryByText(/No titles found/)).toBeNull()
+      expect(screen.getByText(/No titles found/)).toBeTruthy()
     })
   })
 })

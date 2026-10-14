@@ -10,15 +10,9 @@ import { ThemeProvider } from "../../src/contexts/themeContext"
 import PickerContainer from "../../src/components/picker"
 import { useGameStore } from "../../src/state/gameStore"
 import { hapticsService } from "../../src/utils/hapticsService"
-import { search } from "fast-fuzzy"
 import { BasicTriviaItem, TriviaItem } from "../../src/models/trivia"
 
 // --- Mocks ---
-
-// 1. Mock `fast-fuzzy` to control search results
-jest.mock("fast-fuzzy", () => ({
-  search: jest.fn(),
-}))
 
 // 2. Mock `hapticsService`
 jest.mock("../../src/utils/hapticsService", () => ({
@@ -97,6 +91,7 @@ jest.mock("../../src/components/tutorialTooltip", () => {
 
 // --- Test Data ---
 const mockBasicItems: BasicTriviaItem[] = [
+  { id: 9, title: "9", releaseDate: "2009", posterPath: "" },
   {
     id: 1,
     title: "Inception",
@@ -142,6 +137,7 @@ const defaultStoreState = {
   dismissGuessInputTip: mockDismissGuessInputTip,
   dismissResultsTip: jest.fn(),
   gameMode: "movies",
+  playerGame: { id: "movies_2026-10-13", playerID: "guest", guesses: [] },
 }
 
 describe("PickerContainer Component", () => {
@@ -151,8 +147,6 @@ describe("PickerContainer Component", () => {
     mockUseGameStore.mockImplementation((selector: any) =>
       selector(defaultStoreState)
     )
-    // Default search behavior: return everything if query matches nothing specific in mock
-    ;(search as jest.Mock).mockReturnValue([])
   })
 
   afterEach(() => {
@@ -191,36 +185,53 @@ describe("PickerContainer Component", () => {
   })
 
   describe("Search Logic", () => {
+    it("allows a one-character exact title to be guessed", () => {
+      renderWithTheme(<PickerContainer />)
+      fireEvent.changeText(screen.getByTestId("mock-input"), "9")
+      act(() => jest.advanceTimersByTime(300))
+      fireEvent.press(screen.getByTestId("picker-item-9"))
+      expect(mockMakeGuess).toHaveBeenCalledWith(mockBasicItems[0])
+    })
+    it("rejects duplicate selections even if a stale row invokes its handler", () => {
+      mockUseGameStore.mockImplementation((selector: any) => selector({ ...defaultStoreState,
+        playerGame: { ...defaultStoreState.playerGame, guesses: [{ itemId: 1 }] } }))
+      renderWithTheme(<PickerContainer />)
+      fireEvent.changeText(screen.getByTestId("mock-input"), "Inception")
+      act(() => jest.advanceTimersByTime(300))
+      fireEvent.press(screen.getByTestId("picker-item-1"))
+      expect(mockMakeGuess).not.toHaveBeenCalled()
+    })
+    it("cancels pending searches and clears input when the account changes", () => {
+      const view = renderWithTheme(<PickerContainer />)
+      fireEvent.changeText(screen.getByTestId("mock-input"), "Inception")
+      mockUseGameStore.mockImplementation((selector: any) => selector({ ...defaultStoreState,
+        playerGame: { ...defaultStoreState.playerGame, playerID: "other" } }))
+      view.rerender(<ThemeProvider><PickerContainer /></ThemeProvider>)
+      act(() => jest.advanceTimersByTime(300))
+      expect(screen.getByTestId("mock-input").props.value).toBe("")
+      expect(screen.queryByText("Inception")).toBeNull()
+    })
     it("should debounce search input and update results", () => {
-      // Setup mock search result
-      ;(search as jest.Mock).mockReturnValue([mockBasicItems[0]])
-
       renderWithTheme(<PickerContainer />)
 
       const input = screen.getByTestId("mock-input")
       fireEvent.changeText(input, "Incep")
 
       // Should not have searched yet (debounce)
-      expect(search).not.toHaveBeenCalled()
+      expect(screen.queryByText("Inception")).toBeNull()
 
       // Advance timers
       act(() => {
         jest.advanceTimersByTime(300)
       })
 
-      // Now search should have been called
-      expect(search).toHaveBeenCalledWith(
-        "Incep",
-        mockBasicItems,
-        expect.anything()
-      )
       expect(hapticsService.light).toHaveBeenCalled() // Haptic on result found
 
       // Verify result list renders
       expect(screen.getByText("Inception")).toBeTruthy()
     })
 
-    it("should NOT search if query is too short (< 2 chars)", () => {
+    it("does not return fuzzy results for a single character", () => {
       renderWithTheme(<PickerContainer />)
       const input = screen.getByTestId("mock-input")
 
@@ -230,13 +241,11 @@ describe("PickerContainer Component", () => {
         jest.advanceTimersByTime(500)
       })
 
-      expect(search).not.toHaveBeenCalled()
       expect(screen.queryByText("Inception")).toBeNull()
     })
 
     it("should clear results if input is cleared", () => {
       // 1. Populate results
-      ;(search as jest.Mock).mockReturnValue([mockBasicItems[0]])
       renderWithTheme(<PickerContainer />)
       const input = screen.getByTestId("mock-input")
       fireEvent.changeText(input, "Incep")
@@ -262,15 +271,11 @@ describe("PickerContainer Component", () => {
 
       act(() => jest.runAllTimers())
 
-      expect(search).not.toHaveBeenCalled()
+      expect(screen.queryByText("Inception")).toBeNull()
     })
   })
 
   describe("Item Interaction", () => {
-    beforeEach(() => {
-      // Pre-load results for interaction tests
-      ;(search as jest.Mock).mockReturnValue([mockBasicItems[0]])
-    })
 
     it("should expand item details on long press", () => {
       renderWithTheme(<PickerContainer />)
@@ -320,7 +325,7 @@ describe("PickerContainer Component", () => {
       fireEvent.press(item)
 
       // Assertions
-      expect(mockMakeGuess).toHaveBeenCalledWith(mockBasicItems[0])
+      expect(mockMakeGuess).toHaveBeenCalledWith(mockBasicItems[1])
 
       // Input should be cleared (component calls handleInputChange("") on select)
       // Note: In this test setup, the TextInput value is controlled by the 'query' state passed into the mock.

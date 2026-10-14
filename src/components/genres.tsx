@@ -90,7 +90,7 @@ const themedStyles = (theme: Theme): GenresStyles => ({
     textAlign: "center",
   },
   noGenresText: {
-    color: theme.colors.tertiary,
+    color: theme.colors.accentText,
     fontFamily: "Arvo-Italic",
     fontSize: theme.responsive.responsiveFontSize(12),
     textAlign: "center",

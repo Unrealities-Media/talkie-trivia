@@ -30,7 +30,7 @@ const options: Option[] = (
 
 const DifficultySelector = () => {
   const { player } = useAuth()
-  const difficulty = useGameStore((state) => state.difficulty)
+  const difficulty = useGameStore((state) => state.nextDifficulty)
   const setDifficulty = useGameStore((state) => state.setDifficulty)
   const styles = useStyles(themedStyles)
 
@@ -96,7 +96,7 @@ const DifficultySelector = () => {
             size={styles.icon.fontSize}
             color={styles.icon.color}
           />
-          <Typography style={styles.title}>Difficulty</Typography>
+          <Typography style={styles.title}>Next challenge difficulty</Typography>
         </View>
         <View style={styles.selectedOptionDisplay}>
           <Typography style={styles.selectedOptionTextDisplay}>
@@ -120,7 +120,7 @@ const DifficultySelector = () => {
             ]}
             accessibilityRole="button"
             accessibilityState={{ selected: difficulty === option.value }}
-            accessibilityLabel={`Set difficulty to ${option.label}. ${option.description}`}
+            accessibilityLabel={`Set next challenge difficulty to ${option.label}. ${option.description}`}
           >
             <Typography
               style={[
@@ -227,7 +227,7 @@ const themedStyles = (theme: Theme): DifficultySelectorStyles => ({
   },
   selectedOptionText: {
     fontFamily: "Arvo-Bold",
-    color: theme.colors.background,
+    color: theme.colors.onAccent,
   },
   descriptionContainer: {
     marginTop: theme.spacing.extraSmall,

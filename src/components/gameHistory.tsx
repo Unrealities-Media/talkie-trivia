@@ -8,10 +8,13 @@ import { GameHistoryEntry } from "../models/gameHistory"
 import { hapticsService } from "../utils/hapticsService"
 import { API_CONFIG } from "../config/constants"
 import { DIFFICULTY_MODES } from "../config/difficulty"
-import { gameService } from "../services/gameService"
+import { gameService, HistoryCursor } from "../services/gameService"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Typography } from "./ui/typography"
 import { useSkeletonAnimation } from "../utils/hooks/useSkeletonAnimation"
+import { useGameStore } from "../state/gameStore"
+import ErrorMessage from "./errorMessage"
+import { Button } from "./ui/button"
 
 const GameHistorySkeletonItem = memo(() => {
   const styles = useStyles(themedStyles)
@@ -43,6 +46,7 @@ const GameHistoryItem = memo(({ item, onPress }: GameHistoryItemProps) => {
   const difficultyLabel = DIFFICULTY_MODES[item.difficulty]?.label || "Unknown"
   const date = new Date(item.dateId)
   const formattedDate = date.toLocaleDateString("en-US", {
+    timeZone: "UTC",
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -101,33 +105,41 @@ interface GameHistoryProps {
   onHistoryItemPress: (item: GameHistoryEntry) => void
 }
 
-const GameHistory = ({ onHistoryItemPress }: GameHistoryProps) => {
-  const { player } = useAuth()
+const HistoryForAccount = ({ uid, onHistoryItemPress }: GameHistoryProps & { uid: string | null }) => {
   const styles = useStyles(themedStyles)
   const [history, setHistory] = useState<GameHistoryEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
+  const [page, setPage] = useState(0)
+  const [cursors, setCursors] = useState<(HistoryCursor | null)[]>([null])
+  const [next, setNext] = useState<HistoryCursor | null>(null)
 
   useEffect(() => {
+    let active = true
+    setHistory([])
+    setError(null)
+    setLoading(true)
+    setNext(null)
     const fetchHistory = async () => {
-      if (!player) {
+      if (!uid) {
         setLoading(false)
         return
       }
 
       try {
-        const fetchedHistory = await gameService.fetchGameHistory(player.id)
-        setHistory(fetchedHistory)
-      } catch (err: any) {
-        console.error("Failed to fetch game history:", err)
-        setError("Could not load game history.")
+        const result = await gameService.fetchGameHistory(uid, cursors[page])
+        if (active) { setHistory(result.entries); setNext(result.next) }
+      } catch {
+        if (active) setError("Could not load game history.")
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
 
     fetchHistory()
-  }, [player])
+    return () => { active = false }
+  }, [uid, page, cursors, attempt])
 
   const renderItem = useCallback(
     ({ item }: { item: GameHistoryEntry }) => (
@@ -136,28 +148,27 @@ const GameHistory = ({ onHistoryItemPress }: GameHistoryProps) => {
     [onHistoryItemPress]
   )
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
+  return (
+    <View style={styles.container}>
+      {uid && <View style={styles.pageControls}>
+        <Typography accessibilityLiveRegion="polite">History page {page + 1} · Newest games first</Typography>
+        <Button title="Refresh history" variant="secondary" disabled={loading} onPress={() => {
+          setPage(0); setCursors([null]); setAttempt(value => value + 1)
+        }} />
+        {page > 0 && <Button title="Newer games" variant="secondary" disabled={loading} onPress={() => setPage(page - 1)} />}
+        {next && <Button title="Older games" variant="secondary" disabled={loading} onPress={() => {
+          setCursors(previous => [...previous.slice(0, page + 1), next]); setPage(page + 1)
+        }} />}
+      </View>}
+      {loading ? <View>
         {Array(5)
           .fill(0)
           .map((_, index) => (
             <GameHistorySkeletonItem key={`skeleton-${index}`} />
           ))}
-      </View>
-    )
-  }
-
-  if (error) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Typography style={styles.emptyText}>{error}</Typography>
-      </View>
-    )
-  }
-
-  return (
-    <View style={styles.container}>
+      </View> : error ? <View style={styles.emptyContainer}>
+        <ErrorMessage message={error} onRetry={() => setAttempt(value => value + 1)} />
+      </View> :
       <FlashList
         data={history}
         renderItem={renderItem}
@@ -166,13 +177,21 @@ const GameHistory = ({ onHistoryItemPress }: GameHistoryProps) => {
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             <Typography style={styles.emptyText}>
-              Play a game to see your history here!
+              {page === 0 ? "Play a game to see your history here!" : "No older games on this page. Refresh history to see your latest results."}
             </Typography>
           </View>
         )}
-      />
+      />}
     </View>
   )
+}
+
+const GameHistory = (props: GameHistoryProps) => {
+  const { player } = useAuth()
+  const completedGames = useGameStore(state => state.playerStats.games)
+  // Immediately discard rows/cursors and cancel late responses on account
+  // changes or a confirmed completion, even when Profile stays mounted.
+  return <HistoryForAccount key={`${player?.id ?? "signed-out"}:${completedGames}`} uid={player?.id ?? null} {...props} />
 }
 
 const themedStyles = (theme: Theme): any => ({
@@ -183,6 +202,10 @@ const themedStyles = (theme: Theme): any => ({
   },
   listContainer: {
     paddingBottom: theme.spacing.large,
+  },
+  pageControls: {
+    gap: theme.spacing.small,
+    marginBottom: theme.spacing.medium,
   },
   itemContainer: {
     flexDirection: "row",
@@ -219,7 +242,7 @@ const themedStyles = (theme: Theme): any => ({
   difficultyText: {
     fontFamily: "Arvo-Italic",
     fontSize: theme.responsive.responsiveFontSize(12),
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
     marginBottom: theme.spacing.extraSmall,
   },
   resultText: {
@@ -240,7 +263,7 @@ const themedStyles = (theme: Theme): any => ({
   scoreText: {
     fontFamily: "Arvo-Bold",
     fontSize: theme.responsive.responsiveFontSize(20),
-    color: theme.colors.tertiary,
+    color: theme.colors.accentText,
   },
   scoreLabel: {
     fontFamily: "Arvo-Regular",

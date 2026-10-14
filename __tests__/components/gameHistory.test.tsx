@@ -6,6 +6,7 @@ import {
   screen,
   fireEvent,
   cleanup,
+  act,
   RenderOptions,
 } from "@testing-library/react-native";
 import { ThemeProvider } from "../../src/contexts/themeContext";
@@ -13,6 +14,7 @@ import GameHistory from "../../src/components/gameHistory";
 import { useAuth } from "../../src/contexts/authContext";
 import { gameService } from "../../src/services/gameService";
 import { GameHistoryEntry } from "../../src/models/gameHistory";
+import { useGameStore } from "../../src/state/gameStore";
 
 // --- Mocking Dependencies ---
 jest.mock("@shopify/flash-list", () => {
@@ -27,6 +29,7 @@ jest.mock("@shopify/flash-list", () => {
 jest.mock("../../src/contexts/authContext");
 jest.mock("../../src/services/gameService");
 jest.mock("../../src/utils/hapticsService");
+jest.mock("../../src/state/gameStore", () => ({ useGameStore: jest.fn() }));
 
 const renderWithTheme = (ui: ReactElement, options?: RenderOptions) => {
   return render(<ThemeProvider>{ui}</ThemeProvider>, options);
@@ -44,10 +47,71 @@ describe("GameHistory Component", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGameService.fetchGameHistory.mockReset();
     mockUseAuth.mockReturnValue({ player: { id: "test-player-id" } });
+    (useGameStore as unknown as jest.Mock).mockReturnValue(1);
   });
 
   afterEach(cleanup);
+
+  it("navigates older/newer pages without accumulating rows and refreshes from the newest page", async () => {
+    const cursor = { uid: "test-player-id", dateId: "2025-11-15", id: "2025-11-15" };
+    const older = { ...mockHistoryData[0], dateId: "2025-11-14", itemTitle: "Older movie" };
+    mockGameService.fetchGameHistory
+      .mockResolvedValueOnce({ entries: mockHistoryData, next: cursor })
+      .mockResolvedValueOnce({ entries: [older], next: null })
+      .mockResolvedValueOnce({ entries: mockHistoryData, next: cursor })
+      .mockResolvedValueOnce({ entries: [older], next: null })
+      .mockResolvedValueOnce({ entries: mockHistoryData, next: null });
+    renderWithTheme(<GameHistory onHistoryItemPress={onHistoryItemPressMock} />);
+    fireEvent.press(await screen.findByLabelText("Older games"));
+    expect(await screen.findByText("Older movie")).toBeTruthy();
+    expect(screen.queryByText("Inception")).toBeNull();
+    expect(screen.queryByLabelText("Older games")).toBeNull();
+    expect(mockGameService.fetchGameHistory).toHaveBeenLastCalledWith("test-player-id", cursor);
+    fireEvent.press(screen.getByLabelText("Newer games"));
+    expect(await screen.findByText("Inception")).toBeTruthy();
+    fireEvent.press(screen.getByLabelText("Older games"));
+    await screen.findByText("Older movie");
+    fireEvent.press(screen.getByLabelText("Refresh history"));
+    await screen.findByText("Inception");
+    expect(mockGameService.fetchGameHistory).toHaveBeenLastCalledWith("test-player-id", null);
+    expect(screen.queryByLabelText("Newer games")).toBeNull();
+  });
+
+  it("retries the same failed older page without losing the way back", async () => {
+    const cursor = { uid: "test-player-id", dateId: "2025-11-15", id: "2025-11-15" };
+    mockGameService.fetchGameHistory
+      .mockResolvedValueOnce({ entries: mockHistoryData, next: cursor })
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({ entries: [{ ...mockHistoryData[0], itemTitle: "Recovered" }], next: null });
+    renderWithTheme(<GameHistory onHistoryItemPress={onHistoryItemPressMock} />);
+    fireEvent.press(await screen.findByLabelText("Older games"));
+    await screen.findByText("Could not load game history.");
+    expect(screen.getByLabelText("Newer games")).toBeTruthy();
+    fireEvent.press(screen.getByText("Retry"));
+    expect(await screen.findByText("Recovered")).toBeTruthy();
+    expect(mockGameService.fetchGameHistory).toHaveBeenLastCalledWith("test-player-id", cursor);
+  });
+
+  it.each(["account", "completion"])("discards a late page after %s changes", async change => {
+    let finish!: (value: any) => void;
+    const cursor = { uid: "test-player-id", dateId: "2025-11-15", id: "2025-11-15" };
+    mockGameService.fetchGameHistory
+      .mockResolvedValueOnce({ entries: mockHistoryData, next: cursor })
+      .mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }))
+      .mockResolvedValueOnce({ entries: [{ ...mockHistoryData[0], itemTitle: "Current result" }], next: null });
+    const view = renderWithTheme(<GameHistory onHistoryItemPress={onHistoryItemPressMock} />);
+    fireEvent.press(await screen.findByLabelText("Older games"));
+    if (change === "account") mockUseAuth.mockReturnValue({ player: { id: "other" } });
+    else (useGameStore as unknown as jest.Mock).mockReturnValue(2);
+    view.rerender(<ThemeProvider><GameHistory onHistoryItemPress={onHistoryItemPressMock} /></ThemeProvider>);
+    await screen.findByText("Current result");
+    await act(async () => finish({ entries: [{ ...mockHistoryData[0], itemTitle: "Stale result" }], next: cursor }));
+    expect(screen.queryByText("Stale result")).toBeNull();
+    expect(screen.queryByLabelText("Newer games")).toBeNull();
+    expect(mockGameService.fetchGameHistory).toHaveBeenLastCalledWith(change === "account" ? "other" : "test-player-id", null);
+  });
 
   describe("Loading State", () => {
     it("should display skeleton loaders while fetching data", () => {
@@ -64,7 +128,7 @@ describe("GameHistory Component", () => {
 
   describe("Data Display", () => {
     it("should render a list of game history items on successful fetch", async () => {
-      mockGameService.fetchGameHistory.mockResolvedValue(mockHistoryData);
+      mockGameService.fetchGameHistory.mockResolvedValue({ entries: mockHistoryData, next: null });
       
       renderWithTheme(<GameHistory onHistoryItemPress={onHistoryItemPressMock} />);
 
@@ -76,7 +140,7 @@ describe("GameHistory Component", () => {
 
   describe("Empty and Error States", () => {
     it("should display an empty message if no history is returned", async () => {
-      mockGameService.fetchGameHistory.mockResolvedValue([]);
+      mockGameService.fetchGameHistory.mockResolvedValue({ entries: [], next: null });
       renderWithTheme(<GameHistory onHistoryItemPress={onHistoryItemPressMock} />);
       expect(await screen.findByText("Play a game to see your history here!")).toBeTruthy();
     });
@@ -104,7 +168,7 @@ describe("GameHistory Component", () => {
 
   describe("Interaction", () => {
     it("should call onHistoryItemPress with the correct item when pressed", async () => {
-      mockGameService.fetchGameHistory.mockResolvedValue(mockHistoryData);
+      mockGameService.fetchGameHistory.mockResolvedValue({ entries: mockHistoryData, next: null });
       renderWithTheme(<GameHistory onHistoryItemPress={onHistoryItemPressMock} />);
 
       const firstItem = await screen.findByText("Inception");

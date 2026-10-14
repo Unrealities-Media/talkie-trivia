@@ -43,6 +43,7 @@ describe("GameplayView Component", () => {
       giveUp: mockGiveUp,
       isInteractionsDisabled: false,
       gameMode: "movies",
+      syncStatus: "idle",
       ...overrides,
     }
     mockUseGameStore.mockImplementation((selector: (state: any) => any) =>
@@ -52,6 +53,7 @@ describe("GameplayView Component", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockGiveUp.mockImplementation(() => new Promise(() => {}))
     setMockStoreState()
   })
 

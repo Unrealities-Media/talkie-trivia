@@ -91,6 +91,7 @@ describe("Facts Component", () => {
 
       // Hints (Director)
       expect(screen.getByText("Director: Christopher Nolan")).toBeTruthy()
+      expect(screen.getByText("Released: 2010")).toBeTruthy()
 
       // Hints (Actors) - Check that the Actors component rendered its content
       expect(screen.getByText("Leonardo DiCaprio")).toBeTruthy()
@@ -123,6 +124,18 @@ describe("Facts Component", () => {
   })
 
   describe("Interactions", () => {
+    it("does not make malformed title IDs into external links", () => {
+      renderWithTheme(<Facts item={{ ...mockTriviaItem, metadata: { imdb_id: "tt1375666/../../other" } }} />)
+      expect(screen.queryByRole("link", { name: "Open IMDb page for Inception" })).toBeNull()
+      fireEvent.press(screen.getByText("Inception"))
+      expect(mockOpenLink).not.toHaveBeenCalled()
+    })
+
+    it("shows the exact release year in compact history rather than substituting the decade", () => {
+      renderWithTheme(<Facts compact item={{ ...mockTriviaItem, hints: [...mockTriviaItem.hints, { type: "decade", label: "Decade", value: "2010s" }] }} />)
+      expect(screen.getByText("Released: 2010")).toBeTruthy()
+      expect(screen.queryByText("Released: 2010s")).toBeNull()
+    })
     it("should call openLink and analytics when the linkable header is pressed", () => {
       renderWithTheme(<Facts item={mockTriviaItem} />)
 

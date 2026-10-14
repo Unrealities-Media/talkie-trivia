@@ -14,6 +14,7 @@ import { Image } from "expo-image"
 import { BasicTriviaItem, TriviaItem } from "../models/trivia"
 import { API_CONFIG } from "../config/constants"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
+import { releaseYear as getReleaseYear } from "../utils/dateDisplay"
 
 if (
   Platform.OS === "android" &&
@@ -26,6 +27,7 @@ interface ItemProps {
   item: BasicTriviaItem
   detailedItem: TriviaItem | null
   isDisabled: boolean
+  isGuessed?: boolean
   isExpanded: boolean
   onSelect: (item: BasicTriviaItem) => void
   onLongPress: (item: BasicTriviaItem) => void
@@ -34,7 +36,7 @@ interface ItemProps {
 const defaultPoster = require("../../assets/movie_default.png")
 
 const PickerItem = memo<ItemProps>(
-  ({ item, detailedItem, isDisabled, isExpanded, onSelect, onLongPress }) => {
+  ({ item, detailedItem, isDisabled, isGuessed = false, isExpanded, onSelect, onLongPress }) => {
     const styles = useStyles(themedStyles)
 
     useEffect(() => {
@@ -43,9 +45,8 @@ const PickerItem = memo<ItemProps>(
       }
     }, [isExpanded])
 
-    const releaseYear = item.releaseDate
-      ? ` (${item.releaseDate.toString().substring(0, 4)})`
-      : ""
+    const year = getReleaseYear(item.releaseDate)
+    const releaseYear = year ? ` (${year})` : ""
     const titleWithYear = `${item.title}${releaseYear}`
 
     const imageSource = item.posterPath
@@ -61,7 +62,8 @@ const PickerItem = memo<ItemProps>(
           testID={`result-item-${item.title}`}
           accessible
           accessibilityRole="button"
-          accessibilityLabel={`Select and guess: ${item.title}. Long press to preview.`}
+          accessibilityLabel={isGuessed ? `${titleWithYear}. Already guessed.` : `Select and guess: ${titleWithYear}. Long press to preview.`}
+          accessibilityState={{ disabled: isDisabled || isGuessed }}
           onPress={() => onSelect(item)}
           onLongPress={() => onLongPress(item)}
           delayLongPress={200}
@@ -69,7 +71,7 @@ const PickerItem = memo<ItemProps>(
             styles.resultItem,
             pressed && styles.pressedItem,
           ]}
-          disabled={isDisabled}
+          disabled={isDisabled || isGuessed}
         >
           <View style={styles.resultItemContent}>
             <View style={styles.imageWrapper}>
@@ -82,10 +84,9 @@ const PickerItem = memo<ItemProps>(
             </View>
             <Text
               style={styles.unselected}
-              numberOfLines={2}
-              ellipsizeMode="tail"
             >
               {titleWithYear}
+              {isGuessed ? " — Already guessed" : ""}
             </Text>
           </View>
 
@@ -100,12 +101,12 @@ const PickerItem = memo<ItemProps>(
                 />
               </View>
               <View style={styles.expandedInfo}>
-                <Text style={styles.expandedTitle} numberOfLines={3}>
+                <Text style={styles.expandedTitle}>
                   {detailedItem.title}
                 </Text>
                 <Text style={styles.expandedYear}>
                   Release Year:{" "}
-                  {new Date(detailedItem.releaseDate).getFullYear()}
+                  {getReleaseYear(detailedItem.releaseDate) || "Unknown"}
                 </Text>
                 <Text style={styles.expandedHint}>
                   Tap this item to select.
@@ -192,7 +193,6 @@ const themedStyles = (theme: Theme): PickerItemStyles => ({
   },
   expandedInfo: {
     flex: 1,
-    height: "100%",
     justifyContent: "center",
   },
   expandedTitle: {
@@ -209,7 +209,7 @@ const themedStyles = (theme: Theme): PickerItemStyles => ({
   },
   expandedHint: {
     ...theme.typography.caption,
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
     fontFamily: "Arvo-Italic",
   },
 })

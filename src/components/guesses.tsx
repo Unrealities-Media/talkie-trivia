@@ -1,6 +1,5 @@
 import React, { memo, useMemo, useCallback } from "react"
 import { View, ViewStyle } from "react-native"
-import { FlashList, ListRenderItemInfo } from "@shopify/flash-list"
 import { BasicTriviaItem } from "../models/trivia"
 import { useGameStore } from "../state/gameStore"
 import { HintInfo, PlayerGame, Guess } from "../models/game"
@@ -9,7 +8,7 @@ import { GuessRow } from "./guess/guessRow"
 import { EmptyGuessTile } from "./guess/emptyGuessTile"
 import { SkeletonRow } from "./guess/skeletonRow"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
-import { spacing, responsive } from "../styles/global"
+import { isCompletedGame } from "../utils/resultSummary"
 
 type GuessResult = {
   itemId: number | string
@@ -28,8 +27,6 @@ type ListItem =
   | { type: "guess"; guess: Guess; index: number }
   | { type: "empty"; index: number }
   | { type: "skeleton"; index: number }
-
-const ESTIMATED_ROW_HEIGHT = responsive.scale(44) + spacing.small
 
 const GuessesContainer = memo(
   ({
@@ -52,6 +49,7 @@ const GuessesContainer = memo(
 
     const { guesses, guessesMax, triviaItem } = currentGame
     const correctItemId = triviaItem?.id ?? 0
+    const completed = isCompletedGame(currentGame)
 
     const listData: ListItem[] = useMemo(() => {
       const max = guessesMax || 5
@@ -62,6 +60,8 @@ const GuessesContainer = memo(
         }))
       }
 
+      if (completed) return guesses.map((guess, index) => ({ type: "guess", guess, index }))
+
       const listItems: ListItem[] = []
       for (let i = 0; i < max; i++) {
         if (guesses[i]) {
@@ -71,10 +71,10 @@ const GuessesContainer = memo(
         }
       }
       return listItems
-    }, [isDataLoading, guesses, guessesMax])
+    }, [isDataLoading, guesses, guessesMax, completed])
 
     const renderListItem = useCallback(
-      ({ item }: ListRenderItemInfo<ListItem>) => {
+      (item: ListItem) => {
         switch (item.type) {
           case "skeleton":
             return <SkeletonRow index={item.index} />
@@ -103,22 +103,11 @@ const GuessesContainer = memo(
       [lastGuessResult, guesses.length, items, correctItemId]
     )
 
-    const keyExtractor = useCallback(
-      (item: ListItem) => item.index.toString(),
-      []
-    )
-
-    const listContainerHeight = (guessesMax || 5) * ESTIMATED_ROW_HEIGHT
-
+    // A game has at most five rows. Let text and feedback determine their height
+    // inside the screen's ScrollView; an estimated list height clips large text.
     return (
-      <View style={[styles.listWrapper, { height: listContainerHeight }]}>
-        <FlashList
-          data={listData}
-          renderItem={renderListItem}
-          keyExtractor={keyExtractor}
-          contentContainerStyle={styles.container}
-          scrollEnabled={false}
-        />
+      <View style={[styles.listWrapper, styles.container]}>
+        {listData.map(item => <React.Fragment key={item.index}>{renderListItem(item)}</React.Fragment>)}
       </View>
     )
   }

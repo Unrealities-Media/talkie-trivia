@@ -57,7 +57,7 @@ describe("UI Component: Button", () => {
       )
       expect(text.props.style).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ color: lightColors.primary }),
+          expect.objectContaining({ color: lightColors.accentText }),
         ])
       )
     })

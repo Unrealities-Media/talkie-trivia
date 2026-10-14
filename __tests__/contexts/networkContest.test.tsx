@@ -1,6 +1,6 @@
 import React from "react"
-import { View, Text } from "react-native"
-import { render, waitFor, screen, act } from "@testing-library/react-native"
+import { View, Text, Button } from "react-native"
+import { render, waitFor, screen, act, fireEvent } from "@testing-library/react-native"
 import { NetworkProvider, useNetwork } from "../../src/contexts/networkContext"
 import * as Network from "expo-network"
 import { analyticsService } from "../../src/utils/analyticsService"
@@ -14,9 +14,10 @@ jest.mock("../../src/utils/analyticsService")
 
 // Helper Component to consume the context
 const TestComponent = () => {
-  const { isNetworkConnected } = useNetwork()
+  const { isNetworkConnected, refreshNetwork } = useNetwork()
   return (
     <View>
+      <Button title="Retry" onPress={refreshNetwork} />
       <Text testID="status">
         {isNetworkConnected === null
           ? "Unknown"
@@ -90,12 +91,28 @@ describe("Context: NetworkContext", () => {
       </NetworkProvider>
     )
 
-    // Should default to false (Disconnected) on error as per implementation
+    // A failed reachability probe is not proof of being offline.
     await waitFor(() => {
-      expect(screen.getByTestId("status").children[0]).toBe("Disconnected")
+      expect(screen.getByTestId("status").children[0]).toBe("Unknown")
     })
 
     consoleSpy.mockRestore()
+  })
+  it("rechecks connectivity on Retry and uses connection state when reachability is unknown", async () => {
+    ;(Network.getNetworkStateAsync as jest.Mock).mockResolvedValueOnce({ isInternetReachable: false }).mockResolvedValueOnce({ isInternetReachable: null, isConnected: true })
+    render(<NetworkProvider><TestComponent /></NetworkProvider>)
+    await waitFor(() => screen.getByText("Disconnected"))
+    fireEvent.press(screen.getByText("Retry"))
+    await waitFor(() => screen.getByText("Connected"))
+    expect(Network.getNetworkStateAsync).toHaveBeenCalledTimes(2)
+  })
+  it("ignores an initial probe that resolves after a newer connection event", async () => {
+    let finish!: (value: unknown) => void
+    ;(Network.getNetworkStateAsync as jest.Mock).mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+    render(<NetworkProvider><TestComponent /></NetworkProvider>)
+    act(() => listenerCallback!({ isInternetReachable: true }))
+    await act(async () => finish({ isInternetReachable: false }))
+    expect(screen.getByText("Connected")).toBeTruthy()
   })
 
   it("should update state when network listener fires", async () => {

@@ -1,0 +1,108 @@
+name: Native build verification
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_VARIANT: development
+  EXPO_NO_DOTENV: '1'
+  EXPO_NO_TELEMETRY: '1'
+  CI: '1'
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm run test:config
+      - run: npm run native:generate -- android
+      - name: Test APK alignment verifier
+        run: python3 -m unittest discover -s scripts -p 'test_android_page_size.py'
+      # Release compiles/bundles the actual JS and native dependencies. No upload
+      # credential is provided: the config plugin leaves the artifact unsigned.
+      - name: Compile unsigned Android release (ARM64)
+        working-directory: android
+        run: bash gradlew :app:assembleRelease --no-daemon --console=plain -PreactNativeArchitectures=arm64-v8a
+      - name: Verify packaged 16 KB alignment
+        run: |
+          NDK_VERSION=$(node -p 'require("./plugins/withAndroidPageSize.cjs").ndkVersion')
+          python3 scripts/verify-android-page-size.py android/app/build/outputs/apk/release/app-release-unsigned.apk \
+            --readelf "$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" \
+            --zipalign "$ANDROID_HOME/build-tools/36.0.0/zipalign" \
+            --report .expo/android-page-size-report.json
+      - name: Retain Android build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-diagnostics
+          path: |
+            android/build/reports/
+            .expo/react-native-source/ReactAndroid/build/reports/
+            .expo/react-native-source/ReactAndroid/hermes-engine/build/build-hermesc.log
+            .expo/android-page-size-report.json
+          retention-days: 5
+
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - name: Check Xcode and CocoaPods
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphonesimulator --show-sdk-version
+          pod --version
+      - run: npm ci
+      - run: npm run native:generate -- ios
+      - name: Install native dependencies
+        working-directory: ios
+        run: pod install
+      - name: Compile unsigned iOS simulator release
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ios/TalkieDev.xcworkspace -scheme TalkieDev \
+            -configuration Release -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath .expo/ios-build \
+            -resultBundlePath .expo/ios-build-results.xcresult \
+            CODE_SIGNING_ALLOWED=NO build | tee .expo/ios-build.log
+      - name: Retain iOS build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-diagnostics
+          path: |
+            .expo/ios-build.log
+            .expo/ios-build-results.xcresult
+          retention-days: 5

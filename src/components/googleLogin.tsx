@@ -5,9 +5,10 @@ import { hapticsService } from "../utils/hapticsService"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Button } from "./ui/button"
 import { Typography } from "./ui/typography"
+import { isLocalDemoIdentity } from "../services/localDemoIdentity"
 
 const GoogleLogin: React.FC = memo(() => {
-  const { player, user, handleSignIn, handleSignOut, isSigningIn, error } =
+  const { player, user, handleSignIn, handleSignOut, isSigningIn, accountError } =
     useAuth()
   const styles = useStyles(themedStyles)
 
@@ -16,13 +17,13 @@ const GoogleLogin: React.FC = memo(() => {
 
   const buttonText = isSignedIn
     ? `Sign Out ${displayName}`.trim()
-    : "Sign In with Google"
+    : isLocalDemoIdentity() ? "Sign in to local demo" : "Sign In with Google"
   const accessibilityLabel = isSignedIn
     ? `Sign out ${displayName}`.trim()
-    : "Sign in with Google"
+    : isLocalDemoIdentity() ? "Sign in to local demo" : "Sign in with Google"
   const accessibilityHint = isSignedIn
     ? "Signs you out of the game"
-    : "Signs you in with your Google account"
+    : isLocalDemoIdentity() ? "Uses a fake account in the local emulator" : "Signs you in with your Google account"
 
   const handlePress = () => {
     hapticsService.medium()
@@ -46,9 +47,9 @@ const GoogleLogin: React.FC = memo(() => {
         accessibilityRole="button"
         accessibilityState={{ disabled: isSigningIn }}
       />
-      {error && (
+      {accountError && (
         <Typography variant="error" style={styles.errorText}>
-          {error}
+          {accountError}
         </Typography>
       )}
     </View>

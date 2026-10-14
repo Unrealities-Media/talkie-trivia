@@ -12,7 +12,7 @@ const TitleHeader: React.FC<TitleHeaderProps> = memo(({ title }) => {
 
   return (
     <View style={styles.container}>
-      <Typography variant="h2" style={styles.header}>
+      <Typography variant="h2" accessibilityRole="header" style={styles.header}>
         {title}
       </Typography>
     </View>
@@ -29,11 +29,10 @@ const themedStyles = (theme: Theme): TitleHeaderStyles => ({
     justifyContent: "center",
     alignItems: "flex-start",
     paddingVertical: theme.responsive.scale(4),
-    flex: 1,
   },
   header: {
     fontSize: theme.responsive.responsiveFontSize(18),
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
     textAlign: "left",
   },
 })

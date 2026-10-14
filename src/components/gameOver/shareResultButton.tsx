@@ -5,6 +5,7 @@ import { shareGameResult } from "../../utils/shareUtils"
 import { Button } from "../ui/button"
 import { useStyles, Theme } from "../../utils/hooks/useStyles"
 import { u } from "../../styles/utils"
+import { savedScore } from "../../utils/resultSummary"
 
 interface ShareResultButtonProps {
   playerGame: PlayerGame
@@ -38,6 +39,7 @@ const ShareResultButton: React.FC<ShareResultButtonProps> = ({
         title="Share Your Result"
         onPress={handleShare}
         isLoading={isSharing}
+        disabled={savedScore(playerGame) === null}
         variant="tertiary"
         style={styles.button}
       />

@@ -63,7 +63,7 @@ export const DIFFICULTY_MODES: Record<DifficultyLevel, DifficultyMode> = {
   LEVEL_2: {
     label: "Easy",
     description:
-      "Reveal clues gradually. You can use earned hint points to reveal specific hints.",
+      "Reveal clues gradually. Each game includes three hints; each hint reduces your winning score by 50 points.",
     guessesMax: 5,
     hintStrategy: "USER_SPEND",
     scoreMultiplier: 0.55, // Max score: 550
@@ -90,7 +90,7 @@ export const DIFFICULTY_MODES: Record<DifficultyLevel, DifficultyMode> = {
   LEVEL_5: {
     label: "Extreme",
     description:
-      "The ultimate challenge. You only get 3 guesses, clues are revealed more slowly, and no hints are available.",
+      "The ultimate challenge. You only get 3 guesses and no hints are available.",
     guessesMax: 3,
     hintStrategy: "EXTREME_CHALLENGE",
     scoreMultiplier: 1.0, // Max score: 1000

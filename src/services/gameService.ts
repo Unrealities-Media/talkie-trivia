@@ -1,224 +1,133 @@
-import {
-  doc,
-  getDoc,
-  setDoc,
-  collection,
-  query,
-  orderBy,
-  limit,
-  getDocs,
-} from "firebase/firestore"
+import { doc, getDoc, setDoc, collection, query, orderBy, limit, getDocs, documentId, startAfter } from "firebase/firestore"
 import { getFunctions, httpsCallable } from "firebase/functions"
-import { db, app } from "./firebaseClient"
-import Constants from "expo-constants"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import uuid from "react-native-uuid"
+import { db, app, auth } from "./firebaseClient"
 import { playerConverter } from "../utils/firestore/converters/player"
 import { playerGameConverter } from "../utils/firestore/converters/playerGame"
-import { playerStatsConverter } from "../utils/firestore/converters/playerStats"
 import { gameHistoryEntryConverter } from "../utils/firestore/converters/gameHistoryEntry"
 import Player from "../models/player"
 import PlayerStats from "../models/playerStats"
 import { PlayerGame } from "../models/game"
-import { TriviaItem } from "../models/trivia"
-import { FIRESTORE_COLLECTIONS } from "../config/constants"
 import { GameHistoryEntry } from "../models/gameHistory"
-import { defaultPlayerGame } from "../models/default"
-import { DEFAULT_DIFFICULTY } from "../config/difficulty"
+import { DifficultyLevel } from "../config/difficulty"
+import { version as catalogVersion } from "../data/catalogVersion.json"
+import { deletionStorage } from "./deletionStorage"
+import { mergeStorage } from "./mergeStorage"
+
+export interface GameResponse { game: PlayerGame; stats: PlayerStats; challengeId: string; resetAt: string; serverNow: string; receivedAtMonotonic: number }
+export const HISTORY_PAGE_SIZE = 20
+export interface HistoryCursor { uid: string; dateId: string; id: string }
+export interface HistoryPage { entries: GameHistoryEntry[]; next: HistoryCursor | null }
+export type ActionInput = { type: "guess"; itemId: number } | { type: "hint"; hintType: string } | { type: "giveUp" }
+interface PendingAction {
+  challengeId: string; expectedRevision: number; actionId: string
+  type: ActionInput["type"]; itemId?: number; hintType?: string
+}
+const pendingKey = (uid: string) => `game-action-v2:${uid}`
+const locks = new Map<string, Promise<unknown>>()
+function serialize<T>(uid: string, operation: () => Promise<T>): Promise<T> {
+  const next = (locks.get(uid) || Promise.resolve()).catch(() => undefined).then(operation)
+  locks.set(uid, next)
+  void next.finally(() => { if (locks.get(uid) === next) locks.delete(uid) }).catch(() => undefined)
+  return next
+}
+function requireUser(uid: string) {
+  if (auth.currentUser?.uid !== uid) throw new Error("Your account changed. Please reopen the game.")
+}
+function decode(data: unknown, uid: string): GameResponse {
+  const result = data as GameResponse
+  if (!result?.game || result.game.playerID !== uid || !result.stats || !Array.isArray(result.game.guesses) || !Number.isInteger(result.game.revision) ||
+    !Number.isFinite(Date.parse(result.serverNow)) || !Number.isFinite(Date.parse(result.resetAt)) ||
+    Date.parse(result.resetAt) !== Date.parse(`${result.challengeId}T00:00:00Z`) + 86400000) {
+    throw new Error("The saved game could not be read. Please try again.")
+  }
+  return { ...result, receivedAtMonotonic: performance.now(), game: { ...result.game, startDate: new Date(result.game.startDate), endDate: new Date(result.game.endDate) } }
+}
+async function call(name: string, data: unknown, uid: string): Promise<GameResponse> {
+  requireUser(uid)
+  if ((await deletionStorage.read())?.uid === uid) throw new Error("Account deletion is in progress. Open Profile for its status.")
+  if (await mergeStorage.read()) throw new Error("Finish account recovery before playing.")
+  const result = await httpsCallable(getFunctions(app), name)(data)
+  requireUser(uid)
+  return decode(result.data, uid)
+}
+async function replay(uid: string): Promise<GameResponse | null> {
+  requireUser(uid)
+  const stored = await AsyncStorage.getItem(pendingKey(uid))
+  if (!stored) return null
+  const pending: PendingAction = JSON.parse(stored)
+  try {
+    const result = await call("applyGameAction", pending, uid)
+    await AsyncStorage.removeItem(pendingKey(uid))
+    return result
+  } catch (error) {
+    const code = (error as { code?: string }).code?.replace("functions/", "")
+    // A rejected command did not commit. Transport failures retain the exact ID
+    // and revision for safe retry, including commit-with-lost-response failures.
+    if (["invalid-argument", "aborted", "already-exists", "failed-precondition", "not-found"].includes(code || "")) {
+      await AsyncStorage.removeItem(pendingKey(uid))
+    }
+    throw error
+  }
+}
 
 export const gameService = {
-  ensurePlayerExists: async (
-    playerId: string,
-    playerName: string
-  ): Promise<Player> => {
-    const playerRef = doc(
-      db,
-      FIRESTORE_COLLECTIONS.PLAYERS,
-      playerId
-    ).withConverter(playerConverter)
-    const playerSnap = await getDoc(playerRef)
-    if (playerSnap.exists()) {
-      return playerSnap.data()
-    } else {
-      const newPlayer = new Player(playerId, playerName)
-      await setDoc(playerRef, newPlayer)
-      return newPlayer
-    }
+  ensurePlayerExists: async (playerId: string, playerName: string): Promise<Player> => {
+    const ref = doc(db, "players", playerId).withConverter(playerConverter)
+    const snapshot = await getDoc(ref)
+    if (snapshot.exists()) return snapshot.data()
+    const player = new Player(playerId, (playerName.trim() || "Player").slice(0, 50))
+    await setDoc(ref, player)
+    return player
   },
-
-  fetchOrCreatePlayerGame: async (
-    playerId: string,
-    dateId: string,
-    dailyItem: TriviaItem,
-    guessesMax: number
-  ): Promise<PlayerGame> => {
-    const playerGameRef = doc(
-      db,
-      FIRESTORE_COLLECTIONS.PLAYER_GAMES,
-      `${playerId}-${dateId}`
-    ).withConverter(playerGameConverter)
-    const gameSnap = await getDoc(playerGameRef)
-
-    if (gameSnap.exists()) {
-      const existingGame = gameSnap.data()
-      existingGame.guessesMax = guessesMax
-      return existingGame
-    } else {
-      const newPlayerGame: PlayerGame = {
-        ...defaultPlayerGame,
-        id: `${playerId}-${dateId}`,
-        playerID: playerId,
-        triviaItem: dailyItem,
-        startDate: new Date(),
-        endDate: new Date(),
-        guessesMax: guessesMax,
-        difficulty: DEFAULT_DIFFICULTY,
-        hintsUsed: {},
-      }
-      await setDoc(playerGameRef, newPlayerGame)
-      return newPlayerGame
-    }
+  startGame: (uid: string, difficulty: DifficultyLevel): Promise<GameResponse> => serialize(uid, async () => {
+    await replay(uid)
+    return call("startGame", { difficulty, catalogVersion }, uid)
+  }),
+  applyAction: (game: PlayerGame, action: ActionInput): Promise<GameResponse> => serialize(game.playerID, async () => {
+    requireUser(game.playerID)
+    if ((await deletionStorage.read())?.uid === game.playerID) throw new Error("Account deletion is in progress. Open Profile for its status.")
+    if (await mergeStorage.read()) throw new Error("Finish account recovery before playing.")
+    if (!game.challengeId || game.revision === undefined) throw new Error("Reload this challenge before playing.")
+    if (await AsyncStorage.getItem(pendingKey(game.playerID))) throw new Error("Retry your pending move before continuing.")
+    const pending: PendingAction = { ...action, challengeId: game.challengeId, expectedRevision: game.revision, actionId: String(uuid.v4()) }
+    // Persist before issuing the request. If storage fails, nothing is sent.
+    await AsyncStorage.setItem(pendingKey(game.playerID), JSON.stringify(pending))
+    return (await replay(game.playerID))!
+  }),
+  resumePendingAction: (uid: string) => serialize(uid, () => replay(uid)),
+  clearLocalProgress: (uid: string) => serialize(uid, () => AsyncStorage.removeItem(pendingKey(uid))),
+  fetchPlayerStats: async (uid: string): Promise<PlayerStats | null> => {
+    requireUser(uid)
+    const snapshot = await getDoc(doc(db, "players", uid, "privateStats", "summary"))
+    requireUser(uid)
+    return snapshot.exists() ? snapshot.data() as PlayerStats : null
   },
-
-  fetchPlayerGameById: async (
-    playerGameId: string
-  ): Promise<PlayerGame | null> => {
-    // --- E2E MOCK ---
-    const isE2E =
-      Constants.expoConfig?.extra?.isE2E === true ||
-      process.env.EXPO_PUBLIC_IS_E2E === "true"
-
-    if (isE2E) {
-      return {
-        ...defaultPlayerGame,
-        id: playerGameId,
-        triviaItem: {
-          id: 27205, // Inception ID
-          title: "Inception",
-          description: "A thief who steals corporate secrets...",
-          posterPath: "/9gk7admal4zlDun9ncJ7sUCKRnl.jpg",
-          releaseDate: "2010-07-16",
-          metadata: { imdb_id: "tt1375666" },
-          hints: [],
-        },
-        guesses: [
-          { itemId: 27205, hintInfo: [] }, // Winning guess
-        ],
-        correctAnswer: true,
-        guessesMax: 5,
-        difficulty: "LEVEL_4",
-      }
-    }
-
-    const playerGameRef = doc(
-      db,
-      FIRESTORE_COLLECTIONS.PLAYER_GAMES,
-      playerGameId
-    ).withConverter(playerGameConverter)
-    const gameSnap = await getDoc(playerGameRef)
-    return gameSnap.exists() ? gameSnap.data() : null
+  fetchPlayerGameById: async (gameId: string): Promise<PlayerGame | null> => {
+    const uid = auth.currentUser?.uid
+    if (!uid || !/^movies_\d{4}-\d{2}-\d{2}$/.test(gameId)) return null
+    const ref = doc(db, "players", uid, "games", gameId).withConverter(playerGameConverter)
+    const snapshot = await getDoc(ref)
+    return snapshot.exists() ? snapshot.data() : null
   },
-
-  fetchOrCreatePlayerStats: async (playerId: string): Promise<PlayerStats> => {
-    const statsRef = doc(
-      db,
-      FIRESTORE_COLLECTIONS.PLAYER_STATS,
-      playerId
-    ).withConverter(playerStatsConverter)
-    const statsSnap = await getDoc(statsRef)
-    if (statsSnap.exists()) {
-      return statsSnap.data()
-    } else {
-      const newPlayerStats: PlayerStats = {
-        id: playerId,
-        currentStreak: 0,
-        games: 0,
-        maxStreak: 0,
-        wins: [0, 0, 0, 0, 0],
-        hintsAvailable: 3,
-        hintsUsedCount: 0,
-        allTimeScore: 0,
-      }
-      await setDoc(statsRef, newPlayerStats)
-      return newPlayerStats
+  fetchGameHistory: async (uid: string, cursor: HistoryCursor | null = null): Promise<HistoryPage> => {
+    requireUser(uid)
+    if (cursor && (cursor.uid !== uid || !/^\d{4}-\d{2}-\d{2}$/.test(cursor.dateId) ||
+      !Number.isFinite(Date.parse(`${cursor.dateId}T00:00:00Z`)) ||
+      new Date(`${cursor.dateId}T00:00:00Z`).toISOString().slice(0, 10) !== cursor.dateId ||
+      !cursor.id || cursor.id.length > 200 || cursor.id.includes("/"))) {
+      throw new Error("Refresh this account's game history.")
     }
-  },
-
-  /**
-   * Securely submits the game result to Firebase Cloud Functions.
-   * Server calculates score, updates stats, and verifies integrity.
-   */
-  submitGameResult: async (playerGame: PlayerGame): Promise<void> => {
-    // --- CHECK FOR E2E MODE ---
-    const isE2E =
-      Constants.expoConfig?.extra?.isE2E === true ||
-      process.env.EXPO_PUBLIC_IS_E2E === "true"
-
-    if (isE2E) {
-      console.log("[E2E] Intercepting submitGameResult. Simulating success.")
-      return
-    }
-
-    const functions = getFunctions(app)
-    const submitFunction = httpsCallable(functions, "submitGameResult")
-
-    // Serialize dates to ISO strings for transport
-    const payload = {
-      ...playerGame,
-      startDate:
-        playerGame.startDate instanceof Date
-          ? playerGame.startDate.toISOString()
-          : playerGame.startDate,
-      endDate:
-        playerGame.endDate instanceof Date
-          ? playerGame.endDate.toISOString()
-          : playerGame.endDate,
-    }
-
-    await submitFunction({ playerGame: payload })
-  },
-
-  /**
-   * @deprecated Used for local optimistic updates only if needed.
-   * Direct writes are now blocked by security rules for stats/history.
-   */
-  savePlayerProgress: async (
-    playerGame: PlayerGame,
-    playerStats: PlayerStats,
-    gameHistoryEntry: GameHistoryEntry | null = null
-  ) => {
-    throw new Error("Client-side save is deprecated. Use submitGameResult.")
-  },
-
-  fetchGameHistory: async (playerId: string): Promise<GameHistoryEntry[]> => {
-    // --- E2E MOCK ---
-    const isE2E =
-      Constants.expoConfig?.extra?.isE2E === true ||
-      process.env.EXPO_PUBLIC_IS_E2E === "true"
-
-    if (isE2E) {
-      // Return a fake history entry matching the E2E flow (Inception)
-      return [
-        {
-          dateId: new Date().toISOString().split("T")[0],
-          itemId: 27205, // Inception's real TMDB ID
-          itemTitle: "Inception",
-          posterPath: "/9gk7admal4zlDun9ncJ7sUCKRnl.jpg",
-          wasCorrect: true,
-          gaveUp: false,
-          guessCount: 1,
-          guessesMax: 5,
-          difficulty: "LEVEL_4", // Hard mode from test
-          score: 850,
-          gameMode: "movies",
-        },
-      ]
-    }
-
-    const historyRef = collection(
-      db,
-      `${FIRESTORE_COLLECTIONS.PLAYERS}/${playerId}/${FIRESTORE_COLLECTIONS.GAME_HISTORY}`
-    ).withConverter(gameHistoryEntryConverter)
-    const q = query(historyRef, orderBy("dateId", "desc"), limit(20))
-    const querySnapshot = await getDocs(q)
-    return querySnapshot.docs.map((doc) => doc.data())
+    const ref = collection(db, "players", uid, "gameHistoryV2").withConverter(gameHistoryEntryConverter)
+    // A stable tie-breaker and one lookahead row avoid skipped records and empty
+    // trailing pages, including while imported results share a date.
+    const snapshot = await getDocs(query(ref, orderBy("dateId", "desc"), orderBy(documentId(), "desc"),
+      ...(cursor ? [startAfter(cursor.dateId, cursor.id)] : []), limit(HISTORY_PAGE_SIZE + 1)))
+    requireUser(uid)
+    const docs = snapshot.docs.slice(0, HISTORY_PAGE_SIZE)
+    const entries = docs.map(item => item.data())
+    return { entries, next: snapshot.docs.length > HISTORY_PAGE_SIZE
+      ? { uid, dateId: entries[entries.length - 1].dateId, id: docs[docs.length - 1].id } : null }
   },
 }

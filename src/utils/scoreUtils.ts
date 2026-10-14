@@ -5,6 +5,7 @@ const MAX_SCORE = 1000
 const HINT_PENALTY = 50
 
 export function calculateScore(playerGame: PlayerGame): number {
+  if (playerGame.statsProcessed && typeof playerGame.score === "number") return playerGame.score
   if (!playerGame.correctAnswer) {
     return 0
   }

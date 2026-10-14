@@ -7,6 +7,11 @@ import Player from "../models/player"
 export type GameStatus = "playing" | "revealing" | "gameOver"
 
 export interface GameSlice {
+  syncStatus: "idle" | "saving" | "pending"
+  syncError: string | null
+  retryPendingAction: () => Promise<void>
+  resetSession: () => void
+  resetDeadline: number | null
   playerGame: PlayerGame
   playerStats: PlayerStats
   gameStatus: GameStatus
@@ -19,9 +24,9 @@ export interface GameSlice {
   } | null
 
   initializeGame: (player: Player) => Promise<void>
-  makeGuess: (selectedItem: BasicTriviaItem) => void
-  useHint: (hintType: string) => void
-  giveUp: () => void
+  makeGuess: (selectedItem: BasicTriviaItem) => Promise<void>
+  useHint: (hintType: string) => Promise<void>
+  giveUp: () => Promise<void>
   processGameOver: () => Promise<void>
   completeRevealSequence: () => void
 }
@@ -47,6 +52,7 @@ export interface UISlice {
 }
 
 export interface SettingsSlice {
+  nextDifficulty: DifficultyLevel
   gameMode: GameMode
   difficulty: DifficultyLevel
   setGameMode: (mode: GameMode) => Promise<void>

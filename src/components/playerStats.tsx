@@ -77,10 +77,10 @@ const themedStyles = (theme: Theme): PlayerStatsStyles => ({
     width: "100%",
   },
   scoreText: {
-    color: theme.colors.tertiary,
+    color: theme.colors.accentText,
   },
   streakText: {
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
   },
 })
 

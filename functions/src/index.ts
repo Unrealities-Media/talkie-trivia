@@ -1,131 +1,120 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https"
+import { onSchedule } from "firebase-functions/v2/scheduler"
+import { getAuth } from "firebase-admin/auth"
 import { initializeApp } from "firebase-admin/app"
-import { getFirestore, FieldValue } from "firebase-admin/firestore"
-import { calculateScore } from "./utils/scoreUtils"
+import { getFirestore } from "firebase-admin/firestore"
+import { catalog, catalogVersion } from "./catalog"
+import { publishedContent } from "./publishedContent"
+import { DIFFICULTY_MODES } from "./utils/difficulty"
+import { Game, Stats, completeStats, dateId, hints, initialStats, parseAction, parseStart, record, transition } from "./gameEngine"
+import { user, requireActiveAccount } from "./accountAccess"
+import { accountDeletion } from "./accountDeletion"
+import { gameHistory } from "./gameHistory"
+import { accountMergeLifecycle } from "./accountMergeLifecycle"
+import { gameNow } from "./gameClock"
 
 initializeApp()
 const db = getFirestore()
-
-/**
- * Atomic submission for game results.
- * Calculates score on server to prevent tampering, updates player streaks/stats,
- * and records a history entry for the user.
- */
-export const submitGameResult = onCall(async (request) => {
-  if (!request.auth) {
-    throw new HttpsError(
-      "unauthenticated",
-      "The function must be called while authenticated.",
-    )
-  }
-
-  const { playerGame } = request.data
-  const userId = request.auth.uid
-
-  // Security check: Ensure the user is only submitting results for their own account
-  if (!playerGame || playerGame.playerID !== userId) {
-    throw new HttpsError("permission-denied", "Invalid game data ownership.")
-  }
-
-  const score = calculateScore(playerGame)
-  const isWin = playerGame.correctAnswer
-
-  /**
-   * Date ID Parsing Logic:
-   * Safely derive a YYYY-MM-DD string from the client's startDate.
-   * Handles raw ISO strings, Firestore Timestamp objects, or falls back to server time.
-   */
-  let dateId = new Date().toISOString().split("T")[0]
-  try {
-    const raw = playerGame.startDate
-    if (raw) {
-      if (typeof raw === "string") {
-        dateId = raw.split("T")[0]
-      } else if (raw.seconds) {
-        dateId = new Date(raw.seconds * 1000).toISOString().split("T")[0]
-      } else if (typeof raw.toDate === "function") {
-        dateId = raw.toDate().toISOString().split("T")[0]
-      }
-    }
-  } catch (e) {
-    console.warn("Date parsing error, falling back to server date:", e)
-  }
-
-  const playerStatsRef = db.collection("playerStats").doc(userId)
-  const playerGameRef = db.collection("playerGames").doc(playerGame.id)
-  const historyRef = db
-    .collection("players")
-    .doc(userId)
-    .collection("gameHistory")
-    .doc(dateId)
-
-  try {
-    await db.runTransaction(async (transaction) => {
-      const statsDoc = await transaction.get(playerStatsRef)
-      let stats = statsDoc.exists ? statsDoc.data() : null
-
-      if (!stats) {
-        stats = {
-          id: userId,
-          currentStreak: 0,
-          games: 0,
-          maxStreak: 0,
-          wins: [0, 0, 0, 0, 0],
-          hintsAvailable: 3,
-          hintsUsedCount: 0,
-          allTimeScore: 0,
-        }
-      }
-
-      stats!.games = (stats!.games || 0) + 1
-      stats!.allTimeScore = (stats!.allTimeScore || 0) + score
-
-      if (isWin) {
-        stats!.currentStreak = (stats!.currentStreak || 0) + 1
-        stats!.maxStreak = Math.max(stats!.currentStreak, stats!.maxStreak || 0)
-
-        const guessCount = playerGame.guesses.length
-        if (!stats!.wins) stats!.wins = [0, 0, 0, 0, 0]
-
-        // Map guess count (1-5) to 0-indexed wins array
-        if (guessCount > 0 && guessCount <= 5) {
-          stats!.wins[guessCount - 1] = (stats!.wins[guessCount - 1] || 0) + 1
-        }
-      } else {
-        stats!.currentStreak = 0
-      }
-
-      // Mark game as processed so client doesn't attempt re-submission
-      transaction.set(
-        playerGameRef,
-        { ...playerGame, statsProcessed: true, score },
-        { merge: true },
-      )
-
-      transaction.set(playerStatsRef, stats!)
-
-      transaction.set(historyRef, {
-        dateId,
-        itemId: playerGame.triviaItem.id,
-        itemTitle: playerGame.triviaItem.title || "Unknown Title",
-        posterPath: playerGame.triviaItem.posterPath || "",
-        wasCorrect: isWin,
-        gaveUp: playerGame.gaveUp,
-        guessCount: playerGame.guesses.length,
-        guessesMax: playerGame.guessesMax,
-        difficulty: playerGame.difficulty,
-        score: score,
-        gameMode: playerGame.gameMode || "movies",
-        createdAt: FieldValue.serverTimestamp(),
-      })
-    })
-
-    return { success: true, score }
-  } catch (error: any) {
-    console.error("Transaction failure:", error)
-    throw new HttpsError(
-      "internal",
-      `Could not submit game result: ${error.message}`,
-    )
-  }
+const options = { maxInstances: 10, concurrency: 40, timeoutSeconds: 30, memory: "256MiB" as const }
+// Live rollout requires reconciliation tooling and native-provider acceptance.
+// Recovery stays available for already accepted operations even if rollout stops.
+export const beginAccountMerge = onCall(options, request => {
+  if (process.env.FUNCTIONS_EMULATOR !== "true") throw new HttpsError("failed-precondition", "Combining accounts is not available in this release.")
+  return accountMergeLifecycle(db, getAuth()).begin(request)
 })
+export const getAccountMergeStatus = onCall(options, request => accountMergeLifecycle(db, getAuth()).status(request))
+export const cancelAccountMerge = onCall(options, request => accountMergeLifecycle(db, getAuth()).cancel(request))
+export const resumeAccountMerge = onCall({ ...options, timeoutSeconds: 120 }, request => accountMergeLifecycle(db, getAuth()).resume(request))
+export const retryAccountMerges = onSchedule({
+  schedule: "every 5 minutes", timeZone: "UTC", timeoutSeconds: 540,
+  maxInstances: 1, concurrency: 1, memory: "256MiB", retryCount: 0,
+}, () => accountMergeLifecycle(db, getAuth()).retry())
+const refs = (uid: string, challengeId: string) => ({
+  game: db.doc(`players/${uid}/games/movies_${challengeId}`),
+  stats: db.doc(`players/${uid}/privateStats/summary`),
+  history: db.doc(`players/${uid}/gameHistoryV2/${challengeId}`),
+})
+const response = (game: Game, stats: Stats, now: Date) => ({ game, stats, challengeId: game.challengeId, serverNow: now.toISOString(), resetAt: new Date(Date.parse(`${game.challengeId}T00:00:00Z`) + 86400000).toISOString() })
+
+/** The date, content, paths, and defaults originate on the server. */
+export const startGame = onCall(options, async request => {
+  const uid = user(request)
+  const command = parseStart(request.data)
+  if (command.catalogVersion !== catalogVersion) {
+    throw new HttpsError("failed-precondition", "Please update the app to load the current movie catalog.")
+  }
+  const now = await gameNow(db)
+  const challengeId = now.toISOString().slice(0, 10)
+  const paths = refs(uid, challengeId)
+  return db.runTransaction(async tx => {
+    const [gameDoc, statsDoc, deletion, mergeLock] = await Promise.all([tx.get(paths.game), tx.get(paths.stats), tx.get(db.doc(`accountDeletions/${uid}`)), tx.get(db.doc(`accountMergeLocks/${uid}`))])
+    requireActiveAccount(deletion, mergeLock)
+    const stats = statsDoc.exists ? statsDoc.data() as Stats : initialStats(uid)
+    if (gameDoc.exists) return response(gameDoc.data() as Game, stats, now)
+    const schedule = await tx.get(db.doc(`dailyGames/${challengeId}`))
+    const answer = catalog.get(schedule.data()?.movieId)
+    if (!answer) throw new HttpsError("unavailable", "Today's challenge is not available yet. Please try again soon.")
+    const content = publishedContent(schedule.data(), challengeId, catalogVersion)
+    const description = content.description
+    const game: Game = {
+      schemaVersion: 2, id: `movies_${challengeId}`, challengeId, playerID: uid, gameMode: "movies",
+      difficulty: command.difficulty, guessesMax: DIFFICULTY_MODES[command.difficulty].guessesMax,
+      answerId: answer.i, guesses: [], correctAnswer: false, gaveUp: false, hintsUsed: {},
+      revision: 0, actions: [], startDate: now.toISOString(), endDate: now.toISOString(),
+      statsProcessed: false, score: 0, scoringVersion: 1,
+      triviaItem: { id: answer.i, title: answer.t, description, posterPath: answer.p,
+        releaseDate: answer.y, metadata: { imdb_id: content.imdbId || null, tagline: content.tagline || null }, hints: hints(answer) },
+    }
+    tx.create(paths.game, game)
+    if (!statsDoc.exists) tx.create(paths.stats, stats)
+    return response(game, stats, now)
+  })
+})
+
+/** One bounded, versioned action; transaction retries cannot award extra credit. */
+export const applyGameAction = onCall(options, async request => {
+  const uid = user(request)
+  const action = parseAction(request.data)
+  const now = await gameNow(db)
+  const paths = refs(uid, action.challengeId)
+  return db.runTransaction(async tx => {
+    const [gameDoc, statsDoc, deletion, mergeLock] = await Promise.all([tx.get(paths.game), tx.get(paths.stats), tx.get(db.doc(`accountDeletions/${uid}`)), tx.get(db.doc(`accountMergeLocks/${uid}`))])
+    requireActiveAccount(deletion, mergeLock)
+    if (!gameDoc.exists) throw new HttpsError("not-found", "Start this challenge before playing.")
+    const game = gameDoc.data() as Game
+    if (game.playerID !== uid || game.schemaVersion !== 2 || game.challengeId !== action.challengeId) {
+      throw new HttpsError("failed-precondition", "This saved game needs support assistance.")
+    }
+    const next = transition(game, action, catalog, now)
+    let stats = statsDoc.exists ? statsDoc.data() as Stats : initialStats(uid)
+    if (next === game) return response(game, stats, now)
+    if (action.type === "hint") stats = { ...stats, hintsUsedCount: stats.hintsUsedCount + 1 }
+    if (next.statsProcessed && !game.statsProcessed) {
+      stats = completeStats(stats, next)
+      tx.create(paths.history, gameHistory(next))
+    }
+    tx.set(paths.game, next)
+    tx.set(paths.stats, stats)
+    return response(next, stats, now)
+  })
+})
+
+/** Compatibility name, read-only. Legacy full-game payloads fail closed. */
+export const submitGameResult = onCall(options, async request => {
+  const uid = user(request)
+  const data = record(request.data, ["challengeId"])
+  const challengeId = dateId(data.challengeId)
+  const now = await gameNow(db)
+  const paths = refs(uid, challengeId)
+  return db.runTransaction(async tx => {
+    const [gameDoc, statsDoc, deletion, mergeLock] = await Promise.all([tx.get(paths.game), tx.get(paths.stats), tx.get(db.doc(`accountDeletions/${uid}`)), tx.get(db.doc(`accountMergeLocks/${uid}`))])
+    requireActiveAccount(deletion, mergeLock)
+    if (!gameDoc.exists || !gameDoc.data()?.statsProcessed) throw new HttpsError("failed-precondition", "Finish the challenge before requesting its result.")
+    return response(gameDoc.data() as Game, statsDoc.exists ? statsDoc.data() as Stats : initialStats(uid), now)
+  })
+})
+
+export const deleteAccount = onCall({ ...options, timeoutSeconds: 120 }, request => accountDeletion(db, getAuth()).request(request))
+export const prepareAccountDeletion = onCall(options, request => accountDeletion(db, getAuth()).prepare(request))
+export const getAccountDeletionStatus = onCall(options, request => accountDeletion(db, getAuth()).status(request))
+export const retryAccountDeletions = onSchedule({ schedule: "every 5 minutes", timeZone: "UTC", timeoutSeconds: 540, maxInstances: 1, memory: "256MiB" }, () => accountDeletion(db, getAuth()).retry())

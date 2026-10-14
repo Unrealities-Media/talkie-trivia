@@ -1,52 +1,24 @@
-import React, { useState, useEffect, useCallback, memo } from "react"
+import React, { useState, useEffect, memo } from "react"
 import { View, TextStyle, ViewStyle } from "react-native"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Typography } from "./ui/typography"
+import { useGameStore } from "../state/gameStore"
+import { countdownText } from "../utils/dateDisplay"
 
 const CountdownTimer: React.FC = () => {
   const styles = useStyles(themedStyles)
 
-  const calculateTimeLeft = useCallback(() => {
-    const now = new Date()
-    const tomorrow = new Date(now)
-    tomorrow.setDate(now.getDate() + 1)
-    tomorrow.setHours(0, 0, 0, 0)
-
-    const difference = tomorrow.getTime() - now.getTime()
-
-    let timeLeft = {
-      hours: "00",
-      minutes: "00",
-      seconds: "00",
-    }
-
-    if (difference > 0) {
-      const pad = (num: number) => num.toString().padStart(2, "0")
-      timeLeft = {
-        hours: pad(Math.floor((difference / (1000 * 60 * 60)) % 24)),
-        minutes: pad(Math.floor((difference / 1000 / 60) % 60)),
-        seconds: pad(Math.floor((difference / 1000) % 60)),
-      }
-    }
-
-    return timeLeft
-  }, [])
-
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft())
-
+  const deadline = useGameStore(state => state.resetDeadline)
+  const [, tick] = useState(0)
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft())
-    }, 1000)
-
-    // Clear interval on component unmount
+    const timer = setInterval(() => tick(value => value + 1), 1000)
     return () => clearInterval(timer)
-  }, [calculateTimeLeft])
+  }, [])
 
   return (
     <View style={styles.container}>
       <Typography style={styles.text}>
-        Next game in {timeLeft.hours}:{timeLeft.minutes}:{timeLeft.seconds}
+        {countdownText(deadline)}
       </Typography>
     </View>
   )

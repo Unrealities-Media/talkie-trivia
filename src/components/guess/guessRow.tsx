@@ -7,6 +7,7 @@ import { Guess, HintInfo } from "../../models/game"
 import { useStyles, Theme, useThemeTokens } from "../../utils/hooks/useStyles"
 import { useGuessAnimation } from "../../utils/hooks/useGuessAnimation"
 import { u } from "../../styles/utils"
+import { releaseYear as getReleaseYear } from "../../utils/dateDisplay"
 
 type GuessResult = {
   itemId: number | string
@@ -48,9 +49,8 @@ export const GuessRow = memo(
       (item: BasicTriviaItem) => item.id === guess.itemId
     )
     const guessTitle = guessItem?.title || "Unknown Item"
-    const releaseYear = guessItem?.releaseDate
-      ? ` (${new Date(guessItem.releaseDate).getFullYear()})`
-      : ""
+    const year = getReleaseYear(guessItem?.releaseDate)
+    const releaseYear = year ? ` (${year})` : ""
     const isCorrect = guess.itemId === correctItemId
     const feedbackMessage =
       isLastGuess && !isCorrect ? lastGuessResult?.feedback : null
@@ -98,8 +98,6 @@ export const GuessRow = memo(
           />
           <View style={styles.guessTextContainer}>
             <Text
-              numberOfLines={1}
-              ellipsizeMode="tail"
               style={styles.guessText}
             >
               {`${guessTitle}${releaseYear}`}
@@ -112,7 +110,7 @@ export const GuessRow = memo(
                       name={getIconNameForHint(hint.type)}
                       style={styles.guessHintIcon}
                     />
-                    <Text style={styles.guessHintText} numberOfLines={1}>
+                    <Text style={styles.guessHintText}>
                       {getHintDisplayValue(hint)}
                     </Text>
                   </View>
@@ -165,7 +163,7 @@ const themedStyles = (theme: Theme): GuessRowStyles => ({
     zIndex: 1,
   },
   feedbackText: {
-    color: theme.colors.background,
+    color: theme.colors.onAccent,
     fontFamily: "Arvo-Bold",
     fontSize: theme.responsive.responsiveFontSize(14),
     textAlign: "center",
@@ -210,16 +208,17 @@ const themedStyles = (theme: Theme): GuessRowStyles => ({
     ...u.flexRow,
     ...u.alignCenter,
     marginRight: theme.spacing.medium,
+    maxWidth: "100%",
   },
   guessHintIcon: {
     marginRight: theme.spacing.extraSmall,
     fontSize: theme.responsive.responsiveFontSize(12),
-    color: theme.colors.primary,
-    opacity: 0.8,
+    color: theme.colors.accentText,
   },
   guessHintText: {
+    flexShrink: 1,
     fontFamily: "Arvo-Bold",
     fontSize: theme.responsive.responsiveFontSize(11),
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
   },
 })

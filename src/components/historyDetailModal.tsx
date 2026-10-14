@@ -11,11 +11,13 @@ import { TriviaItem, BasicTriviaItem } from "../models/trivia"
 import { PlayerGame } from "../models/game"
 import { useAuth } from "../contexts/authContext"
 import { gameService } from "../services/gameService"
-import { getGameDataService } from "../services/gameServiceFactory"
+import { MovieDataService } from "../services/movieDataService"
 import { useStyles, Theme, useThemeTokens } from "../utils/hooks/useStyles"
 import { Typography } from "./ui/typography"
 import DetailModal from "./detailModal"
 import Facts from "./facts"
+import ResultSummary from "./gameOver/resultSummary"
+import FullPlotSection from "./gameOver/fullPlotSection"
 
 const GuessesContainer = lazy(() => import("./guesses"))
 
@@ -47,19 +49,18 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
       return
     }
 
+    let active = true
+    setItem(null)
+    setPlayerGame(null)
     const fetchData = async () => {
       setIsLoading(true)
       setError(null)
       try {
-        const dataService = getGameDataService(historyItem.gameMode)
-        const playerGameId = `${player.id}-${historyItem.dateId}`
-
-        const [fetchedItem, fetchedPlayerGame, { basicItems }] =
-          await Promise.all([
-            dataService.getItemById(historyItem.itemId),
-            gameService.fetchPlayerGameById(playerGameId),
-            dataService.getDailyTriviaItemAndLists(),
-          ])
+        const playerGameId = `movies_${historyItem.dateId}`
+        const fetchedPlayerGame = await gameService.fetchPlayerGameById(playerGameId)
+        const fetchedItem = fetchedPlayerGame?.triviaItem
+        const { basicItems } = new MovieDataService().getCatalogLists()
+        if (!active) return
 
         if (fetchedItem && fetchedPlayerGame) {
           setItem(fetchedItem)
@@ -69,14 +70,16 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
           throw new Error("Could not find item or game history details.")
         }
       } catch (e: any) {
+        if (!active) return
         console.error("Failed to fetch history details:", e)
         setError(e.message || "Failed to load history.")
       } finally {
-        setIsLoading(false)
+        if (active) setIsLoading(false)
       }
     }
 
     fetchData()
+    return () => { active = false }
   }, [historyItem, player])
 
   const renderModalContent = () => {
@@ -101,7 +104,9 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {playerGame && <ResultSummary game={playerGame} />}
           <Facts item={item} isScrollEnabled={false} compact={true} />
+          <FullPlotSection overview={item.description} />
           {playerGame && (
             <View style={styles.guessesSection}>
               <View style={styles.divider} />
@@ -132,7 +137,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
 
   return (
     <Suspense fallback={null}>
-      <DetailModal show={!!historyItem} toggleModal={onClose}>
+      <DetailModal show={!!historyItem} toggleModal={onClose} playerGame={playerGame}>
         {renderModalContent()}
       </DetailModal>
     </Suspense>

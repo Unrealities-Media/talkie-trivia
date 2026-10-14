@@ -1,0 +1,23 @@
+{
+  "name": "talkie-trivia-emulator-tests",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.12.0 <25" },
+  "scripts": {
+    "test:dependencies": "node --test dependency-contracts.test.mjs",
+    "test": "node run-emulators.mjs",
+    "test:running": "node run-contracts.mjs"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "6.0.0",
+    "firebase": "13.0.0",
+    "firebase-tools": "15.33.0"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "1.14.6",
+    "re2": "1.27.0",
+    "get-uri": { "basic-ftp": "6.2.3" },
+    "gaxios": { "uuid": "11.1.1" },
+    "@google-cloud/pubsub": { "@opentelemetry/core": "2.8.0" }
+  }
+}

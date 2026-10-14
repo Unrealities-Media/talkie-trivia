@@ -55,6 +55,7 @@ export const Button: React.FC<ButtonProps> = ({
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityLabel={title}
+      accessibilityState={{ disabled: Boolean(isDisabled), busy: isLoading }}
       {...props}
     >
       {isLoading ? (
@@ -84,7 +85,7 @@ const getVariantStyles = (
           borderColor: colors.primary,
         },
         text: {
-          color: colors.primary,
+          color: colors.accentText,
         },
       }
     case "error":
@@ -93,7 +94,7 @@ const getVariantStyles = (
           backgroundColor: colors.error,
         },
         text: {
-          color: colors.background,
+          color: colors.onError,
         },
       }
     case "tertiary":
@@ -102,7 +103,7 @@ const getVariantStyles = (
           backgroundColor: colors.tertiary,
         },
         text: {
-          color: colors.background,
+          color: colors.onAccent,
         },
       }
     case "primary":
@@ -112,7 +113,7 @@ const getVariantStyles = (
           backgroundColor: colors.primary,
         },
         text: {
-          color: colors.background,
+          color: colors.onAccent,
         },
       }
   }

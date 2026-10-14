@@ -1,161 +1,179 @@
-// --- HOISTED MOCKS SETUP ---
-const mockTransaction = {
-  get: jest.fn(),
-  set: jest.fn(),
-  update: jest.fn(),
+// Callable contract tests. The transaction fixture is atomic/serialized, but is
+// not a substitute for the Firestore emulator's retry and authorization tests.
+const mockRecords = new Map<string, any>()
+let mockQueue = Promise.resolve()
+const mockRef = (path: string) => ({ path, get: async () => snapshot(path) })
+function snapshot(path: string) {
+  return { exists: mockRecords.has(path), data: () => structuredClone(mockRecords.get(path)) }
 }
-
-const mockFirestoreInstance = {
-  collection: jest.fn().mockReturnThis(),
-  doc: jest.fn().mockReturnThis(),
-  runTransaction: jest.fn(async (callback) => {
-    return callback(mockTransaction)
-  }),
-}
-
-jest.mock("firebase-admin/app", () => ({
-  initializeApp: jest.fn(),
-}))
-
+jest.mock("firebase-admin/app", () => ({ initializeApp: jest.fn() }))
+jest.mock("firebase-admin/auth", () => ({ getAuth: jest.fn() }))
 jest.mock("firebase-admin/firestore", () => ({
-  getFirestore: jest.fn(() => mockFirestoreInstance),
-  FieldValue: {
-    serverTimestamp: jest.fn(() => "MOCK_TIMESTAMP"),
-  },
-}))
-
-// Mock firebase-functions/v2/https
-jest.mock("firebase-functions/v2/https", () => ({
-  onCall: jest.fn((optionsOrHandler: any, maybeHandler?: any) => {
-    // onCall can be called as onCall(handler) or onCall(options, handler)
-    // Return the handler function in either case
-    const handler = maybeHandler || optionsOrHandler
-    return handler
-  }),
-  HttpsError: class extends Error {
-    code: string
-    constructor(code: string, message: string) {
-      super(message)
-      this.code = code
-    }
-  },
-}))
-
-// Import AFTER all mocks are set up
-import { submitGameResult } from "./index"
-
-describe("Cloud Function: submitGameResult", () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
-  const mockAuth = {
-    uid: "user-123",
-    token: "mock-token",
-  }
-
-  const mockGame = {
-    id: "game-1",
-    playerID: "user-123",
-    correctAnswer: true,
-    difficulty: "LEVEL_3",
-    guesses: [{}, {}],
-    guessesMax: 5,
-    startDate: "2023-01-01",
-    triviaItem: {
-      id: 101,
-      title: "Test Movie",
-      posterPath: "/path.jpg",
+  getFirestore: () => ({
+    doc: mockRef,
+    runTransaction: (fn: any) => {
+      const run = mockQueue.then(async () => {
+        const writes: (() => void)[] = []
+        const result = await fn({
+          get: async (ref: any) => {
+            if (writes.length) throw new Error("Transaction reads must precede writes")
+            return snapshot(ref.path)
+          },
+          create: (ref: any, data: any) => {
+            if (mockRecords.has(ref.path)) throw new Error("Document already exists")
+            writes.push(() => mockRecords.set(ref.path, structuredClone(data)))
+          },
+          set: (ref: any, data: any) => writes.push(() => mockRecords.set(ref.path, structuredClone(data))),
+        })
+        writes.forEach(write => write())
+        return result
+      })
+      mockQueue = run.catch(() => undefined)
+      return run
     },
-  }
-
-  it("should throw error if user is unauthenticated", async () => {
-    // @ts-ignore
-    await expect(
-      submitGameResult({ data: { playerGame: mockGame }, auth: undefined })
-    ).rejects.toThrow("The function must be called while authenticated.")
+  }),
+}))
+jest.mock("firebase-functions/v2/https", () => ({
+  onCall: (_options: any, handler: any) => handler,
+  HttpsError: class extends Error { constructor(public code: string, message: string) { super(message) } },
+}))
+jest.mock("./catalog", () => ({
+  catalogVersion: "a".repeat(64),
+  catalog: new Map([
+    [1, { i: 1, t: "Answer", y: "1999", p: "/a.jpg", d: "Director A", c: ["Actor A"], g: ["Drama"] }],
+    [2, { i: 2, t: "Other", y: "2001", p: "/b.jpg", d: "Director B", c: ["Actor B"], g: ["Comedy"] }],
+  ]),
+}))
+import { startGame, applyGameAction, submitGameResult, beginAccountMerge } from "./index"
+it("keeps merge creation disabled outside the isolated emulator rollout", async () => {
+  const previous = process.env.FUNCTIONS_EMULATOR
+  delete process.env.FUNCTIONS_EMULATOR
+  try { await expect(Promise.resolve().then(() => (beginAccountMerge as any)({ data: {} }))).rejects.toMatchObject({ code: "failed-precondition" }) }
+  finally { if (previous !== undefined) process.env.FUNCTIONS_EMULATOR = previous }
+})
+import { createHash } from "node:crypto"
+const start = (data: any = { difficulty: "LEVEL_3", catalogVersion: "a".repeat(64) }, uid = "user-with-hyphens") => (startGame as any)({ auth: { uid }, data })
+const act = (data: any = {}, uid = "user-with-hyphens") => (applyGameAction as any)({ auth: { uid }, data: { challengeId: "2026-10-13", expectedRevision: 0, actionId: "command-00000001", type: "guess", itemId: 1, ...data } })
+const statsPath = "players/user-with-hyphens/privateStats/summary"
+describe("authoritative game callables", () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-10-13T12:00:00Z"))
+    mockRecords.clear()
+    const description = "A sufficiently detailed, reviewed clue for the daily movie challenge that players can read without learning its title."
+    mockRecords.set("dailyGames/2026-10-13", { movieId: 1, schemaVersion: 1, catalogVersion: "a".repeat(64), date: new Date("2026-10-13T00:00:00Z"),
+      content: { description, imdbId: "", tagline: "" }, contentHash: createHash("sha256").update(`1\n${description}\n\n`).digest("hex"), reviewedBy: "editor", reviewedAt: "2026-10-12T00:00:00Z" })
+    mockRecords.set("movies/1", { overview: "A sufficiently detailed clue for the daily movie challenge that players can read." })
+    mockQueue = Promise.resolve()
   })
-
-  it("should throw error if playerID does not match auth uid", async () => {
-    const badGame = { ...mockGame, playerID: "other-user" }
-    // @ts-ignore
-    await expect(
-      submitGameResult({ data: { playerGame: badGame }, auth: mockAuth })
-    ).rejects.toThrow("Invalid game data ownership.")
+  afterEach(() => jest.useRealTimers())
+  it("requires authentication and rejects client identities, dates and result payloads", async () => {
+    await expect((startGame as any)({ data: {} })).rejects.toMatchObject({ code: "unauthenticated" })
+    for (const uid of [undefined, "", "nested/path", "x".repeat(129), 12]) {
+      await expect((startGame as any)({ auth: { uid }, data: {} })).rejects.toMatchObject({ code: "unauthenticated" })
+    }
+    await expect(start({ difficulty: "LEVEL_3", catalogVersion: "a".repeat(64), playerID: "victim" })).rejects.toMatchObject({ code: "invalid-argument" })
+    await expect((submitGameResult as any)({ auth: { uid: "attacker" }, data: { playerGame: { id: "victim-2026-10-13", correctAnswer: true } } })).rejects.toMatchObject({ code: "invalid-argument" })
   })
-
-  it("should successfully process a win and update stats", async () => {
-    mockTransaction.get.mockResolvedValue({
-      exists: true,
-      data: () => ({
-        id: "user-123",
-        currentStreak: 2,
-        maxStreak: 5,
-        games: 10,
-        wins: [0, 0, 0, 0, 0],
-        allTimeScore: 5000,
-      }),
-    })
-
-    // @ts-ignore
-    const result = await submitGameResult({
-      data: { playerGame: mockGame },
-      auth: mockAuth,
-    })
-
-    expect(result.success).toBe(true)
-    expect(result.score).toBeGreaterThan(0)
-
-    expect(mockFirestoreInstance.runTransaction).toHaveBeenCalled()
-
-    const statsUpdateCall = mockTransaction.set.mock.calls.find(
-      (call: any) => call[1].id === "user-123"
-    )
-    const updatedStats = statsUpdateCall[1]
-
-    expect(updatedStats.games).toBe(11)
-    expect(updatedStats.currentStreak).toBe(3)
-    expect(updatedStats.allTimeScore).toBe(5000 + result.score)
+  it("starts once with immutable server difficulty and an authoritative date", async () => {
+    const first = await start()
+    const again = await start({ difficulty: "LEVEL_5", catalogVersion: "a".repeat(64) })
+    expect(first.game.challengeId).toBe("2026-10-13")
+    expect(first.serverNow).toBe("2026-10-13T12:00:00.000Z")
+    expect(first.resetAt).toBe("2026-10-14T00:00:00.000Z")
+    expect(again.game.difficulty).toBe("LEVEL_3")
+    expect(again.game.guessesMax).toBe(5)
+    expect(mockRecords.get(statsPath).games).toBe(0)
   })
-
-  it("should reset streak on loss", async () => {
-    const lossGame = { ...mockGame, correctAnswer: false }
-
-    mockTransaction.get.mockResolvedValue({
-      exists: true,
-      data: () => ({
-        id: "user-123",
-        currentStreak: 5,
-        games: 10,
-        allTimeScore: 5000,
-      }),
-    })
-
-    // @ts-ignore
-    await submitGameResult({ data: { playerGame: lossGame }, auth: mockAuth })
-
-    const statsUpdateCall = mockTransaction.set.mock.calls.find(
-      (call: any) => call[1].id === "user-123"
-    )
-    const updatedStats = statsUpdateCall[1]
-
-    expect(updatedStats.currentStreak).toBe(0)
-    expect(updatedStats.games).toBe(11)
+  it("rejects unknown catalogs and missing content without creating partial state", async () => {
+    await expect(start({ difficulty: "LEVEL_3", catalogVersion: "b".repeat(64) })).rejects.toMatchObject({ code: "failed-precondition" })
+    mockRecords.delete("dailyGames/2026-10-13")
+    await expect(start()).rejects.toMatchObject({ code: "unavailable" })
+    expect(mockRecords.has(statsPath)).toBe(false)
   })
-
-  it("should create default stats if they do not exist", async () => {
-    mockTransaction.get.mockResolvedValue({ exists: false })
-
-    // @ts-ignore
-    await submitGameResult({ data: { playerGame: mockGame }, auth: mockAuth })
-
-    const statsUpdateCall = mockTransaction.set.mock.calls.find(
-      (call: any) => call[1].id === "user-123"
-    )
-    const updatedStats = statsUpdateCall[1]
-
-    expect(updatedStats).toBeDefined()
-    expect(updatedStats.games).toBe(1)
-    expect(updatedStats.currentStreak).toBe(1)
+  it("cannot address another user's game or inject a win", async () => {
+    await start()
+    await expect(act({ playerID: "user-with-hyphens" }, "attacker")).rejects.toMatchObject({ code: "invalid-argument" })
+    await expect(act({}, "attacker")).rejects.toMatchObject({ code: "not-found" })
+    await expect(act({ correctAnswer: true, itemId: 2 })).rejects.toMatchObject({ code: "invalid-argument" })
+    const result = await act({ itemId: 2 })
+    expect(result.game.correctAnswer).toBe(false)
+    expect(result.game.score).toBe(0)
+    expect(result.game.hintsUsed).toEqual({})
+    expect(result.stats.games).toBe(0)
+  })
+  it("blocks all game endpoints once account deletion is requested", async () => {
+    await start()
+    mockRecords.set("accountDeletions/user-with-hyphens", { status: "pending" })
+    await expect(start()).rejects.toMatchObject({ code: "permission-denied" })
+    await expect(act()).rejects.toMatchObject({ code: "permission-denied" })
+    await expect((submitGameResult as any)({ auth: { uid: "user-with-hyphens" }, data: { challengeId: "2026-10-13" } })).rejects.toMatchObject({ code: "permission-denied" })
+    expect(mockRecords.get(statsPath).games).toBe(0)
+  })
+  it("blocks all game endpoints while either role in an account merge is reserved", async () => {
+    await start()
+    for (const role of ["source", "target"]) {
+      mockRecords.set("accountMergeLocks/user-with-hyphens", { jobId: "guest", role })
+      await expect(start()).rejects.toMatchObject({ code: "failed-precondition" })
+      await expect(act()).rejects.toMatchObject({ code: "failed-precondition" })
+      await expect((submitGameResult as any)({ auth: { uid: "user-with-hyphens" }, data: { challengeId: "2026-10-13" } })).rejects.toMatchObject({ code: "failed-precondition" })
+      expect(mockRecords.get(statsPath).games).toBe(0)
+    }
+  })
+  it("uses the immutable schedule clue for every player even if upstream movies change", async () => {
+    const first = await start()
+    mockRecords.set("movies/1", { manual_overview: "An unreviewed edit", overview: "Different source text" })
+    const second = await start(undefined, "another-player")
+    expect(second.game.triviaItem.description).toBe(first.game.triviaItem.description)
+  })
+  it("rejects unreviewed legacy schedules and tampered clues without creating a game", async () => {
+    const ref = "dailyGames/2026-10-13"
+    const snapshot = mockRecords.get(ref)
+    mockRecords.set(ref, { movieId: 1 })
+    await expect(start()).rejects.toMatchObject({ code: "unavailable" })
+    mockRecords.set(ref, { ...snapshot, content: { ...snapshot.content, description: "A changed clue. ".repeat(10) } })
+    await expect(start()).rejects.toMatchObject({ code: "unavailable" })
+    expect(mockRecords.has(statsPath)).toBe(false)
+  })
+  it("persists a nonterminal guess and resumes it", async () => {
+    await start()
+    await act({ itemId: 2 })
+    expect((await start()).game.guesses).toEqual([{ itemId: 2 }])
+  })
+  it("awards exactly one result under concurrent retries and a lost-response replay", async () => {
+    await start()
+    const results = await Promise.all(Array.from({ length: 10 }, () => act()))
+    expect(results.every(result => result.game.score === 700)).toBe(true)
+    expect(mockRecords.get(statsPath)).toMatchObject({ games: 1, allTimeScore: 700, currentStreak: 1, wins: [1, 0, 0, 0, 0] })
+    expect([...mockRecords.keys()].filter(path => path.includes("gameHistoryV2"))).toHaveLength(1)
+    jest.setSystemTime(new Date("2026-10-20T12:00:00Z"))
+    expect((await act()).stats.games).toBe(1)
+  })
+  it("rejects action ID reuse with changed input, stale revisions and post-completion changes", async () => {
+    await start()
+    await act({ itemId: 2 })
+    await expect(act()).rejects.toMatchObject({ code: "already-exists" })
+    await expect(act({ actionId: "command-00000002" })).rejects.toMatchObject({ code: "aborted" })
+    await act({ actionId: "command-00000002", expectedRevision: 1 })
+    await expect(act({ actionId: "command-00000003", expectedRevision: 2 })).rejects.toMatchObject({ code: "failed-precondition" })
+  })
+  it("limits hints per Easy game and counts each spend once", async () => {
+    await start({ difficulty: "LEVEL_2", catalogVersion: "a".repeat(64) })
+    for (const [i, hintType] of ["actors", "director", "genre"].entries()) {
+      const command = { type: "hint", itemId: undefined, hintType, expectedRevision: i, actionId: `hint-command-000${i}` }
+      await act(command)
+      await act(command)
+    }
+    expect(mockRecords.get(statsPath).hintsUsedCount).toBe(3)
+    await expect(act({ type: "hint", itemId: undefined, hintType: "decade", expectedRevision: 3, actionId: "hint-command-0004" })).rejects.toMatchObject({ code: "failed-precondition" })
+    const win = await act({ expectedRevision: 3, actionId: "guess-command-win" })
+    expect(win.game.score).toBe(400)
+  })
+  it("counts a give-up once and returns the saved result without mutating it", async () => {
+    await start()
+    const result = await act({ type: "giveUp", itemId: undefined })
+    expect(result.stats).toMatchObject({ games: 1, allTimeScore: 0, currentStreak: 0 })
+    const fetched = await (submitGameResult as any)({ auth: { uid: "user-with-hyphens" }, data: { challengeId: "2026-10-13" } })
+    expect(fetched.game).toEqual(result.game)
+    expect(fetched.stats.games).toBe(1)
   })
 })

@@ -1,140 +1,57 @@
-import React, { memo, useMemo } from "react"
+import React, { memo } from "react"
 import { View, ViewStyle, TextStyle } from "react-native"
 import { Typography } from "./ui/typography"
-import { useStyles, Theme, useThemeTokens } from "../utils/hooks/useStyles"
-const { VictoryBar, VictoryChart, VictoryAxis } = require("victory-native")
+import { useStyles, Theme } from "../utils/hooks/useStyles"
 
-export interface WinChartProps {
-  wins: number[]
-}
+export interface WinChartProps { wins: readonly number[] }
 
+/** Native layout and text keep the distribution usable without a chart SDK. */
 const WinChart = memo(({ wins }: WinChartProps) => {
   const styles = useStyles(themedStyles)
-  const theme = useThemeTokens()
-  const { colors, responsive } = theme
-  const totalWins = wins.reduce((a, b) => a + b, 0)
-
-  const accessibilityLabel = useMemo(() => {
-    if (totalWins === 0) {
-      return "Win distribution chart is empty. No wins recorded yet."
-    }
-    const descriptions = wins
-      .map((count, index) =>
-        count > 0
-          ? `${count} ${count === 1 ? "win" : "wins"} with ${index + 1} ${
-              index === 0 ? "guess" : "guesses"
-            }`
-          : ""
-      )
-      .filter(Boolean)
-      .join(". ")
-    return `Bar chart showing win distribution. ${descriptions}.`
-  }, [wins, totalWins])
-
-  if (totalWins === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Typography style={styles.emptyText}>
-          Your win distribution will appear here after your first win!
-        </Typography>
-      </View>
-    )
+  const valid = Array.isArray(wins) && wins.length <= 20
+    && wins.every(count => Number.isSafeInteger(count) && count >= 0)
+  const total = valid ? wins.reduce((sum, count) => sum + count, 0) : NaN
+  if (!Number.isSafeInteger(total)) {
+    return <Typography>Win distribution is unavailable for these saved statistics.</Typography>
+  }
+  if (total === 0) {
+    return <View style={styles.container}><Typography style={styles.summary}>
+      Your win distribution will appear here after your first win!
+    </Typography></View>
   }
 
-  const chartData = wins.map((winCount, index) => ({
-    x: index + 1,
-    y: winCount,
-  }))
-
-  if (!VictoryBar || !VictoryChart || !VictoryAxis) {
-    console.warn("Victory Native components failed to load. Skipping chart.")
-    return null
-  }
-
+  // Older snapshots may omit trailing zero buckets. Preserve any historic ones.
+  const counts = Array.from({ length: Math.max(5, wins.length) }, (_, index) => wins[index] ?? 0)
+  const largest = Math.max(...counts)
   return (
-    <View style={styles.container} accessibilityLabel={accessibilityLabel}>
-      <VictoryChart
-        domainPadding={{ x: responsive.scale(25) }}
-        height={responsive.scale(220)}
-        padding={{
-          top: responsive.scale(30),
-          bottom: responsive.scale(30),
-          left: responsive.scale(50),
-          right: responsive.scale(30),
-        }}
-      >
-        <VictoryAxis
-          style={{
-            axis: { stroke: "transparent" },
-            tickLabels: { fill: "transparent" },
-            grid: { stroke: "transparent" },
-          }}
-        />
-        <VictoryBar
-          data={chartData}
-          barWidth={responsive.scale(20)}
-          style={{
-            data: { fill: colors.primary, borderRadius: responsive.scale(4) },
-            labels: {
-              fill: colors.textSecondary,
-              fontFamily: "Arvo-Bold",
-              fontSize: responsive.responsiveFontSize(12),
-            },
-          }}
-          labels={({ datum }: { datum: any }) =>
-            datum.y > 0 ? datum.y.toString() : ""
-          }
-        />
-        <VictoryAxis
-          dependentAxis
-          style={{
-            axis: { stroke: "transparent" },
-            tickLabels: { fill: "transparent" },
-            grid: { stroke: colors.border, strokeDasharray: "4, 8" },
-          }}
-        />
-        <VictoryAxis
-          style={{
-            axis: { stroke: colors.border },
-            tickLabels: {
-              fill: colors.textSecondary,
-              fontFamily: "Arvo-Regular",
-              fontSize: responsive.responsiveFontSize(10),
-            },
-            grid: { stroke: "transparent" },
-          }}
-        />
-      </VictoryChart>
+    <View style={styles.container} testID="win-distribution">
+      <Typography variant="h2" accessibilityRole="header">Win distribution</Typography>
+      <Typography style={styles.summary}>
+        {total} {total === 1 ? "win" : "wins"} across all difficulties. Wins by number of guesses:
+      </Typography>
+      {counts.map((count, index) => {
+        const guesses = `${index + 1} ${index === 0 ? "guess" : "guesses"}`
+        const label = `${guesses}: ${count} ${count === 1 ? "win" : "wins"}`
+        return (
+          <View key={index} style={styles.row} accessible accessibilityLabel={label}>
+            <Typography>{label}</Typography>
+            <View style={styles.track} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              <View testID={`win-bar-${index + 1}`} style={[styles.bar, { width: `${count / largest * 100}%` }]} />
+            </View>
+          </View>
+        )
+      })}
     </View>
   )
 })
 
-interface WinChartStyles {
-  container: ViewStyle
-  emptyContainer: ViewStyle
-  emptyText: TextStyle
-}
-
+interface WinChartStyles { container: ViewStyle; summary: TextStyle; row: ViewStyle; track: ViewStyle; bar: ViewStyle }
 const themedStyles = (theme: Theme): WinChartStyles => ({
-  container: {
-    alignItems: "center",
-    alignSelf: "center",
-    flex: 1,
-    flexDirection: "column",
-    padding: theme.responsive.scale(15),
-    width: "100%",
-    backgroundColor: theme.colors.background,
-  },
-  emptyContainer: {
-    padding: theme.spacing.large,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyText: {
-    fontFamily: "Arvo-Italic",
-    textAlign: "center",
-    color: theme.colors.textSecondary,
-  },
+  container: { width: "100%", paddingVertical: theme.spacing.medium, gap: theme.spacing.small },
+  summary: { color: theme.colors.textPrimary },
+  row: { width: "100%", gap: theme.spacing.extraSmall, paddingVertical: theme.spacing.extraSmall },
+  track: { width: "100%", height: 12, borderRadius: 4, backgroundColor: theme.colors.surface, overflow: "hidden" },
+  bar: { height: "100%", borderRadius: 4, backgroundColor: theme.colors.textPrimary },
 })
 
 export default WinChart

@@ -10,6 +10,7 @@ import { Button } from "./ui/button"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { u } from "../styles/utils"
 import { GAME_MODE_CONFIG } from "../config/difficulty"
+import { Typography } from "./ui/typography"
 
 const GameplayView: React.FC = () => {
   const { giveUp, isInteractionsDisabled, gameMode } = useGameStore(
@@ -20,6 +21,9 @@ const GameplayView: React.FC = () => {
     }))
   )
   const styles = useStyles(themedStyles)
+  const syncStatus = useGameStore(state => state.syncStatus)
+  const syncError = useGameStore(state => state.syncError)
+  const retryPendingAction = useGameStore(state => state.retryPendingAction)
 
   const [showGiveUpConfirmation, setShowGiveUpConfirmation] = useState(false)
   const [isGivingUp, setIsGivingUp] = useState(false)
@@ -34,11 +38,16 @@ const GameplayView: React.FC = () => {
   const confirmGiveUp = useCallback(() => {
     setShowGiveUpConfirmation(false)
     setIsGivingUp(true)
-    giveUp()
+    void giveUp().finally(() => setIsGivingUp(false))
   }, [giveUp])
 
   return (
     <>
+      {syncStatus === "saving" && <Typography accessibilityLiveRegion="polite">Saving your move…</Typography>}
+      {syncStatus === "pending" && <View accessibilityLiveRegion="polite">
+        <Typography>{syncError || "Your move is waiting to be saved."}</Typography>
+        <Button title="Retry save" onPress={() => { void retryPendingAction() }} />
+      </View>}
       <HintContainer />
       <PickerContainer />
 
@@ -46,7 +55,7 @@ const GameplayView: React.FC = () => {
         title="Give Up?"
         onPress={handleGiveUpPress}
         isLoading={isGivingUp}
-        disabled={isInteractionsDisabled}
+        disabled={isInteractionsDisabled || syncStatus !== "idle"}
         variant="error"
         style={[u.wFull, styles.giveUpButton] as StyleProp<ViewStyle>}
         testID="give-up-button"

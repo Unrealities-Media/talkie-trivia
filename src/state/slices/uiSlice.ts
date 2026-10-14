@@ -2,7 +2,6 @@ import { StateCreator } from "zustand"
 import { GameStoreState, UISlice } from "../storeTypes"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { ASYNC_STORAGE_KEYS } from "../../config/constants"
-import { analyticsService } from "../../utils/analyticsService"
 import { produce } from "immer"
 
 export const createUISlice: StateCreator<GameStoreState, [], [], UISlice> = (
@@ -31,7 +30,8 @@ export const createUISlice: StateCreator<GameStoreState, [], [], UISlice> = (
         state.tutorialState.showGuessInputTip = false
       })
     )
-    AsyncStorage.setItem(ASYNC_STORAGE_KEYS.TUTORIAL_GUESS_INPUT_SEEN, "true")
+    // A failed preference write may show the tip next time; dismissal still works.
+    void AsyncStorage.setItem(ASYNC_STORAGE_KEYS.TUTORIAL_GUESS_INPUT_SEEN, "true").catch(() => {})
   },
 
   dismissResultsTip: () => {
@@ -40,7 +40,6 @@ export const createUISlice: StateCreator<GameStoreState, [], [], UISlice> = (
         state.tutorialState.showResultsTip = false
       })
     )
-    analyticsService.trackOnboardingCompleted()
-    AsyncStorage.setItem(ASYNC_STORAGE_KEYS.TUTORIAL_RESULTS_SEEN, "true")
+    void AsyncStorage.setItem(ASYNC_STORAGE_KEYS.TUTORIAL_RESULTS_SEEN, "true").catch(() => {})
   },
 })

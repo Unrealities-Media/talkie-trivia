@@ -1,125 +1,49 @@
 rules_version = '2';
-
 service cloud.firestore {
-  match / databases / { database } / documents {
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+  match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid
+        && !exists(/databases/$(database)/documents/accountDeletions/$(uid))
+        && !exists(/databases/$(database)/documents/accountMergeLocks/$(uid));
     }
-
-    function hasValidPlayerFields() {
-      // Allow id and name to be required strings.
-      // Remove strict size check to allow for future expansion (e.g. email, avatar)
-      return request.resource.data.id == request.auth.uid
+    function validPlayer(uid) {
+      return request.resource.data.keys().hasOnly(['id', 'name'])
+        && request.resource.data.id == uid
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() < 50;
+        && request.resource.data.name.size() <= 50;
     }
-
-    function isCreatingPlayerGame() {
-      let data = request.resource.data;
-      // On creation, the game must start in a default state.
-      return data.playerID == request.auth.uid
-        && data.guesses.size() == 0
-        && data.correctAnswer == false
-        && data.gaveUp == false
-        && data.statsProcessed == false
-        && data.guessesMax >= 3 && data.guessesMax <= 5
-        && data.startDate == request.time;
-    }
-
-    function isUpdatingPlayerGame() {
-      let incoming = request.resource.data;
-      let existing = resource.data;
-
-      // Fields that should never change after creation
-      let isImmutableDataUnchanged = incoming.id == existing.id
-        && incoming.playerID == existing.playerID
-        && incoming.movie.id == existing.movie.id
-        && incoming.startDate == existing.startDate;
-
-      // A user can only add exactly one guess at a time.
-      let isGuessListValid = incoming.guesses.size() == existing.guesses.size() + 1
-        && incoming.guesses[existing.guesses.size()] is number;
-
-      // You can't undo a win or a give-up decision.
-      let isStateTransitionValid = (existing.correctAnswer == false || incoming.correctAnswer == true)
-        && (existing.gaveUp == false || incoming.gaveUp == true);
-
-      // The game should not be modifiable once it's over.
-      let isGameAlreadyOver = existing.correctAnswer == true || existing.gaveUp == true || existing.guesses.size() >= existing.guessesMax;
-
-      return isImmutableDataUnchanged
-        && isStateTransitionValid
-        && !isGameAlreadyOver
-        && (isGuessListValid || incoming.gaveUp == true); // An update is either a guess or giving up.
-    }
-
-    function hasValidGameHistoryFields() {
-      let data = request.resource.data;
-      return data.keys().hasAll([
-        'dateId', 'movieId', 'movieTitle', 'posterPath',
-        'wasCorrect', 'gaveUp', 'guessCount', 'guessesMax', 'createdAt'
-      ])
-        && data.dateId is string
-          && data.movieId is number
-            && data.movieTitle is string
-              && data.posterPath is string
-                && data.wasCorrect is bool
-                  && data.gaveUp is bool
-                    && data.guessCount is number
-                      && data.guessesMax is number
-                        && data.createdAt == request.time;
-    }
-
-    // --- Collection Rules ---
-
-    // Movies data is publically readable, but write access is locked down.
-    match / movies / { movieId } {
-  allow read: if true;
-  allow write: if false; // Only allow writes from admin/backend scripts
-    }
-
-    // Daily games are readable by authenticated users, but not writable by clients.
-    match / dailyGames / { dateId } {
-  allow read: if request.auth != null;
-  allow write: if false; // Only allow writes from a trusted server/function
-    }
-
-    // Player documents. A user can only access their own.
-    match / players / { userId } {
-  allow get, delete: if isOwner(userId);
-  allow create: if isOwner(userId) && hasValidPlayerFields();
-  // Allow a user to update only their name.
-  allow update: if isOwner(userId)
-        && request.resource.data.name != resource.data.name
-        && request.resource.data.keys().hasOnly(['id', 'name']);
-
-      // Sub-collection for a player's game history.
-      // This write should only be performed by a trusted backend function when a game is processed.
-      match / gameHistory / { dateId } {
-    allow read: if isOwner(userId);
-    // For maximum security, change to `allow write: if false;` and use a Cloud Function.
-    // For now, we validate the client-written data shape.
-    allow write: if isOwner(userId) && hasValidGameHistoryFields();
+    match /players/{uid} {
+      allow get: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validPlayer(uid);
+      allow delete: if false;
+      match /games/{gameId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+      match /privateStats/{statsId} {
+        allow get: if isOwner(uid);
+        allow write: if false;
+      }
+      match /gameHistory/{dateId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+      match /gameHistoryV2/{dateId} {
+        allow get: if isOwner(uid);
+        allow list: if isOwner(uid) && request.query.limit != null && request.query.limit <= 21;
+        allow write: if false;
+      }
+      match /mergedGuestGames/{archiveId} {
+        allow get: if isOwner(uid);
+        allow list: if isOwner(uid) && request.query.limit != null && request.query.limit <= 21;
+        allow write: if false;
       }
     }
-
-    // Player statistics. Read-only for clients. Must be updated by the backend.
-    match / playerStats / { userId } {
-  allow get: if isOwner(userId);
-  // Deny all client-side writes to prevent cheating (e.g., manually setting streaks).
-  // Stats should be calculated and updated by a Cloud Function after a game is completed.
-  allow write: if false;
+    // Only startGame selects the current challenge. No future schedule enumeration.
+    // Legacy movie content/games/stats and administrative collections are server-only.
+    match /{document=**} {
+      allow read, write: if false;
     }
-
-    // A player's game state for a specific day. This is where clients write their progress.
-    match / playerGames / { gameId } {
-  // The gameId must be in the format `userId-date`
-  allow read: if isOwner(gameId.split('-')[0]);
-  allow create: if isOwner(gameId.split('-')[0]) && isCreatingPlayerGame();
-  allow update: if isOwner(gameId.split('-')[0]) && isUpdatingPlayerGame();
-    }
-
   }
 }

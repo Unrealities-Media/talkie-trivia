@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main, master]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: verification-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Run Tests & Coverage
@@ -18,7 +25,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24.21.0
           cache: "npm"
 
       - name: Install App Dependencies
@@ -31,6 +38,15 @@ jobs:
 
       - name: Type Check (App)
         run: npm run typecheck
+
+      - name: Validate environment and release signing contracts
+        run: npm run test:config
+
+      - name: Validate dependency security backports
+        run: npm run test:dependencies
+
+      - name: Audit deployed backend dependencies
+        run: npm --prefix functions audit --omit=dev
 
       - name: Build Functions
         run: npm --prefix functions run build
@@ -78,3 +94,52 @@ jobs:
           cache-dependency-path: utils/pipeline/go.sum
       - run: go test ./...
       - run: go vet ./...
+      - name: Check Go formatting
+        run: test -z "$(gofmt -l .)"
+
+  emulator-contracts:
+    name: Firebase rules and transaction contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+          cache-dependency-path: |
+            integration/package-lock.json
+            functions/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: utils/pipeline/go.mod
+          cache-dependency-path: utils/pipeline/go.sum
+      - name: Install locked dependencies
+        run: |
+          npm --prefix functions ci
+          npm --prefix integration ci
+      - uses: actions/cache@v4
+        with:
+          path: .expo/firebase-emulators
+          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('integration/package-lock.json') }}
+      - name: Verify emulator dependency compatibility
+        run: npm --prefix integration run test:dependencies
+      - name: Test isolated demo project
+        run: npm --prefix integration test
+        env:
+          FIREBASE_CLI_DISABLE_USAGE_REPORTING: 'true'
+      - name: Retain failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-contract-failure
+          path: |
+            firebase-debug.log
+            firestore-debug.log
+          retention-days: 3

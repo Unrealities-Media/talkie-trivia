@@ -14,15 +14,10 @@ const logEvent = async (eventName: string, params?: { [key: string]: any }) => {
   }
 
   try {
-    if (__DEV__) {
-      // Sanitize params for logging to avoid potential issues in dev console
-      const sanitizedParams = params ? JSON.parse(JSON.stringify(params)) : ""
-      console.log(`[ANALYTICS] Event: ${eventName}`, sanitizedParams)
-    }
     // Use the initialized analytics instance
     await firebaseLogEvent(analytics as Analytics, eventName, params)
-  } catch (error) {
-    console.error(`[ANALYTICS] Error logging event ${eventName}:`, error)
+  } catch {
+    // Telemetry failures must neither interrupt play nor expose SDK payloads.
   }
 }
 
@@ -31,9 +26,15 @@ export const analyticsService = {
   identifyUser: (userId: string, properties?: { [key: string]: any }) => {
     if (!analytics) return
     setUserId(analytics as Analytics, userId)
-    if (properties) {
-      setUserProperties(analytics as Analytics, properties)
+    const method = properties?.sign_in_method
+    if (["google", "anonymous", "apple"].includes(method)) {
+      setUserProperties(analytics as Analytics, { sign_in_method: method })
     }
+  },
+  clearIdentity: () => {
+    if (!analytics) return
+    setUserId(analytics as Analytics, null)
+    setUserProperties(analytics as Analytics, { sign_in_method: null })
   },
 
   // --- Onboarding ---
@@ -96,19 +97,20 @@ export const analyticsService = {
   },
   trackGoogleSignInFailure: (error: string) =>
     logEvent("google_signin_failure", {
-      error_message: error.substring(0, 100),
+      error_code: ["auth/network-request-failed", "auth/credential-already-in-use", "auth/email-already-in-use", "auth/too-many-requests"].includes(error) ? error : "unknown",
     }),
   trackAnonymousSignIn: (userId: string) => {
     logEvent("login", { method: "anonymous" })
     analyticsService.identifyUser(userId, { sign_in_method: "anonymous" })
   },
-  trackSignOut: () => logEvent("sign_out"),
+  trackSignOut: () => {
+    const event = logEvent("sign_out")
+    analyticsService.clearIdentity()
+    return event
+  },
 
   // --- App Health ---
   trackNetworkStatusChange: (isConnected: boolean) =>
     logEvent("network_status_change", { is_connected: isConnected }),
-  trackErrorBoundary: (errorMessage: string) =>
-    logEvent("error_boundary_triggered", {
-      error_message: errorMessage.substring(0, 100),
-    }),
+  trackErrorBoundary: (_errorMessage: string) => logEvent("error_boundary_triggered"),
 }

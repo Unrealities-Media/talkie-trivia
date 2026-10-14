@@ -1,29 +1,9 @@
-import { getPerformance } from "firebase/performance"
-import { getAnalytics, isSupported, Analytics } from "firebase/analytics"
-import { app } from "../services/firebaseClient"
-import { Platform } from "react-native"
+import type { Analytics } from "firebase/analytics"
 
-let analytics: Analytics | undefined
-let perf: any
-;(async () => {
-  if (__DEV__) return
+// Optional telemetry is off for launch preparation. Nothing initializes the
+// Analytics or Performance SDK at import time. Re-enabling collection requires
+// an explicit user choice, matching disclosures, and tested withdrawal/deletion.
+const analytics: Analytics | undefined = undefined
+const perf: undefined = undefined
 
-  try {
-    const supported = await isSupported()
-    if (supported) {
-      analytics = getAnalytics(app)
-    }
-  } catch (error) {
-    // Ignore
-  }
-})()
-
-if (Platform.OS === "web" && !__DEV__) {
-  try {
-    perf = getPerformance(app)
-  } catch (e) {
-    // Ignore
-  }
-}
-
-export { perf, analytics }
+export { analytics, perf }

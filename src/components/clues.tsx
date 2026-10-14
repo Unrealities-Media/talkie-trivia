@@ -331,7 +331,7 @@ const themedStyles = (theme: Theme): CluesStyles => ({
   wordCountText: {
     ...theme.typography.caption,
     fontSize: theme.responsive.responsiveFontSize(11),
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
     textAlign: "right",
   },
 })

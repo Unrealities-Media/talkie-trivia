@@ -100,7 +100,7 @@ describe("GoogleLogin Component", () => {
       const errorMessage = "Authentication failed."
       mockUseAuth.mockReturnValue({
         user: null,
-        error: errorMessage,
+        accountError: errorMessage,
         isSigningIn: false,
       })
 

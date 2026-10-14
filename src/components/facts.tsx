@@ -10,7 +10,7 @@ import {
 } from "react-native"
 import { Image } from "expo-image"
 import { FontAwesome } from "@expo/vector-icons"
-import { TriviaItem, Hint } from "../models/trivia"
+import { TriviaItem } from "../models/trivia"
 import { analyticsService } from "../utils/analyticsService"
 import { useExternalLink } from "../utils/hooks/useExternalLink"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
@@ -18,6 +18,8 @@ import { u } from "../styles/utils"
 import { Typography } from "./ui/typography"
 import Actors from "./actors"
 import { API_CONFIG } from "../config/constants"
+import { imdbPersonUrl, imdbTitleUrl } from "../utils/imdbLinks"
+import { releaseYear } from "../utils/dateDisplay"
 
 type ImageSource = { uri: string } | number
 const defaultItemImage = require("../../assets/movie_default.png")
@@ -30,7 +32,7 @@ const InlineActors = ({ actors }: { actors: any[] }) => {
     .map((a) => a.name)
     .join(", ")
   return (
-    <Typography variant="caption" style={styles.inlineActors} numberOfLines={3}>
+    <Typography variant="caption" style={styles.inlineActors}>
       Starring: {topActors}
     </Typography>
   )
@@ -49,6 +51,7 @@ const ItemHeader = memo(
     compact?: boolean
   }) => {
     const styles = useStyles(themedStyles)
+    if (!isLinkable) return <Typography accessibilityRole="header" variant="h1" style={[styles.header, compact && styles.headerCompact]}>{title}</Typography>
     return (
       <Pressable
         onPress={onPress}
@@ -59,7 +62,7 @@ const ItemHeader = memo(
         ]}
         disabled={!isLinkable}
         accessible={isLinkable}
-        accessibilityLabel={`Open external page for ${title}`}
+        accessibilityLabel={`Open IMDb page for ${title}`}
         role="link"
       >
         <View
@@ -75,7 +78,6 @@ const ItemHeader = memo(
               isLinkable && styles.linkText,
               compact && styles.headerCompact,
             ]}
-            numberOfLines={compact ? 2 : undefined}
           >
             {title}
           </Typography>
@@ -111,20 +113,22 @@ const Facts = memo(
   }: FactsProps) => {
     const styles = useStyles(themedStyles)
     const { openLink } = useExternalLink()
+    const titleUrl = imdbTitleUrl(item.metadata.imdb_id)
+    const year = releaseYear(item.releaseDate)
 
     const handleItemPress = useCallback(() => {
-      const imdbId = item.metadata.imdb_id
-      if (imdbId) {
+      if (titleUrl) {
         analyticsService.trackImdbLinkTapped(item.title)
-        openLink(`${API_CONFIG.IMDB_BASE_URL_TITLE}${imdbId}`)
+        openLink(titleUrl)
       }
-    }, [openLink, item.title, item.metadata.imdb_id])
+    }, [openLink, item.title, titleUrl])
 
     const handleActorPress = useCallback(
       (actor: any) => {
-        if (actor.imdb_id) {
+        const url = imdbPersonUrl(actor.imdb_id)
+        if (url) {
           analyticsService.trackActorLinkTapped(actor.name)
-          openLink(`${API_CONFIG.IMDB_BASE_URL_NAME}${actor.imdb_id}`)
+          openLink(url)
         }
       },
       [openLink]
@@ -146,7 +150,7 @@ const Facts = memo(
       )
 
     const imageSource = item.posterPath
-      ? { uri: `https://image.tmdb.org/t/p/w500${item.posterPath}` }
+      ? { uri: `${API_CONFIG.TMDB_IMAGE_BASE_URL_W500}${item.posterPath}` }
       : defaultItemImage
 
     const renderCompactLayout = () => (
@@ -165,7 +169,7 @@ const Facts = memo(
             <ItemHeader
               title={item.title}
               onPress={handleItemPress}
-              isLinkable={!!item.metadata.imdb_id}
+              isLinkable={!!titleUrl}
               compact
             />
 
@@ -198,16 +202,17 @@ const Facts = memo(
                 return null
               })}
 
-              {/* Year/Decade */}
+              {year && <Typography variant="caption" style={styles.metadataText}>Released: {year}</Typography>}
+              {/* Use a decade only when an exact release year is unavailable. */}
               {item.hints.map((h) => {
-                if (h.type === "decade") {
+                if (h.type === "decade" && !year) {
                   return (
                     <Typography
                       key="dec"
                       variant="caption"
                       style={styles.metadataText}
                     >
-                      Released: {String(h.value)}
+                      Decade: {String(h.value)}
                     </Typography>
                   )
                 }
@@ -248,7 +253,7 @@ const Facts = memo(
         <ItemHeader
           title={item.title}
           onPress={handleItemPress}
-          isLinkable={!!item.metadata.imdb_id}
+          isLinkable={!!titleUrl}
         />
         {item.metadata.tagline && (
           <Typography variant="caption" style={styles.tagline}>
@@ -260,6 +265,7 @@ const Facts = memo(
           style={styles.posterImage}
           contentFit="cover"
         />
+        {year && <Typography style={styles.director}>Released: {year}</Typography>}
         {item.hints.map((hint) => {
           if (hint.type === "actors" && Array.isArray(hint.value)) {
             return (
@@ -364,7 +370,7 @@ const themedStyles = (theme: Theme): FactsStyles => ({
     marginLeft: theme.spacing.small,
     paddingBottom: theme.spacing.small,
     fontSize: theme.responsive.scale(22),
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
   },
   imdbIconCompact: {
     paddingBottom: 0,
@@ -376,7 +382,7 @@ const themedStyles = (theme: Theme): FactsStyles => ({
     textAlign: "center",
     width: "90%",
     marginBottom: theme.spacing.small,
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
     fontStyle: "italic",
   },
   director: {
@@ -400,7 +406,8 @@ const themedStyles = (theme: Theme): FactsStyles => ({
     paddingBottom: theme.spacing.small,
   },
   posterImage: {
-    width: "100%",
+    width: theme.responsive.scale(180),
+    maxWidth: "100%",
     height: undefined,
     aspectRatio: 2 / 3,
     marginBottom: theme.spacing.medium,
@@ -416,7 +423,7 @@ const themedStyles = (theme: Theme): FactsStyles => ({
     paddingVertical: 0,
   },
   loadingIndicator: {
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
   },
 
   // Compact Layout

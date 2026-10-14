@@ -1,132 +1,76 @@
-import {
-  generateShareMessage,
-  shareGameResult,
-} from "../../src/utils/shareUtils"
 import { Share } from "react-native"
-import { analyticsService } from "../../src/utils/analyticsService"
-import { hapticsService } from "../../src/utils/hapticsService"
+import { generateShareMessage, shareGameResult } from "../../src/utils/shareUtils"
 import { defaultPlayerGame } from "../../src/models/default"
-import { useGameStore } from "../../src/state/gameStore"
-import { calculateScore } from "../../src/utils/scoreUtils"
-import { PlayerGame, Guess } from "../../src/models/game"
-
-// Mocks
-jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" })
+import { PlayerGame } from "../../src/models/game"
+import { analyticsService } from "../../src/utils/analyticsService"
 jest.mock("../../src/utils/analyticsService")
 jest.mock("../../src/utils/hapticsService")
-jest.mock("../../src/utils/scoreUtils")
-jest.mock("../../src/state/gameStore", () => ({
-  useGameStore: {
-    getState: jest.fn(),
-  },
-}))
+jest.mock("../../src/state/gameStore", () => ({ useGameStore: { getState: () => { throw new Error("Sharing must not read the current game") } } }))
+jest.spyOn(Share, "share")
+const game = (): PlayerGame => ({ ...defaultPlayerGame, id: "saved-game", playerID: "private-owner", challengeId: "2026-10-13", startDate: new Date("2026-10-14T00:30:00Z"), difficulty: "LEVEL_2", guessesMax: 5, guesses: [{ itemId: 123 }, { itemId: 456 }], correctAnswer: true, statsProcessed: true, score: 411, hintsUsed: { director: true }, triviaItem: { ...defaultPlayerGame.triviaItem, title: "SECRET ANSWER", description: "SECRET PLOT" } })
+beforeEach(() => { jest.clearAllMocks(); (Share.share as jest.Mock).mockResolvedValue({ action: Share.sharedAction }) })
 
-describe("Utils: shareUtils", () => {
-  const mockDate = new Date("2023-01-01T12:00:00.000Z")
+it("shares only the immutable UTC result, saved score and difficulty without spoilers or an unverified URL", () => {
+  const localDate = jest.spyOn(Date.prototype, "toLocaleDateString").mockImplementation(() => { throw new Error("No local calendar") })
+  try {
+    expect(generateShareMessage(game())).toBe("Talkie Trivia 🎬\n2026-10-13 (UTC) · Easy\nSolved in 2/5 guesses\n🟥🟩\nScore: 411\nHints used: 1/3")
+  } finally { localDate.mockRestore() }
+})
 
-  // Correctly typed mock guesses
-  const mockGuesses: Guess[] = [{ itemId: 1 }, { itemId: 2 }]
+it("uses UTC for legacy saved dates and never substitutes a malformed challenge ID", () => {
+  expect(generateShareMessage({ ...game(), challengeId: undefined })).toContain("2026-10-14 (UTC)")
+  expect(() => generateShareMessage({ ...game(), challengeId: "2026-02-30" })).toThrow()
+})
 
-  const baseGame: PlayerGame = {
-    ...defaultPlayerGame,
-    startDate: mockDate,
-    guessesMax: 5,
-    guesses: mockGuesses,
-  }
+it("represents a loss and a zero-guess give-up without misleading win claims", () => {
+  const loss = { ...game(), difficulty: "LEVEL_5" as const, correctAnswer: false, guessesMax: 3, guesses: [{ itemId: 1 }, { itemId: 2 }, { itemId: 3 }], score: 0 }
+  expect(generateShareMessage(loss)).toContain("Out of guesses (3/3)\n🟥🟥🟥\nScore: 0")
+  expect(generateShareMessage(loss)).not.toContain("Hints used")
+  expect(generateShareMessage({ ...game(), correctAnswer: false, gaveUp: true, guesses: [], score: 0 })).toContain("Gave up after 0 guesses\n⏹️")
+})
 
-  beforeEach(() => {
-    jest.clearAllMocks()
-    ;(calculateScore as jest.Mock).mockReturnValue(1000)
-    ;(useGameStore.getState as jest.Mock).mockReturnValue({
-      gameMode: "movies",
-    })
-  })
+it.each([
+  { statsProcessed: false }, { score: undefined }, { score: NaN }, { score: -1 },
+  { correctAnswer: false }, { guesses: [] }, { challengeId: "bad-day" },
+])("refuses to share an incomplete or invalid saved result: %j", async override => {
+  await expect(shareGameResult({ ...game(), ...override })).rejects.toThrow("saved, completed result")
+  expect(Share.share).not.toHaveBeenCalled()
+})
 
-  describe("generateShareMessage", () => {
-    it("should generate a correct message for a Win", () => {
-      const game = { ...baseGame, correctAnswer: true }
-      const msg = generateShareMessage(game)
+it("deduplicates active sheets, snapshots content and records only the platform-reported shared action", async () => {
+  let resolve!: (value: unknown) => void
+  ;(Share.share as jest.Mock).mockImplementationOnce(() => new Promise(done => { resolve = done }))
+  const original = game()
+  const first = shareGameResult(original)
+  original.correctAnswer = false
+  original.score = 0
+  await shareGameResult(game())
+  expect(Share.share).toHaveBeenCalledTimes(1)
+  expect(analyticsService.trackShareResults).not.toHaveBeenCalled()
+  expect((Share.share as jest.Mock).mock.calls[0][0].message).toContain("Score: 411")
+  resolve({ action: Share.sharedAction })
+  await first
+  expect(analyticsService.trackShareResults).toHaveBeenCalledWith("win")
+})
 
-      expect(msg).toContain("Talkie Trivia 🎬")
-      expect(msg).toContain("2023")
-      expect(msg).toContain("✅ Guessed in 2/5 tries!")
-      // 2 guesses total. First one wrong (red), last one correct (green).
-      expect(msg).toContain("🟥🟩")
-      expect(msg).toContain("Score: 🏆 1000")
-    })
+it("does not report dismissal as sharing", async () => {
+  ;(Share.share as jest.Mock).mockResolvedValueOnce({ action: Share.dismissedAction })
+  await shareGameResult(game())
+  expect(analyticsService.trackShareResults).not.toHaveBeenCalled()
+})
 
-    it("should generate a correct message for a Loss", () => {
-      const lossGuesses: Guess[] = [
-        { itemId: 1 },
-        { itemId: 2 },
-        { itemId: 3 },
-        { itemId: 4 },
-        { itemId: 5 },
-      ]
-      const game = {
-        ...baseGame,
-        correctAnswer: false,
-        gaveUp: false,
-        guessesMax: 5,
-        guesses: lossGuesses,
-      }
-      const msg = generateShareMessage(game)
+it("handles cancellation errors and permits a later retry", async () => {
+  ;(Share.share as jest.Mock).mockRejectedValueOnce({ name: "AbortError" })
+  await expect(shareGameResult(game())).resolves.toBeUndefined()
+  expect(analyticsService.trackShareResults).not.toHaveBeenCalled()
+  await shareGameResult(game())
+  expect(Share.share).toHaveBeenCalledTimes(2)
+})
 
-      expect(msg).toContain("😢 Didn't guess the item!")
-      expect(msg).toContain("🟥🟥🟥🟥🟥")
-    })
-
-    it("should generate a correct message for Giving Up", () => {
-      const giveUpGuesses: Guess[] = [{ itemId: 1 }]
-      const game = {
-        ...baseGame,
-        correctAnswer: false,
-        gaveUp: true,
-        guesses: giveUpGuesses,
-      }
-      const msg = generateShareMessage(game)
-
-      expect(msg).toContain("🤔 Gave up after 1 guess.")
-      expect(msg).toContain("🟥⏹️")
-    })
-
-    it("should adapt title based on Game Mode", () => {
-      ;(useGameStore.getState as jest.Mock).mockReturnValue({
-        gameMode: "videoGames",
-      })
-      const msg = generateShareMessage({ ...baseGame, correctAnswer: true })
-      expect(msg).toContain("Talkie Trivia 🎮")
-    })
-  })
-
-  describe("shareGameResult", () => {
-    it("should call Share.share with correct parameters", async () => {
-      const game = { ...baseGame, correctAnswer: true }
-      await shareGameResult(game)
-
-      expect(hapticsService.medium).toHaveBeenCalled()
-      expect(analyticsService.trackShareResults).toHaveBeenCalledWith("win")
-      expect(Share.share).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: expect.stringContaining("Talkie Trivia"),
-        }),
-        expect.anything()
-      )
-    })
-
-    it("should handle Share cancellation (AbortError) gracefully", async () => {
-      const error = new Error("Share Canceled")
-      error.name = "AbortError"
-      ;(Share.share as jest.Mock).mockRejectedValue(error)
-
-      await expect(shareGameResult(baseGame)).resolves.toBeUndefined()
-    })
-
-    it("should re-throw other errors", async () => {
-      const error = new Error("Random Failure")
-      ;(Share.share as jest.Mock).mockRejectedValue(error)
-
-      await expect(shareGameResult(baseGame)).rejects.toThrow("Random Failure")
-    })
-  })
+it.each([null, "native failure", new Error("native failure")])("preserves unusual failures without masking them and unlocks retry", async error => {
+  ;(Share.share as jest.Mock).mockRejectedValueOnce(error)
+  await expect(shareGameResult(game())).rejects.toBe(error)
+  expect(analyticsService.trackShareResults).not.toHaveBeenCalled()
+  await shareGameResult(game())
+  expect(Share.share).toHaveBeenCalledTimes(2)
 })

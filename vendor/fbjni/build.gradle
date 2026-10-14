@@ -1,0 +1,44 @@
+// Build the unmodified, pinned FBJNI sources with the application's Android
+// toolchain. Upstream provenance and file hashes are recorded in upstream.json.
+apply plugin: "com.android.library"
+
+group = "com.facebook.fbjni"
+version = "0.7.0"
+layout.buildDirectory = rootProject.layout.buildDirectory.dir("fbjni-source")
+
+android {
+    namespace "com.facebook.fbjni"
+    compileSdk rootProject.ext.compileSdkVersion
+    ndkVersion rootProject.ext.ndkVersion
+    defaultConfig {
+        minSdkVersion rootProject.ext.minSdkVersion
+        buildConfigField "boolean", "IS_INTERNAL_BUILD", "true"
+        externalNativeBuild.cmake {
+            arguments "-DANDROID_TOOLCHAIN=clang", "-DANDROID_STL=c++_shared",
+                "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+            targets "fbjni"
+        }
+    }
+    sourceSets.main.java.srcDirs = ["java"]
+    externalNativeBuild.cmake {
+        path "CMakeLists.txt"
+        version "3.30.5"
+        buildStagingDirectory rootProject.layout.buildDirectory.dir("fbjni-cxx").get().asFile
+    }
+    buildFeatures {
+        buildConfig true
+        prefabPublishing true
+    }
+    prefab {
+        fbjni { headers "cxx/" }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    compileOnly "com.google.code.findbugs:jsr305:3.0.2"
+    implementation "com.facebook.soloader:nativeloader:0.10.5"
+}

@@ -10,7 +10,6 @@ import { ThemeProvider } from "../../src/contexts/themeContext"
 import HistoryDetailModal from "../../src/components/historyDetailModal"
 import { useAuth } from "../../src/contexts/authContext"
 import { gameService } from "../../src/services/gameService"
-import { getGameDataService } from "../../src/services/gameServiceFactory"
 import { GameHistoryEntry } from "../../src/models/gameHistory"
 import { defaultPlayerGame, defaultTriviaItem } from "../../src/models/default"
 import { PlayerGame } from "../../src/models/game"
@@ -21,7 +20,6 @@ import { TriviaItem } from "../../src/models/trivia"
 // 1. Mock Contexts and Services
 jest.mock("../../src/contexts/authContext")
 jest.mock("../../src/services/gameService")
-jest.mock("../../src/services/gameServiceFactory")
 jest.mock("../../src/components/facts", () => {
   const { View, Text } = require("react-native")
   return (props: any) => (
@@ -74,7 +72,6 @@ jest.mock("react", () => {
 // --- Helper Types & Data ---
 const mockUseAuth = useAuth as jest.Mock
 const mockGameService = gameService as jest.Mocked<typeof gameService>
-const mockGetGameDataService = getGameDataService as jest.Mock
 
 const mockHistoryItem: GameHistoryEntry = {
   dateId: "2023-01-01",
@@ -99,17 +96,16 @@ const mockTriviaItem: TriviaItem = {
 
 const mockPlayerGame: PlayerGame = {
   ...defaultPlayerGame,
+  triviaItem: mockTriviaItem,
   id: "player-1-2023-01-01",
+  correctAnswer: true,
+  statsProcessed: true,
+  score: 500,
+  challengeId: "2023-01-01",
   guesses: [
     { itemId: 1, hintInfo: [] },
     { itemId: 123, hintInfo: [] },
   ],
-}
-
-// Mock Data Service Implementation
-const mockDataService = {
-  getItemById: jest.fn(),
-  getDailyTriviaItemAndLists: jest.fn(),
 }
 
 // --- Test Setup ---
@@ -126,15 +122,8 @@ describe("HistoryDetailModal Component", () => {
     // Default auth state: logged in
     mockUseAuth.mockReturnValue({ player: { id: "player-1" } })
 
-    // Default service factory return
-    mockGetGameDataService.mockReturnValue(mockDataService)
-
     // Default data resolves
-    mockDataService.getItemById.mockResolvedValue(mockTriviaItem)
     mockGameService.fetchPlayerGameById.mockResolvedValue(mockPlayerGame)
-    mockDataService.getDailyTriviaItemAndLists.mockResolvedValue({
-      basicItems: [],
-    })
   })
 
   describe("Visibility and Initialization", () => {
@@ -173,10 +162,8 @@ describe("HistoryDetailModal Component", () => {
       )
 
       await waitFor(() => {
-        expect(mockGetGameDataService).toHaveBeenCalledWith("movies")
-        expect(mockDataService.getItemById).toHaveBeenCalledWith(123)
         expect(mockGameService.fetchPlayerGameById).toHaveBeenCalledWith(
-          "player-1-2023-01-01"
+          "movies_2023-01-01"
         )
       })
     })
@@ -188,7 +175,7 @@ describe("HistoryDetailModal Component", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {})
 
-      mockDataService.getItemById.mockRejectedValue(new Error("Network Error"))
+      mockGameService.fetchPlayerGameById.mockRejectedValue(new Error("Network Error"))
 
       renderWithTheme(
         <HistoryDetailModal

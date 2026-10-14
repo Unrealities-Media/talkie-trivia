@@ -1,11 +1,5 @@
-import React, { useEffect } from "react"
-import { ScrollView, TextStyle, ViewStyle } from "react-native"
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from "react-native-reanimated"
+import React from "react"
+import { View, TextStyle, ViewStyle } from "react-native"
 import CountdownTimer from "./countdownTimer"
 import Facts from "./facts"
 import PersonalizedStatsMessage from "./personalizedStatsMessage"
@@ -16,6 +10,7 @@ import ShareResultButton from "./gameOver/shareResultButton"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Card } from "./ui/card"
 import { Typography } from "./ui/typography"
+import ResultSummary from "./gameOver/resultSummary"
 
 interface GameOverViewProps {
   playerGame: PlayerGame
@@ -27,61 +22,43 @@ const GameOverView: React.FC<GameOverViewProps> = ({
   lastGuessResult,
 }) => {
   const styles = useStyles(themedStyles)
-  const fadeAnimation = useSharedValue(0)
-
-  useEffect(() => {
-    fadeAnimation.value = withTiming(1, {
-      duration: 600,
-      easing: Easing.out(Easing.ease),
-    })
-  }, [fadeAnimation])
-
-  const animatedContainerStyle = useAnimatedStyle(() => {
-    return {
-      opacity: fadeAnimation.value,
-    }
-  })
-
-  const resultTitle = playerGame.correctAnswer ? "You Got It!" : "So Close!"
+  const resultTitle = playerGame.correctAnswer ? "You Got It!" : playerGame.gaveUp ? "Answer revealed" : "Out of guesses"
   const resultMessage = playerGame.correctAnswer
     ? `You guessed it in ${playerGame.guesses.length} guess${
         playerGame.guesses.length > 1 ? "es" : ""
       }!`
     : playerGame.gaveUp
-    ? "Sometimes you just know when to fold 'em."
-    : "Better luck next time."
+    ? `You ended this game after ${playerGame.guesses.length} ${playerGame.guesses.length === 1 ? "guess" : "guesses"}.`
+    : `You used all ${playerGame.guessesMax} guesses. Here's today's movie.`
 
   return (
-    <Animated.View style={[{ width: "100%" }, animatedContainerStyle]}>
+    <View style={{ width: "100%" }}>
       <Card style={styles.card}>
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContentContainer}
-        >
-          <Typography variant="h2" style={styles.resultTitle}>
+        <View style={styles.scrollContentContainer}>
+          <Typography accessibilityRole="header" variant="h2" style={styles.resultTitle}>
             {resultTitle}
           </Typography>
           <Typography variant="body" style={styles.subText}>
             {resultMessage}
           </Typography>
 
+          <ResultSummary game={playerGame} />
+          <ShareResultButton playerGame={playerGame} />
           <Facts item={playerGame.triviaItem} isScrollEnabled={false} />
 
           <FullPlotSection overview={playerGame.triviaItem.description} />
-        </ScrollView>
+        </View>
       </Card>
 
       <GuessesContainer lastGuessResult={lastGuessResult} />
-      <ShareResultButton playerGame={playerGame} />
       <PersonalizedStatsMessage />
       <CountdownTimer />
-    </Animated.View>
+    </View>
   )
 }
 
 interface GameOverStyles {
   card: ViewStyle
-  scrollView: ViewStyle
   scrollContentContainer: ViewStyle
   resultTitle: TextStyle
   subText: TextStyle
@@ -94,15 +71,12 @@ const themedStyles = (theme: Theme): GameOverStyles => ({
     overflow: "hidden",
     backfaceVisibility: "hidden",
   },
-  scrollView: {
-    maxHeight: theme.responsive.screenHeight * 0.5,
-  },
   scrollContentContainer: {
     padding: theme.spacing.large,
     alignItems: "center",
   },
   resultTitle: {
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
     textAlign: "center",
     marginBottom: theme.spacing.extraSmall,
   },

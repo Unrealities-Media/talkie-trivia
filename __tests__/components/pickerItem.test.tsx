@@ -48,6 +48,15 @@ describe("PickerItem Component", () => {
   })
 
   describe("Collapsed State (Default)", () => {
+    it("announces the release year and prevents selecting an already guessed movie", () => {
+      renderWithTheme(<PickerItem item={mockBasicItem} detailedItem={null} isDisabled={false}
+        isGuessed isExpanded={false} onSelect={mockOnSelect} onLongPress={mockOnLongPress} />)
+      const row = screen.getByRole("button", { name: "The Matrix (1999). Already guessed." })
+      expect(row.props.accessibilityState.disabled).toBe(true)
+      fireEvent.press(row)
+      expect(mockOnSelect).not.toHaveBeenCalled()
+      expect(screen.getByText(/Already guessed/)).toBeTruthy()
+    })
     it("should render the basic info correctly", () => {
       renderWithTheme(
         <PickerItem

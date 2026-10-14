@@ -41,16 +41,17 @@ describe("App: TabsLayout", () => {
     expect(screen.getByTestId("loading-indicator-container")).toBeTruthy()
   })
 
-  it("should show error message if font loading fails", async () => {
+  it("keeps navigation available when fonts fail to load", async () => {
     const errorMsg = "Font load failed"
     const error = new Error(errorMsg)
-    // Ensure fontsLoaded is TRUE so it bypasses loading check
-    ;(useFonts as jest.Mock).mockReturnValue([true, error])
+    ;(useFonts as jest.Mock).mockReturnValue([false, error])
 
     render(<TabLayout />)
 
     await waitFor(() => {
-      expect(screen.getByText(errorMsg)).toBeTruthy()
+      expect(screen.getByTestId("tab-game")).toBeTruthy()
+      expect(screen.getByTestId("tab-profile")).toBeTruthy()
+      expect(screen.queryByTestId("loading-indicator-container")).toBeNull()
     })
   })
 

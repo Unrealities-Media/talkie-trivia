@@ -1,12 +1,13 @@
-import React, { memo } from "react"
+import React, { memo, useState } from "react"
 import {
   ActivityIndicator,
   Text,
   TextInput,
+  Platform,
   View,
-  StyleProp,
   ViewStyle,
   TextStyle,
+  useWindowDimensions,
 } from "react-native"
 import { FlashList, ListRenderItem } from "@shopify/flash-list"
 import Animated from "react-native-reanimated"
@@ -39,14 +40,19 @@ export const PickerUI: React.FC<PickerUIProps> = memo(
   }) => {
     const styles = useStyles(themedStyles)
     const theme = useThemeTokens()
+    const { fontScale } = useWindowDimensions()
+    const [measuredContent, setMeasuredContent] = useState<{
+      items: readonly BasicTriviaItem[]; height: number
+    } | null>(null)
 
-    // Calculate height to enforce scrolling when list is long
+    // Bound only the scrolling list. The hint footer can grow with text size.
     const ITEM_HEIGHT = theme.responsive.scale(62)
     const MAX_CONTAINER_HEIGHT = theme.responsive.scale(250)
 
-    // Add buffer for hint text (approx 30) + list items
-    const calculatedHeight =
-      results.length * ITEM_HEIGHT + theme.responsive.scale(30)
+    // Actual rows can grow for text scaling, wrapped titles and long-press
+    // previews. Keep the scroll viewport bounded, not each result's content.
+    const calculatedHeight = measuredContent?.items === results
+      ? measuredContent.height : results.length * ITEM_HEIGHT * Math.max(1, fontScale)
     const containerHeight = Math.min(calculatedHeight, MAX_CONTAINER_HEIGHT)
 
     return (
@@ -56,7 +62,9 @@ export const PickerUI: React.FC<PickerUIProps> = memo(
             <TextInput
               testID="search-input"
               accessible
-              accessibilityRole="search"
+              accessibilityRole={Platform.OS === "web" ? undefined : "search"}
+              role={Platform.OS === "web" ? "searchbox" : undefined}
+              accessibilityHint="Enter a movie title or alternate title. Add a release year to narrow results. One-character titles must match exactly."
               aria-label="Search for a title to make a guess"
               maxLength={100}
               onChangeText={handleInputChange}
@@ -68,6 +76,7 @@ export const PickerUI: React.FC<PickerUIProps> = memo(
               ]}
               value={query}
               editable={!isInteractionsDisabled}
+              autoCorrect={false}
             />
             {isSearching && (
               <ActivityIndicator
@@ -80,33 +89,35 @@ export const PickerUI: React.FC<PickerUIProps> = memo(
         </Animated.View>
 
         {showResults && (
-          <View
-            style={[
-              styles.resultsContainer,
-              results.length > 0 && { height: containerHeight },
-            ]}
-          >
+          <View style={styles.resultsContainer}>
             {isSearching ? (
               <Text style={styles.noResultsText}>Searching...</Text>
             ) : results.length > 0 ? (
               <>
-                <View style={{ flex: 1, width: "100%" }}>
+                <View testID="search-results-viewport" style={{ height: containerHeight, width: "100%" }}>
                   <FlashList
                     data={results}
                     renderItem={renderItem}
-                    keyExtractor={(item, index) => `${item.id}-${index}`}
+                    keyExtractor={(item) => String(item.id)}
                     keyboardShouldPersistTaps="handled"
+                    nestedScrollEnabled
+                    onContentSizeChange={(_width, height) => {
+                      if (!Number.isFinite(height) || height <= 0) return
+                      setMeasuredContent(previous => previous?.items === results && previous.height === height
+                        ? previous : { items: results, height })
+                    }}
                   />
                 </View>
                 <View style={styles.previewHintContainer}>
-                  <Text style={styles.previewHintText}>
+                  <Text style={styles.previewHintText} accessibilityLiveRegion="polite">
+                    {results.length} {results.length === 1 ? "title" : "titles"}.{" "}
                     💡 Hold any result to preview
                   </Text>
                 </View>
               </>
-            ) : query.length >= 2 ? (
-              <Text style={styles.noResultsText}>
-                No titles found for "{query}"
+            ) : query.trim().length > 0 ? (
+              <Text style={styles.noResultsText} accessibilityLiveRegion="polite">
+                No titles found for "{query}". Try another spelling or omit the year.
               </Text>
             ) : null}
           </View>
@@ -133,7 +144,6 @@ const themedStyles = (theme: Theme): PickerUIStyles => ({
     width: "100%",
     marginTop: theme.spacing.medium,
     marginBottom: theme.spacing.medium,
-    zIndex: 20,
   },
   inputContainer: {
     flexDirection: "row",
@@ -162,21 +172,18 @@ const themedStyles = (theme: Theme): PickerUIStyles => ({
     position: "absolute",
     right: theme.spacing.small,
     top: theme.responsive.scale(12),
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
   },
   resultsContainer: {
-    position: "absolute",
-    top: theme.responsive.scale(55),
-    left: 0,
-    right: 0,
-    // Max height fallback if dynamic calc fails
-    maxHeight: theme.responsive.scale(250),
+    // Results must participate in layout so native accessibility bounds and
+    // the page's scroll extent include every result, including with a keyboard.
+    marginTop: theme.spacing.small,
+    width: "100%",
     backgroundColor: theme.colors.backgroundLight,
     borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: theme.responsive.scale(8),
     ...theme.shadows.medium,
-    zIndex: 100,
     overflow: "hidden",
     flexDirection: "column",
   },
@@ -197,6 +204,6 @@ const themedStyles = (theme: Theme): PickerUIStyles => ({
   previewHintText: {
     fontFamily: "Arvo-Italic",
     fontSize: theme.responsive.responsiveFontSize(11),
-    color: theme.colors.background,
+    color: theme.colors.onAccent,
   },
 })

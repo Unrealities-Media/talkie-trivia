@@ -1,0 +1,9 @@
+{
+  "name": "decode-uri-component",
+  "version": "0.5.0-talkie.1",
+  "private": true,
+  "description": "CommonJS backport of the upstream 0.5.0 security fix for Expo 57 query-string consumers",
+  "main": "index.js",
+  "license": "MIT",
+  "files": ["index.js", "LICENSE", "upstream.json", "README.md"]
+}

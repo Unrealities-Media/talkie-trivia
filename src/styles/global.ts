@@ -69,7 +69,7 @@ export const getTypography = (colors: typeof lightColors) => ({
   button: {
     fontFamily: "Arvo-Bold",
     fontSize: responsive.responsiveFontSize(16),
-    color: colors.background,
+    color: colors.onAccent,
   },
   caption: {
     fontFamily: "Arvo-Regular",
@@ -112,6 +112,8 @@ export const shadows = {
 
 export const getButtonStyles = (colors: ThemeColors) => ({
   base: {
+    minHeight: 48,
+    minWidth: 48,
     borderRadius: responsive.scale(8),
     paddingVertical: spacing.small,
     paddingHorizontal: spacing.medium,
@@ -126,7 +128,6 @@ export const getButtonStyles = (colors: ThemeColors) => ({
   },
   pressed: {
     transform: [{ translateY: 2 }],
-    opacity: 0.8,
   },
   disabled: {
     opacity: 0.6,

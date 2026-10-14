@@ -1,77 +1,57 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react"
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from "react"
+import { AppState } from "react-native"
 import * as Network from "expo-network"
 import { analyticsService } from "../utils/analyticsService"
 
 interface NetworkState {
   isNetworkConnected: boolean | null
+  refreshNetwork: () => Promise<boolean | null>
 }
-
 const NetworkContext = createContext<NetworkState | undefined>(undefined)
+const connection = (state: Network.NetworkState) => state.isInternetReachable ?? state.isConnected ?? null
 
-export const NetworkProvider: React.FC<{ children: ReactNode }> = ({
-  children,
-}) => {
-  const [isNetworkConnected, setIsNetworkConnected] = useState<boolean | null>(
-    null
-  )
+export const NetworkProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [isNetworkConnected, setIsNetworkConnected] = useState<boolean | null>(null)
+  const mounted = useRef(false)
+  const generation = useRef(0)
+  const latest = useRef<boolean | null>(null)
+  const accept = useCallback((value: boolean | null) => {
+    if (!mounted.current) return
+    if (value !== null && value !== latest.current) analyticsService.trackNetworkStatusChange(value)
+    latest.current = value
+    setIsNetworkConnected(value)
+  }, [])
+  const refreshNetwork = useCallback(async () => {
+    const token = ++generation.current
+    let value: boolean | null = null
+    try { value = connection(await Network.getNetworkStateAsync()) } catch { /* Unknown does not prove offline. */ }
+    if (token !== generation.current) return latest.current
+    accept(value)
+    return value
+  }, [accept])
 
   useEffect(() => {
-    let mounted = true
-
-    const checkNetwork = async () => {
-      try {
-        const state = await Network.getNetworkStateAsync()
-        if (mounted) {
-          const isConnected = state.isInternetReachable ?? false
-          setIsNetworkConnected(isConnected)
-          // Track initial status
-          analyticsService.trackNetworkStatusChange(isConnected)
-        }
-      } catch (error) {
-        console.error("NetworkContext: Failed to get network state.", error)
-        if (mounted) {
-          setIsNetworkConnected(false)
-        }
-      }
-    }
-
-    checkNetwork()
-
-    const subscription = Network.addNetworkStateListener((state) => {
-      if (mounted) {
-        const isConnected = state.isInternetReachable ?? false
-        setIsNetworkConnected((prev) => {
-          if (prev !== isConnected) {
-            analyticsService.trackNetworkStatusChange(isConnected)
-          }
-          return isConnected
-        })
-      }
+    mounted.current = true
+    void refreshNetwork()
+    const subscription = Network.addNetworkStateListener(state => {
+      generation.current++
+      accept(connection(state))
     })
-
+    const foreground = AppState.addEventListener("change", state => {
+      if (state === "active") void refreshNetwork()
+    })
     return () => {
-      mounted = false
+      mounted.current = false
+      generation.current++
       subscription.remove()
+      foreground.remove()
     }
-  }, [])
-
-  const value = { isNetworkConnected }
-
-  return (
-    <NetworkContext.Provider value={value}>{children}</NetworkContext.Provider>
-  )
+  }, [accept, refreshNetwork])
+  return <NetworkContext.Provider value={{ isNetworkConnected, refreshNetwork }}>{children}</NetworkContext.Provider>
 }
 
 export const useNetwork = () => {
   const context = useContext(NetworkContext)
-  if (context === undefined) {
-    throw new Error("useNetwork must be used within a NetworkProvider")
-  }
+  if (context === undefined) throw new Error("useNetwork must be used within a NetworkProvider")
   return context
 }

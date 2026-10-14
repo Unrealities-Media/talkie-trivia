@@ -1,118 +1,122 @@
-import { useState, useCallback, useMemo, useEffect } from "react"
-import {
-  GoogleAuthProvider,
-  getAuth,
-  signInWithCredential,
-  signOut,
-  User,
-} from "firebase/auth"
-import * as Google from "expo-auth-session/providers/google"
+import { useState, useCallback, useRef } from "react"
+import { AuthCredential, GoogleAuthProvider, getAuth, linkWithCredential, signInWithCredential, signOut, reauthenticateWithCredential, User } from "firebase/auth"
+import { clearGoogleIdentity, useGoogleIdentity } from "./useGoogleIdentity"
 import Constants from "expo-constants"
 import { analyticsService } from "../analyticsService"
+import { gameService } from "../../services/gameService"
+import { deletionStorage } from "../../services/deletionStorage"
+import { mergeStorage } from "../../services/mergeStorage"
+import { isLocalDemoIdentity } from "../../services/localDemoIdentity"
 
-export function useGoogleAuth(onAuthStateChange: (user: User | null) => void) {
+export function useGoogleAuth(onAuthStateChange: (user: User | null) => void | Promise<void>, onSignedOut?: () => Promise<void>, onCollision?: (sourceUid: string, credential: AuthCredential) => Promise<void>) {
   const [isLoading, setIsLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
-
-  const authConfig = useMemo(
-    () => ({
-      androidClientId: Constants.expoConfig?.extra?.androidClientId,
-      expoClientId: Constants.expoConfig?.extra?.expoClientId,
-      iosClientId: Constants.expoConfig?.extra?.iosClientId,
-      webClientId: Constants.expoConfig?.extra?.webClientId,
-    }),
-    []
-  )
-
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest(
-    authConfig,
-    {}
-  )
-
-  useEffect(() => {
-    const handleGoogleResponse = async () => {
-      if (response?.type === "success") {
-        const { id_token } = response.params
-        const auth = getAuth()
-        const credential = GoogleAuthProvider.credential(id_token)
-        try {
-          const result = await signInWithCredential(auth, credential)
-          setAuthError(null)
-          analyticsService.trackGoogleSignInSuccess(result.user.uid)
-        } catch (e: any) {
-          setAuthError(`Firebase sign-in error: ${e.message}`)
-          analyticsService.trackGoogleSignInFailure(e.message)
-        }
-      } else if (response?.type === "error") {
-        const errorMessage = `Google sign-in error: ${response.error?.message}`
-        setAuthError(errorMessage)
-        analyticsService.trackGoogleSignInFailure(errorMessage)
-      }
-      setIsLoading(false)
-    }
-
-    if (response) {
-      handleGoogleResponse()
-    }
-  }, [response])
+  const busy = useRef(false)
+  const requestIdentity = useGoogleIdentity()
 
   const handleSignIn = useCallback(async () => {
-    // CHECK BOTH SOURCES FOR E2E FLAG
-    // 1. Constants (from app.config.js)
-    // 2. Direct process.env (standard Expo behavior)
-    const isE2E =
-      Constants.expoConfig?.extra?.isE2E === true ||
-      process.env.EXPO_PUBLIC_IS_E2E === "true"
-
-    console.log("[Auth] Sign In attempted. E2E Mode Detected:", isE2E)
-
-    if (isE2E) {
-      console.log("[Auth] SKIPPING GOOGLE PROMPT. Using Mock.")
-      onAuthStateChange({
-        uid: "e2e-test-user",
-        displayName: "E2E User",
-        email: "e2e@example.com",
-        isAnonymous: false,
-        emailVerified: true,
-        phoneNumber: null,
-        photoURL: null,
-        providerId: "google.com",
-        metadata: {},
-        providerData: [],
-        refreshToken: "mock-token",
-        tenantId: null,
-        delete: async () => {},
-        getIdToken: async () => "mock-token",
-        getIdTokenResult: async () => ({} as any),
-        reload: async () => {},
-        toJSON: () => ({}),
-      } as unknown as User)
-      return
-    }
-
+    if (busy.current) return
+    busy.current = true
     setIsLoading(true)
     setAuthError(null)
-    analyticsService.trackGoogleSignInStart()
+    const auth = getAuth()
+    const source = auth.currentUser
     try {
-      await promptAsync()
-    } catch (e: any) {
-      console.error("Google prompt error:", e)
-      setIsLoading(false)
-    }
-  }, [promptAsync, onAuthStateChange])
+      if (Constants.expoConfig?.extra?.googleConfigured === false && !isLocalDemoIdentity()) {
+        setAuthError("Google sign-in is not configured for this development build.")
+        return
+      }
+      if (await deletionStorage.read()) throw new Error("account-deletion-pending")
+      if (await mergeStorage.read()) throw new Error("account-merge-pending")
+      if (source) await gameService.resumePendingAction(source.uid)
+      if (auth.currentUser?.uid !== source?.uid) throw new Error("account-changed")
+      analyticsService.trackGoogleSignInStart()
+      const idToken = await requestIdentity()
+      if (idToken === null) return
+      // A provider response must not authenticate a different session opened meanwhile.
+      if (auth.currentUser?.uid !== source?.uid) throw new Error("account-changed")
+      const credential = GoogleAuthProvider.credential(idToken)
+      let result
+      try {
+        result = source?.isAnonymous ? await linkWithCredential(source, credential) : await signInWithCredential(auth, credential)
+      } catch (error) {
+        if (source?.isAnonymous && onCollision && (error as { code?: string }).code === "auth/credential-already-in-use") {
+          if (auth.currentUser?.uid !== source.uid) throw new Error("account-changed")
+          await onCollision(source.uid, credential)
+          return
+        }
+        throw error
+      }
+      if (auth.currentUser?.uid !== result.user.uid) throw new Error("account-changed")
+      await onAuthStateChange(result.user)
+      analyticsService.trackGoogleSignInSuccess(result.user.uid)
+    } catch (error) {
+      const code = (error as { code?: string }).code
+      // Never fall back to signInWithCredential here: that abandons guest progress.
+      setAuthError(code === "auth/credential-already-in-use" || code === "auth/email-already-in-use"
+        ? "That Google account already has a saved profile. Your guest progress is safe. Connecting existing profiles isn't available yet."
+        : "We couldn't connect your Google account. Your progress is safe. Check your connection and try again.")
+      analyticsService.trackGoogleSignInFailure(code || "unknown")
+    } finally { busy.current = false; setIsLoading(false) }
+  }, [requestIdentity, onAuthStateChange, onCollision])
 
   const handleSignOut = useCallback(async () => {
+    if (busy.current) return
+    busy.current = true
     setIsLoading(true)
     setAuthError(null)
+    const auth = getAuth()
+    const source = auth.currentUser
     try {
+      if (await deletionStorage.read()) throw new Error("account-deletion-pending")
+      if (await mergeStorage.read()) throw new Error("account-merge-pending")
+      // Retain both the session and its durable outbox if a move cannot be saved.
+      if (source) await gameService.resumePendingAction(source.uid)
+      if (auth.currentUser?.uid !== source?.uid) throw new Error("account-changed")
+      await clearGoogleIdentity()
+      if (auth.currentUser?.uid !== source?.uid) throw new Error("account-changed")
+      await signOut(auth)
       analyticsService.trackSignOut()
-      await signOut(getAuth())
-    } catch (e: any) {
-      setAuthError(`Sign-out error: ${e.message}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+      await onSignedOut?.()
+    } catch {
+      setAuthError("We couldn't save your pending progress and sign out. Check your connection and try again.")
+    } finally { busy.current = false; setIsLoading(false) }
+  }, [onSignedOut])
 
-  return { isLoading, authError, handleSignIn, handleSignOut }
+  const withDeletionVerification = useCallback(async (uid: string, operation: () => Promise<void>) => {
+    if (busy.current) throw new Error("Another account operation is in progress.")
+    busy.current = true
+    setIsLoading(true)
+    try {
+      const auth = getAuth()
+      if (await mergeStorage.read()) throw new Error("Finish combining accounts before requesting deletion.")
+      const source = auth.currentUser
+      if (!source || source.uid !== uid) throw new Error("Your account changed. Reopen Profile before continuing.")
+      if (!source.isAnonymous && Constants.expoConfig?.extra?.googleConfigured === false && !isLocalDemoIdentity()) throw new Error("Google sign-in is not configured for this build.")
+      if (!source.isAnonymous) {
+        const idToken = await requestIdentity()
+        if (idToken === null) throw Object.assign(new Error("Verification cancelled. No new deletion request was sent."), { code: "account/verification-cancelled" })
+        if (auth.currentUser?.uid !== uid) throw new Error("Account verification failed. No new deletion request was sent.")
+        await reauthenticateWithCredential(source, GoogleAuthProvider.credential(idToken))
+        await source.getIdToken(true)
+      }
+      if (auth.currentUser?.uid !== uid) throw new Error("Your account changed. No new deletion request was sent.")
+      await operation()
+    } finally { busy.current = false; setIsLoading(false) }
+  }, [requestIdentity])
+
+  const verifyGoogleAccount = useCallback(async (operation: (credential: AuthCredential) => Promise<void>) => {
+    if (busy.current) throw new Error("Another account operation is in progress.")
+    busy.current = true
+    setIsLoading(true)
+    try {
+      if (Constants.expoConfig?.extra?.googleConfigured === false && !isLocalDemoIdentity()) throw new Error("Google sign-in is not configured.")
+      if (await deletionStorage.read()) throw new Error("Finish account deletion first.")
+      const idToken = await requestIdentity()
+      if (idToken === null) throw Object.assign(new Error("Verification cancelled."), { code: "account/verification-cancelled" })
+      await operation(GoogleAuthProvider.credential(idToken))
+    } finally { busy.current = false; setIsLoading(false) }
+  }, [requestIdentity])
+
+  return { isLoading, authError, handleSignIn, handleSignOut, withDeletionVerification, verifyGoogleAccount }
 }

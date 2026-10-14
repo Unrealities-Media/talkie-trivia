@@ -123,7 +123,7 @@ const themedStyles = (theme: Theme): RevealSequenceStyles => ({
   title: {
     fontFamily: "Arvo-Bold",
     fontSize: theme.responsive.responsiveFontSize(24),
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
     textAlign: "center",
     marginTop: theme.spacing.large,
     paddingHorizontal: theme.spacing.small,

@@ -2,80 +2,50 @@ import { Share } from "react-native"
 import { PlayerGame } from "../models/game"
 import { analyticsService } from "./analyticsService"
 import { hapticsService } from "./hapticsService"
-import { calculateScore } from "./scoreUtils"
-import { GAME_MODE_CONFIG } from "../config/difficulty"
-import { useGameStore } from "../state/gameStore"
+import { DIFFICULTY_MODES } from "../config/difficulty"
+import { challengeDay, manualHintsUsed, savedScore } from "./resultSummary"
 
-export const generateShareMessage = (playerGame: PlayerGame): string => {
-  const appUrl = "https://talkie-trivia.com"
-  const gameDate =
-    playerGame.startDate instanceof Date
-      ? playerGame.startDate
-      : new Date(playerGame.startDate)
-
-  // Get the current game mode to generate a context-aware message.
-  const gameMode = useGameStore.getState().gameMode
-  const config = GAME_MODE_CONFIG[gameMode]
-
-  const dateString = gameDate.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-  const title = `${config.shareResultTitle}\n📅 ${dateString}`
-
-  let resultLine = ""
-  let grid = ""
-  const guessCount = playerGame.guesses.length
-
-  if (playerGame.correctAnswer) {
-    resultLine = `✅ Guessed in ${guessCount}/${playerGame.guessesMax} tries!`
-    grid = "🟥".repeat(guessCount - 1) + "🟩"
-  } else if (playerGame.gaveUp) {
-    resultLine = `🤔 Gave up after ${guessCount} guess${
-      guessCount === 1 ? "" : "es"
-    }.`
-    grid = "🟥".repeat(guessCount) + "⏹️"
-  } else {
-    resultLine = `😢 Didn't guess the item!`
-    grid = "🟥".repeat(playerGame.guessesMax).trim()
+export const generateShareMessage = (game: PlayerGame): string => {
+  const day = challengeDay(game)
+  const score = savedScore(game)
+  const mode = DIFFICULTY_MODES[game.difficulty]
+  if (!day || score === null || !mode || game.guesses.length > game.guessesMax ||
+      (game.correctAnswer && game.guesses.length === 0)) {
+    throw new Error("A saved, completed result is needed before sharing.")
   }
-
-  const score = calculateScore(playerGame)
-  const scoreLine = `Score: 🏆 ${score}`
-
-  return `${title}\n${resultLine}\n\n${grid}\n${scoreLine}\n\nPlay at ${appUrl}`
+  const count = game.guesses.length
+  const result = game.correctAnswer
+    ? `Solved in ${count}/${game.guessesMax} guesses`
+    : game.gaveUp ? `Gave up after ${count} ${count === 1 ? "guess" : "guesses"}`
+      : `Out of guesses (${count}/${game.guessesMax})`
+  const grid = game.correctAnswer ? "🟥".repeat(count - 1) + "🟩"
+    : "🟥".repeat(count) + (game.gaveUp ? "⏹️" : "")
+  const hintLine = game.difficulty === "LEVEL_2" ? `\nHints used: ${manualHintsUsed(game)}/3` : ""
+  // Text-only until an owned public destination is configured and verified.
+  // No answer, cast, plot, guessed titles, account IDs, or mutable store values.
+  return `Talkie Trivia 🎬\n${day} (UTC) · ${mode.label}\n${result}\n${grid}\nScore: ${score}${hintLine}`
 }
 
-export const shareGameResult = async (playerGame: PlayerGame) => {
-  hapticsService.medium()
-  const outcome = playerGame.correctAnswer
-    ? "win"
-    : playerGame.gaveUp
-    ? "give_up"
-    : "lose"
-  analyticsService.trackShareResults(outcome)
-
-  const message = generateShareMessage(playerGame)
-
+let sharing = false
+export const shareGameResult = async (game: PlayerGame): Promise<void> => {
+  if (sharing) return
+  const message = generateShareMessage(game)
+  const outcome = game.correctAnswer ? "win" : game.gaveUp ? "give_up" : "lose"
+  sharing = true
   try {
-    await Share.share(
-      {
-        message,
-        title: "Talkie Trivia Results",
-      },
-      {
-        dialogTitle: "Share your Talkie Trivia results!",
-      }
-    )
-  } catch (error: any) {
-    if (
-      error.name === "AbortError" ||
-      error.message.includes("Share Canceled")
-    ) {
-      console.log("Share action was canceled by the user.")
-      return
-    }
+    hapticsService.medium()
+    const result = await Share.share({ message, title: "Talkie Trivia Results" }, {
+      dialogTitle: "Share your Talkie Trivia results!",
+    })
+    // This is the platform-reported result, not proof that a recipient received it.
+    if (result.action === Share.sharedAction) analyticsService.trackShareResults(outcome)
+  } catch (error: unknown) {
+    if (error && typeof error === "object" && (
+      ("name" in error && error.name === "AbortError") ||
+      ("message" in error && typeof error.message === "string" && /share cancel(?:l?ed)/i.test(error.message))
+    )) return
     throw error
+  } finally {
+    sharing = false
   }
 }

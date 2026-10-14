@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState, useCallback } from "react"
+import React, { lazy, Suspense, useState, useCallback, useEffect } from "react"
 import {
   ScrollView,
   View,
@@ -13,7 +13,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import LoadingIndicator from "../../components/loadingIndicator"
 import { useAuth } from "../../contexts/authContext"
 import { GameHistoryEntry } from "../../models/gameHistory"
-import { useGameStore } from "../../state/gameStore"
+import ErrorMessage from "../../components/errorMessage"
 import { FontAwesome } from "@expo/vector-icons"
 import ProfileSection from "../../components/profileSection"
 import { useStyles, Theme } from "../../utils/hooks/useStyles"
@@ -23,9 +23,14 @@ import { u } from "../../styles/utils"
 import Constants from "expo-constants"
 
 const GoogleLogin = lazy(() => import("../../components/googleLogin"))
-const PlayerStatsContainer = lazy(() => import("../../components/playerStats"))
+const AccountDeletion = lazy(() => import("../../components/accountDeletion"))
+const AccountMerge = lazy(() => import("../../components/accountMerge"))
+const SessionRecovery = lazy(() => import("../../components/sessionRecovery"))
+const AccountStats = lazy(() => import("../../components/accountStats"))
 const GameHistory = lazy(() => import("../../components/gameHistory"))
+const GuestArchive = lazy(() => import("../../components/guestArchive"))
 const ThemeSelector = lazy(() => import("../../components/themeSelector"))
+const ReminderSettings = lazy(() => import("../../components/reminderSettings"))
 const DifficultySelector = lazy(
   () => import("../../components/difficultySelector"),
 )
@@ -59,18 +64,17 @@ const Footer = () => {
 }
 
 const ProfileScreen: React.FC = () => {
-  const { player, user } = useAuth()
-  const playerStats = useGameStore((state) => state.playerStats)
-  const loading = useGameStore((state) => state.loading)
+  const { player, user, deletion, merge, mergeProposal, lostSession, loading: authLoading, error: authError, retryAuthentication } = useAuth()
   const styles = useStyles(themedStyles)
   const { colors } = useTheme()
 
   const [selectedHistoryItem, setSelectedHistoryItem] =
-    useState<GameHistoryEntry | null>(null)
+    useState<{ uid: string; item: GameHistoryEntry } | null>(null)
+  useEffect(() => { setSelectedHistoryItem(null) }, [player?.id])
 
   const handleHistoryItemPress = useCallback((item: GameHistoryEntry) => {
-    setSelectedHistoryItem(item)
-  }, [])
+    if (player) setSelectedHistoryItem({ uid: player.id, item })
+  }, [player?.id])
 
   const handleModalClose = useCallback(() => {
     setSelectedHistoryItem(null)
@@ -80,17 +84,6 @@ const ProfileScreen: React.FC = () => {
   const isUserAuthenticated = player && user
 
   const displayName = player?.name || "Guest"
-
-  if (!isUserAuthenticated || loading) {
-    return (
-      <LinearGradient
-        colors={[colors.background, colors.backgroundLight]}
-        style={u.flex}
-      >
-        <LoadingIndicator />
-      </LinearGradient>
-    )
-  }
 
   return (
     <>
@@ -108,7 +101,11 @@ const ProfileScreen: React.FC = () => {
                 <Text style={styles.title}>Welcome, {displayName}!</Text>
               </View>
 
-              {!isGoogleSignedIn && (
+              {authLoading && <LoadingIndicator message="Opening your player account…" />}
+              {(merge || mergeProposal) && <AccountMerge />}
+              {!authLoading && lostSession && !deletion && <SessionRecovery />}
+              {!authLoading && !isUserAuthenticated && !deletion && !lostSession && !merge && !mergeProposal && <ErrorMessage message={authError || "Your player account could not be opened."} onRetry={retryAuthentication} />}
+              {isUserAuthenticated && !isGoogleSignedIn && (
                 <View style={styles.signInPromptContainer}>
                   <FontAwesome
                     name="google"
@@ -117,11 +114,10 @@ const ProfileScreen: React.FC = () => {
                     style={u.mbMd}
                   />
                   <Text style={styles.signInPromptTitle}>
-                    Save Your Progress
+                    Link Your Guest Account
                   </Text>
                   <Text style={styles.signInPromptText}>
-                    Sign in with Google below to secure your stats permanently
-                    and join the leaderboards.
+                    Your guest progress is already saved. Link a Google account to keep access across devices or after reinstalling. Signing in is optional.
                   </Text>
                   <GoogleLogin />
                 </View>
@@ -137,18 +133,23 @@ const ProfileScreen: React.FC = () => {
                 <DifficultySelector />
                 <View style={styles.divider} />
                 <ThemeSelector />
+                <View style={styles.divider} />
+                <ReminderSettings suspended={authLoading || !!deletion} />
               </ProfileSection>
 
-              <ProfileSection title="Statistics" icon="bar-chart">
-                <PlayerStatsContainer
-                  player={player}
-                  playerStats={playerStats}
-                />
-              </ProfileSection>
+              {!merge && !mergeProposal && (user || deletion) && <ProfileSection title="Account deletion" icon="trash"><AccountDeletion /></ProfileSection>}
 
-              <ProfileSection title="Game History" icon="history">
-                <GameHistory onHistoryItemPress={handleHistoryItemPress} />
+              {isUserAuthenticated && <ProfileSection title="Statistics" icon="bar-chart">
+                <AccountStats key={player.id} player={player} />
               </ProfileSection>
+              }
+
+              {isUserAuthenticated && <ProfileSection title="Game History" icon="history">
+                <GameHistory key={player.id} onHistoryItemPress={handleHistoryItemPress} />
+              </ProfileSection>}
+              {isGoogleSignedIn && <ProfileSection title="Preserved guest games" icon="archive">
+                <GuestArchive uid={player.id} />
+              </ProfileSection>}
 
               <Footer />
             </View>
@@ -157,7 +158,7 @@ const ProfileScreen: React.FC = () => {
       </LinearGradient>
       <Suspense fallback={null}>
         <HistoryDetailModal
-          historyItem={selectedHistoryItem}
+          historyItem={isUserAuthenticated && selectedHistoryItem && selectedHistoryItem.uid === player.id ? selectedHistoryItem.item : null}
           onClose={handleModalClose}
         />
       </Suspense>
@@ -225,11 +226,11 @@ const themedStyles = (theme: Theme): ProfileScreenStyles => ({
   },
   signInPromptIcon: {
     fontSize: theme.responsive.scale(30),
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
   },
   signInPromptTitle: {
     ...theme.typography.heading2,
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
     marginTop: theme.spacing.medium,
     marginBottom: theme.spacing.small,
     textAlign: "center",
@@ -258,7 +259,7 @@ const themedStyles = (theme: Theme): ProfileScreenStyles => ({
     maxWidth: "90%",
   },
   linkText: {
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
     textDecorationLine: "underline",
     fontFamily: "Arvo-Bold",
   },

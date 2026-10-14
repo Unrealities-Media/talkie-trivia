@@ -1,5 +1,6 @@
 module.exports = {
   preset: 'jest-expo',
+  modulePathIgnorePatterns: ["<rootDir>/.expo/"],
   transformIgnorePatterns: [
     "node_modules/(?!(jest-)?react-native|@react-native|expo(nent)?|@expo(nent)?/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@react-navigation/.*|expo-modules-core|immer|zustand/.*|firebase|@firebase|uuid|gaxios|gcp-metadata|google-auth-library)"
   ],
@@ -10,7 +11,9 @@ module.exports = {
   },
   testPathIgnorePatterns: [
     "/node_modules/",
-    "/functions/" 
+    "/functions/",
+    "/scripts/",
+    "/.expo/"
   ],
   collectCoverage: true,
   collectCoverageFrom: [

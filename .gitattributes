@@ -1,0 +1,2 @@
+# Upstream byte hashes must survive Windows checkouts.
+/vendor/fbjni/** text eol=lf

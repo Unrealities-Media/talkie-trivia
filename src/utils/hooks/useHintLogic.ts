@@ -23,6 +23,7 @@ export function useHintLogic() {
     playerStats,
     difficulty,
     useHint,
+    syncStatus,
   } = useGameStore(
     useShallow((state) => ({
       playerGame: state.playerGame,
@@ -30,13 +31,13 @@ export function useHintLogic() {
       playerStats: state.playerStats,
       difficulty: state.difficulty,
       useHint: state.useHint,
+      syncStatus: state.syncStatus,
     }))
   )
 
   const [showHintOptions, setShowHintOptions] = useState(false)
-  const [displayedHintText, setDisplayedHintText] = useState<string | null>(
-    null
-  )
+  const [selectedHint, setSelectedHint] = useState<{ gameKey: string; type: string } | null>(null)
+  const gameKey = `${playerGame.playerID}:${playerGame.id}`
   const [highlightedHint, setHighlightedHint] = useState<string | null>(null)
   const prevHintsUsedRef = useRef<Partial<Record<string, boolean>>>(undefined)
 
@@ -51,7 +52,9 @@ export function useHintLogic() {
 
     for (const hint of allHints) {
       const type = hint.type
-      if (usedHints[type]) {
+      if (isInteractionsDisabled || syncStatus !== "idle") {
+        statuses[type] = "disabled"
+      } else if (usedHints[type]) {
         statuses[type] = "used"
       } else if (
         currentHintStrategy === "NONE_DISABLED" ||
@@ -69,6 +72,7 @@ export function useHintLogic() {
   }, [
     playerGame.hintsUsed,
     isInteractionsDisabled,
+    syncStatus,
     hintsAvailable,
     currentHintStrategy,
     allHints,
@@ -122,30 +126,37 @@ export function useHintLogic() {
 
   const handleHintSelection = useCallback(
     (hintType: string) => {
-      if (currentHintStrategy !== "USER_SPEND") return
+      if (currentHintStrategy !== "USER_SPEND" || isInteractionsDisabled || syncStatus !== "idle") return
+      const status = hintStatuses[hintType]
+      if (status !== "available" && status !== "used") return
 
       hapticsService.medium()
 
-      const status = hintStatuses[hintType]
       setShowHintOptions(false)
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
-      setDisplayedHintText(getHintText(hintType))
+      setSelectedHint({ gameKey, type: hintType })
 
       if (status === "available") {
-        useHint(hintType)
+        void useHint(hintType)
       }
     },
-    [hintStatuses, currentHintStrategy, getHintText, useHint]
+    [hintStatuses, currentHintStrategy, isInteractionsDisabled, syncStatus, gameKey, useHint]
   )
+
+  // Selecting is only intent. The server-confirmed state authorizes display,
+  // including after a failed response is recovered by the durable retry path.
+  const displayedHintText = currentHintStrategy === "USER_SPEND" &&
+    selectedHint?.gameKey === gameKey && playerGame.hintsUsed?.[selectedHint.type]
+      ? getHintText(selectedHint.type) : null
 
   useEffect(() => {
     if (currentHintStrategy !== "USER_SPEND") {
-      setDisplayedHintText(null)
+      setSelectedHint(null)
     }
   }, [playerGame.guesses.length, currentHintStrategy])
 
   const handleToggleHintOptions = useCallback(() => {
-    if (currentHintStrategy !== "USER_SPEND") return
+    if (currentHintStrategy !== "USER_SPEND" || isInteractionsDisabled || syncStatus !== "idle") return
 
     hapticsService.light()
 
@@ -158,7 +169,7 @@ export function useHintLogic() {
 
     if (!showHintOptions) {
       analyticsService.trackHintOptionsToggled()
-      setDisplayedHintText(null)
+      setSelectedHint(null)
     }
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     setShowHintOptions((prevShow) => !prevShow)
@@ -167,6 +178,8 @@ export function useHintLogic() {
     hintsAvailable,
     playerGame.hintsUsed,
     currentHintStrategy,
+    isInteractionsDisabled,
+    syncStatus,
   ])
 
   const hintLabelText = useMemo(() => {
@@ -187,7 +200,7 @@ export function useHintLogic() {
         return `Need a Hint? (${effectiveHints} available)`
       }
       case "IMPLICIT_FEEDBACK":
-        return "Hints are revealed by successful guesses!"
+        return "Match an actor, director, genre or decade to reveal a hint."
       case "NONE_DISABLED":
       case "EXTREME_CHALLENGE":
         return ""
@@ -202,7 +215,7 @@ export function useHintLogic() {
   ])
 
   const isToggleDisabled =
-    isInteractionsDisabled || currentHintStrategy !== "USER_SPEND"
+    isInteractionsDisabled || syncStatus !== "idle" || currentHintStrategy !== "USER_SPEND"
 
   return {
     showHintOptions,

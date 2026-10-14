@@ -63,11 +63,11 @@ const themedStyles = (theme: Theme): ProfileSectionStyles => ({
   },
   icon: {
     fontSize: theme.responsive.responsiveFontSize(16),
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
   },
   title: {
     fontSize: theme.responsive.responsiveFontSize(18),
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
     marginLeft: theme.spacing.small,
   },
   content: {

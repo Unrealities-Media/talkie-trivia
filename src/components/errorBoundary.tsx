@@ -1,6 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from "react"
 import { View, Text, Button, StyleSheet, Platform, Alert } from "react-native"
-import * as Updates from "expo-updates"
+import { reloadAppAsync } from "expo"
 import { analyticsService } from "../utils/analyticsService"
 
 const safeStyles = StyleSheet.create({
@@ -36,9 +36,11 @@ const safeStyles = StyleSheet.create({
 const ErrorDisplay = ({
   error,
   onReload,
+  isReloading,
 }: {
   error: Error | null
   onReload: () => void
+  isReloading: boolean
 }) => {
   return (
     <View style={safeStyles.errorContainer}>
@@ -47,8 +49,10 @@ const ErrorDisplay = ({
         An unexpected error occurred. Please try reloading the app.
       </Text>
       <Button
-        title="Reload App"
+        title={isReloading ? "Reloading…" : "Reload App"}
         onPress={onReload}
+        disabled={isReloading}
+        accessibilityState={{ busy: isReloading, disabled: isReloading }}
         color="#FFC107" // Safe primary color
         testID="reload-button"
       />
@@ -71,41 +75,57 @@ interface State {
   hasError: boolean
   error: Error | null
   errorInfo: ErrorInfo | null
+  isReloading: boolean
 }
 
 class ErrorBoundary extends Component<Props, State> {
+  private reloadPending = false
+  private mounted = false
   public state: State = {
     hasError: false,
     error: null,
     errorInfo: null,
+    isReloading: false,
   }
 
   public static getDerivedStateFromError(
     error: Error
   ): Pick<State, "hasError" | "error"> {
-    console.error("ErrorBoundary caught an error:", error)
-    analyticsService.trackErrorBoundary(error.message)
     return { hasError: true, error }
   }
 
+  public componentDidMount() {
+    this.mounted = true
+  }
+
+  public componentWillUnmount() {
+    this.mounted = false
+  }
+
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("ErrorBoundary details:", error, errorInfo)
+    if (__DEV__) console.error("ErrorBoundary details:", error, errorInfo)
+    analyticsService.trackErrorBoundary(error.message)
     this.setState({ errorInfo })
   }
 
   private handleReload = async () => {
+    if (this.reloadPending) return
+    this.reloadPending = true
+    this.setState({ isReloading: true })
     try {
       if (Platform.OS === "web") {
         window.location.reload()
         return
       }
 
-      if (__DEV__) {
-        console.log("Attempting to reload app via Updates API...")
-      }
-      await Updates.reloadAsync()
+      // Reload the installed bundle even when OTA updates are disabled.
+      // Keep the button busy after acknowledgment until the runtime restarts.
+      await reloadAppAsync("error-boundary")
     } catch (e) {
-      console.error("Failed to reload the app:", e)
+      this.reloadPending = false
+      if (!this.mounted) return
+      this.setState({ isReloading: false })
+      if (__DEV__) console.error("Failed to reload the app:", e)
       Alert.alert(
         "Reload Failed",
         "Could not automatically reload the app. Please close and restart it manually."
@@ -116,7 +136,7 @@ class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <ErrorDisplay error={this.state.error} onReload={this.handleReload} />
+        <ErrorDisplay error={this.state.error} onReload={this.handleReload} isReloading={this.state.isReloading} />
       )
     }
 

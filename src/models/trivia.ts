@@ -44,4 +44,6 @@ export interface BasicTriviaItem {
   title: string
   releaseDate: string
   posterPath: string
+  /** Reviewed alternate/localized titles, always resolving to the same ID. */
+  aliases?: readonly string[]
 }

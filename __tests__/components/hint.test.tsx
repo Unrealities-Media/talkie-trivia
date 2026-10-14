@@ -178,7 +178,7 @@ describe("HintContainer Component", () => {
       expect(screen.queryByTestId("mock-hint-ui")).toBeNull()
     })
 
-    it("should render HintUI when toggle IS disabled (e.g., Game Over)", () => {
+    it("keeps Medium's game-over label informational without hint controls", () => {
       setMockStoreState({
         difficulty: "LEVEL_3",
         isInteractionsDisabled: true,
@@ -192,8 +192,8 @@ describe("HintContainer Component", () => {
 
       renderWithTheme(<HintContainer />)
 
-      // Should fall through to HintUI
-      expect(screen.getByTestId("mock-hint-ui")).toBeTruthy()
+      expect(screen.getByText("Game Over")).toBeTruthy()
+      expect(screen.queryByTestId("mock-hint-ui")).toBeNull()
     })
   })
 

@@ -1,163 +1,52 @@
-import { act, renderHook } from "@testing-library/react-native"
 import { useGameStore } from "../../src/state/gameStore"
 import { defaultPlayerGame, defaultPlayerStats } from "../../src/models/default"
+import { gameService } from "../../src/services/gameService"
 import { analyticsService } from "../../src/utils/analyticsService"
-
-// Mocks
 jest.mock("../../src/utils/analyticsService")
 jest.mock("../../src/services/gameService")
-jest.mock("@react-native-async-storage/async-storage", () =>
-  require("@react-native-async-storage/async-storage/jest/async-storage-mock")
-)
-
-// Mock Data
-const mockBasicItem = {
-  id: 101,
-  title: "The Matrix",
-  releaseDate: "1999",
-  posterPath: "/path",
+jest.mock("@react-native-async-storage/async-storage", () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"))
+const initial = useGameStore.getState()
+const movie = { id: 101, title: "The Matrix", releaseDate: "1999", posterPath: "", description: "Neo", metadata: {}, hints: [] }
+const game = { ...defaultPlayerGame, playerID: "p1", triviaItem: movie, revision: 0, challengeId: "2026-10-13" }
+const acknowledge = (changes: Partial<typeof game>) => {
+  ;(gameService.applyAction as jest.Mock).mockResolvedValue({ game: { ...game, ...changes }, stats: { ...defaultPlayerStats, id: "p1" } })
 }
-const mockFullItem = {
-  id: 101,
-  title: "The Matrix",
-  description: "Neo...",
-  posterPath: "/path",
-  releaseDate: "1999",
-  metadata: {},
-  hints: [
-    { type: "director", label: "Director", value: "Wachowski" },
-    { type: "genre", label: "Genre", value: "Sci-Fi" },
-  ],
-}
-
-describe("State: gameStore", () => {
-  const initialState = useGameStore.getState()
-
+describe("gameplay presentation after server acknowledgment", () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    useGameStore.setState({
-      ...initialState,
-      playerGame: {
-        ...defaultPlayerGame,
-        triviaItem: mockFullItem,
-        guessesMax: 5,
-      },
-      playerStats: { ...defaultPlayerStats, hintsAvailable: 3 },
-      fullItems: [mockFullItem],
-      basicItems: [mockBasicItem],
-      isInteractionsDisabled: false,
-      difficulty: "LEVEL_3", // Medium: Implicit Feedback
-    })
+    useGameStore.setState({ ...initial, loading: false, playerGame: game, fullItems: [movie], basicItems: [movie], isInteractionsDisabled: false }, true)
   })
-
-  describe("makeGuess", () => {
-    it("should process a correct guess", async () => {
-      const { result } = renderHook(() => useGameStore())
-
-      await act(async () => {
-        result.current.makeGuess(mockBasicItem)
-      })
-
-      const state = result.current
-      expect(state.playerGame.correctAnswer).toBe(true)
-      expect(state.showConfetti).toBe(true)
-      expect(state.isInteractionsDisabled).toBe(true) // Game over triggered
-      expect(analyticsService.trackGuessMade).toHaveBeenCalledWith(
-        1,
-        true,
-        101,
-        "The Matrix"
-      )
-    })
-
-    it("should process an incorrect guess and provide feedback", async () => {
-      const { result } = renderHook(() => useGameStore())
-      const wrongItem = { ...mockBasicItem, id: 999, title: "Wrong Movie" }
-
-      await act(async () => {
-        result.current.makeGuess(wrongItem)
-      })
-
-      const state = result.current
-      expect(state.playerGame.correctAnswer).toBe(false)
-      expect(state.playerGame.guesses).toHaveLength(1)
-      expect(state.lastGuessResult?.correct).toBe(false)
-      expect(analyticsService.trackGuessMade).toHaveBeenCalledWith(
-        1,
-        false,
-        999,
-        "Wrong Movie"
-      )
-    })
-
-    it("should not allow guesses if game is over", () => {
-      const { result } = renderHook(() => useGameStore())
-
-      act(() => {
-        useGameStore.setState({
-          playerGame: { ...defaultPlayerGame, correctAnswer: true },
-        })
-      })
-
-      act(() => {
-        result.current.makeGuess(mockBasicItem)
-      })
-
-      // Should not have added a guess
-      expect(useGameStore.getState().playerGame.guesses).toHaveLength(0)
-    })
+  it("shows a confirmed win and its canonical score", async () => {
+    acknowledge({ correctAnswer: true, guesses: [{ itemId: 101 }], statsProcessed: true, score: 700 })
+    await useGameStore.getState().makeGuess(movie)
+    expect(useGameStore.getState()).toMatchObject({ showConfetti: true, isInteractionsDisabled: true, playerGame: { score: 700 } })
+    expect(analyticsService.trackGuessMade).toHaveBeenCalledWith(1, true, 101, "The Matrix")
   })
-
-  describe("useHint", () => {
-    it("should decrement hintsAvailable and mark hint as used", () => {
-      const { result } = renderHook(() => useGameStore())
-
-      // Switch to a mode that allows manual hints (Level 2)
-      act(() => {
-        result.current.setDifficulty("LEVEL_2")
-      })
-
-      act(() => {
-        result.current.useHint("director")
-      })
-
-      const state = result.current
-      expect(state.playerGame.hintsUsed?.director).toBe(true)
-      expect(state.playerStats.hintsAvailable).toBe(2) // Started with 3
-      expect(analyticsService.trackHintUsed).toHaveBeenCalled()
-    })
-
-    it("should not allow using a hint if none available", () => {
-      const { result } = renderHook(() => useGameStore())
-
-      act(() => {
-        result.current.setDifficulty("LEVEL_2")
-        useGameStore.setState({
-          playerStats: { ...defaultPlayerStats, hintsAvailable: 0 },
-        })
-      })
-
-      act(() => {
-        result.current.useHint("genre")
-      })
-
-      const state = result.current
-      expect(state.playerGame.hintsUsed?.genre).toBeUndefined()
-    })
+  it("displays the saved wrong guess without ending the game", async () => {
+    acknowledge({ guesses: [{ itemId: 999 }] })
+    await useGameStore.getState().makeGuess({ ...movie, id: 999 })
+    expect(useGameStore.getState()).toMatchObject({ isInteractionsDisabled: false, lastGuessResult: { correct: false }, playerGame: { guesses: [{ itemId: 999 }] } })
   })
-
-  describe("giveUp", () => {
-    it("should mark game as gaveUp and disable interactions", async () => {
-      const { result } = renderHook(() => useGameStore())
-
-      await act(async () => {
-        result.current.giveUp()
-      })
-
-      const state = result.current
-      expect(state.playerGame.gaveUp).toBe(true)
-      expect(state.isInteractionsDisabled).toBe(true)
-      expect(analyticsService.trackGameGiveUp).toHaveBeenCalled()
-    })
+  it("does not send guesses after completion", async () => {
+    useGameStore.setState({ playerGame: { ...game, correctAnswer: true } })
+    await useGameStore.getState().makeGuess(movie)
+    expect(gameService.applyAction).not.toHaveBeenCalled()
+  })
+  it("shows the remaining per-game hints after a confirmed spend", async () => {
+    acknowledge({ difficulty: "LEVEL_2", hintsUsed: { director: true } })
+    await useGameStore.getState().useHint("director")
+    expect(useGameStore.getState().playerStats.hintsAvailable).toBe(2)
+    expect(analyticsService.trackHintUsed).toHaveBeenCalledWith("director", 0, 2)
+  })
+  it("does not reveal a rejected hint", async () => {
+    ;(gameService.applyAction as jest.Mock).mockRejectedValue(new Error("This hint is not available."))
+    await useGameStore.getState().useHint("director")
+    expect(useGameStore.getState().playerGame.hintsUsed?.director).toBeUndefined()
+  })
+  it("ends play after an acknowledged give-up", async () => {
+    acknowledge({ gaveUp: true, statsProcessed: true })
+    await useGameStore.getState().giveUp()
+    expect(useGameStore.getState()).toMatchObject({ gameStatus: "revealing", isInteractionsDisabled: true })
+    expect(analyticsService.trackGameGiveUp).toHaveBeenCalledWith(0, 0)
   })
 })

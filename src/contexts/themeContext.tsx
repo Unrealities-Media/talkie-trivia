@@ -3,6 +3,7 @@ import React, {
   useState,
   useEffect,
   useContext,
+  useRef,
   ReactNode,
 } from "react"
 import {
@@ -21,6 +22,7 @@ export type ThemeColors = typeof lightColors
 interface ThemeContextType {
   theme: Theme
   setTheme: (theme: Theme) => void
+  saveError?: string | null
   colors: ThemeColors
   colorScheme: AppColorScheme
 }
@@ -34,47 +36,68 @@ export const ThemeContext = createContext<ThemeContextType | undefined>(
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const systemColorScheme = useRNColorScheme() ?? "light"
   const [theme, setThemeState] = useState<Theme>("system")
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const preferenceRevision = useRef(0)
+  const writeQueue = useRef(Promise.resolve())
+  const mounted = useRef(false)
 
   const colorScheme: AppColorScheme =
-    theme === "system" ? (systemColorScheme as AppColorScheme) : theme
+    theme === "system"
+      ? systemColorScheme === "dark" ? "dark" : "light"
+      : theme
 
   useEffect(() => {
+    mounted.current = true
+    let cancelled = false
+    const revision = preferenceRevision.current
     const loadTheme = async () => {
       try {
-        const storedTheme = (await AsyncStorage.getItem(
-          THEME_STORAGE_KEY
-        )) as Theme | null
-        if (storedTheme) {
+        const storedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY)
+        if (
+          !cancelled &&
+          preferenceRevision.current === revision &&
+          (storedTheme === "light" || storedTheme === "dark" || storedTheme === "system")
+        ) {
           setThemeState(storedTheme)
         }
       } catch (e) {
-        console.error("Failed to load theme from storage", e)
+        if (__DEV__) console.error("Failed to load theme from storage", e)
       }
     }
     loadTheme()
+    return () => {
+      cancelled = true
+      mounted.current = false
+    }
   }, [])
 
-  const setTheme = async (newTheme: Theme) => {
-    try {
-      await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme)
-      setThemeState(newTheme)
-
-      if (Platform.OS !== "web") {
-        if (newTheme === "system") {
-          Appearance.setColorScheme("unspecified")
-        } else {
-          Appearance.setColorScheme(newTheme)
-        }
-      }
-    } catch (e) {
-      console.error("Failed to save theme to storage", e)
+  useEffect(() => {
+    if (Platform.OS !== "web") {
+      Appearance.setColorScheme(theme === "system" ? "unspecified" : theme)
     }
+  }, [theme])
+
+  const setTheme = (newTheme: Theme) => {
+    const revision = ++preferenceRevision.current
+    setThemeState(newTheme)
+    setSaveError(null)
+    // Preserve tap order on disk even when storage is slow. A failed write must
+    // not prevent the next preference from being saved.
+    writeQueue.current = writeQueue.current
+      .then(() => AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme))
+      .catch(() => {
+        if (mounted.current && preferenceRevision.current === revision) {
+          setSaveError(
+            "Theme changed for this session. Tap your choice again to save it."
+          )
+        }
+      })
   }
 
   const colors: ThemeColors = colorScheme === "dark" ? darkColors : lightColors
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, colors, colorScheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, saveError, colors, colorScheme }}>
       {children}
     </ThemeContext.Provider>
   )

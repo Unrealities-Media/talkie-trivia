@@ -16,6 +16,7 @@ import { getFunctions, connectFunctionsEmulator } from "firebase/functions"
 import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage"
 import Constants from "expo-constants"
 import { Platform } from "react-native"
+import { useFirebaseEmulators, firebaseEmulatorHost } from "../config/firebaseEnvironment"
 
 const firebaseConfig = {
   apiKey: Constants?.expoConfig?.extra?.firebaseApiKey,
@@ -31,12 +32,16 @@ const app: FirebaseApp = getApps().length
   ? getApp()
   : initializeApp(firebaseConfig)
 
+if (useFirebaseEmulators && !firebaseConfig.projectId?.startsWith("demo-")) {
+  throw new Error("Emulator builds require a demo Firebase project.")
+}
+
 let db: Firestore
 let auth: Auth
 
 try {
   db = initializeFirestore(app, {
-    experimentalForceLongPolling: __DEV__ && Platform.OS === "android",
+    experimentalForceLongPolling: useFirebaseEmulators && Platform.OS === "android",
   })
 } catch (e: any) {
   db = getFirestore(app)
@@ -61,17 +66,17 @@ if (Platform.OS === "web") {
   }
 }
 
-if (__DEV__) {
-  console.log("🔧 Connecting to Firebase Emulators...")
-  const host = Platform.OS === "android" ? "10.0.2.2" : "localhost"
-
-  try {
+if (useFirebaseEmulators) {
+  const host = firebaseEmulatorHost
+  // Persist successful setup across Fast Refresh. Never swallow connection
+  // failures and accidentally continue with a partly live Firebase client.
+  const state = globalThis as typeof globalThis & { __talkieEmulatorApps?: Set<FirebaseApp> }
+  const connected = state.__talkieEmulatorApps ||= new Set<FirebaseApp>()
+  if (!connected.has(app)) {
     connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true })
     connectFirestoreEmulator(db, host, 8080)
     connectFunctionsEmulator(getFunctions(app), host, 5001)
-    console.log("✅ Connected to Emulators")
-  } catch (e) {
-    console.log("Emulators already connected or failed")
+    connected.add(app)
   }
 }
 

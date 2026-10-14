@@ -92,7 +92,7 @@ const HintButton: React.FC<HintButtonProps> = ({
   }
 
   return (
-    <Animated.View style={animatedStyle}>
+    <Animated.View style={[styles.item, animatedStyle]}>
       <Pressable
         style={buttonStyle}
         onPress={() => onPress(hintType)}
@@ -114,6 +114,7 @@ const HintButton: React.FC<HintButtonProps> = ({
 }
 
 interface HintButtonStyles {
+  item: ViewStyle
   hintButton: ViewStyle
   usedHintButton: ViewStyle
   highlightedHintButton: ViewStyle
@@ -126,10 +127,15 @@ interface HintButtonStyles {
 }
 
 const themedStyles = (theme: Theme): HintButtonStyles => ({
+  item: {
+    maxWidth: "100%",
+    flexShrink: 1,
+  },
   hintButton: {
     borderRadius: theme.responsive.scale(4),
     padding: theme.responsive.scale(6),
-    minWidth: "20%",
+    minWidth: 48,
+    minHeight: 48,
     alignItems: "center",
     justifyContent: "center",
     marginHorizontal: theme.responsive.scale(4),
@@ -140,7 +146,6 @@ const themedStyles = (theme: Theme): HintButtonStyles => ({
   },
   usedHintButton: {
     borderColor: theme.colors.tertiary,
-    opacity: 0.8,
   },
   highlightedHintButton: {
     borderColor: theme.colors.primary,
@@ -163,10 +168,10 @@ const themedStyles = (theme: Theme): HintButtonStyles => ({
     color: theme.colors.textDisabled,
   },
   usedText: {
-    color: theme.colors.tertiary,
+    color: theme.colors.accentText,
   },
   highlightedText: {
-    color: theme.colors.primary,
+    color: theme.colors.accentText,
   },
 })
 

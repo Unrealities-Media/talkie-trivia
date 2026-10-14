@@ -68,7 +68,7 @@ const themedStyles = (theme: Theme): FlashMessageStyles => ({
     ...theme.shadows.medium,
   },
   messageText: {
-    color: theme.colors.background,
+    color: theme.colors.onAccent,
     fontSize: theme.responsive.responsiveFontSize(16),
     fontFamily: "Arvo-Bold",
     textAlign: "center",

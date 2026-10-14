@@ -35,7 +35,7 @@ describe("DifficultySelector Component", () => {
 
     mockUseGameStore.mockImplementation((selector: (state: any) => any) => {
       const state = {
-        difficulty: DEFAULT_DIFFICULTY,
+        nextDifficulty: DEFAULT_DIFFICULTY,
         setDifficulty: mockSetDifficulty,
       }
       return selector(state)
@@ -50,7 +50,7 @@ describe("DifficultySelector Component", () => {
     it("should render correctly with default difficulty selected", () => {
       renderWithTheme(<DifficultySelector />)
 
-      expect(screen.getByText("Difficulty")).toBeTruthy()
+      expect(screen.getByText("Next challenge difficulty")).toBeTruthy()
       expect(screen.getByTestId("mock-icon-gamepad")).toBeTruthy()
 
       const mediumElements = screen.getAllByText(

@@ -112,7 +112,7 @@ jest.mock('react-native', () => {
 
   // Mock Dimensions
   RN.Dimensions.get = jest.fn().mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
-  RN.Dimensions.addEventListener = jest.fn();
+  RN.Dimensions.addEventListener = jest.fn(() => ({ remove: jest.fn() }));
   RN.Dimensions.removeEventListener = jest.fn();
 
   // Mock PixelRatio
@@ -258,6 +258,8 @@ jest.mock("firebase/firestore", () => {
     query: jest.fn(),
     where: jest.fn(),
     orderBy: jest.fn(),
+    documentId: jest.fn(() => "__name__"),
+    startAfter: jest.fn(),
     limit: jest.fn(),
     Timestamp: MockTimestamp,
   };

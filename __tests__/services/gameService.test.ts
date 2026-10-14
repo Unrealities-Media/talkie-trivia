@@ -1,229 +1,144 @@
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import { gameService } from "../../src/services/gameService"
-import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore"
-import { getFunctions, httpsCallable } from "firebase/functions"
+import { auth } from "../../src/services/firebaseClient"
+import { getDoc, getDocs, startAfter, limit, orderBy } from "firebase/firestore"
 import { defaultPlayerGame, defaultPlayerStats } from "../../src/models/default"
-import Player from "../../src/models/player"
-import Constants from "expo-constants"
-
-// Mocks
-jest.mock("firebase/firestore", () => ({
-  getFirestore: jest.fn(),
-  doc: jest.fn(),
-  collection: jest.fn(),
-  getDoc: jest.fn(),
-  setDoc: jest.fn(),
-  getDocs: jest.fn(),
-  query: jest.fn(),
-  orderBy: jest.fn(),
-  limit: jest.fn(),
-}))
-
-jest.mock("firebase/functions", () => ({
-  getFunctions: jest.fn(),
-  httpsCallable: jest.fn(),
-}))
-
-jest.mock("../../src/utils/firestore/converters/playerGame", () => ({
-  playerGameConverter: {},
-}))
-jest.mock("../../src/utils/firestore/converters/player", () => ({
-  playerConverter: {},
-}))
-jest.mock("../../src/utils/firestore/converters/playerStats", () => ({
-  playerStatsConverter: {},
-}))
-jest.mock("../../src/utils/firestore/converters/gameHistoryEntry", () => ({
-  gameHistoryEntryConverter: {},
-}))
-
-describe("Service: gameService", () => {
-  const mockPlayerId = "player-123"
-  const mockDateId = "2023-01-01"
-  const mockDocRef = { withConverter: jest.fn().mockReturnValue("mock-ref") }
-
-  beforeEach(() => {
+import { deletionStorage } from "../../src/services/deletionStorage"
+const mockCall = jest.fn()
+jest.mock("firebase/functions", () => ({ getFunctions: () => ({}), httpsCallable: (_: unknown, name: string) => (data: unknown) => mockCall(name, data) }))
+jest.mock("../../src/services/firebaseClient", () => ({ db: {}, app: {}, auth: { currentUser: { uid: "p1" } } }))
+jest.mock("@react-native-async-storage/async-storage", () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"))
+jest.mock("../../src/services/deletionStorage", () => ({ deletionStorage: { read: jest.fn() } }))
+const game = { ...defaultPlayerGame, id: "movies_2026-10-13", playerID: "p1", challengeId: "2026-10-13", revision: 0 }
+const result = { game, stats: { ...defaultPlayerStats, id: "p1" }, challengeId: "2026-10-13", resetAt: "2026-10-14T00:00:00Z", serverNow: "2026-10-13T23:00:00Z" }
+describe("durable game commands", () => {
+  beforeEach(async () => {
     jest.clearAllMocks()
-    ;(doc as jest.Mock).mockReturnValue(mockDocRef)
-    // Ensure E2E is false by default for standard tests
-    Constants.expoConfig!.extra!.isE2E = false
+    ;(deletionStorage.read as jest.Mock).mockResolvedValue(null)
+    await AsyncStorage.clear()
+    ;(auth as any).currentUser = { uid: "p1" }
+    mockCall.mockResolvedValue({ data: result })
   })
-
-  describe("ensurePlayerExists", () => {
-    it("should return existing player if found", async () => {
-      const existingPlayer = new Player(mockPlayerId, "Existing Name")
-      ;(getDoc as jest.Mock).mockResolvedValue({
-        exists: () => true,
-        data: () => existingPlayer,
-      })
-
-      const result = await gameService.ensurePlayerExists(
-        mockPlayerId,
-        "New Name"
-      )
-      expect(result).toEqual(existingPlayer)
+  it("stores the command before sending and removes it only after acknowledgment", async () => {
+    mockCall.mockImplementation(async (_name, command) => {
+      expect(JSON.parse((await AsyncStorage.getItem("game-action-v2:p1"))!)).toEqual(command)
+      expect(command).toMatchObject({ type: "guess", itemId: 1, expectedRevision: 0, challengeId: "2026-10-13" })
+      expect(command).not.toHaveProperty("correctAnswer")
+      return { data: result }
     })
-
-    it("should create new player if not found", async () => {
-      ;(getDoc as jest.Mock).mockResolvedValue({ exists: () => false })
-
-      const result = await gameService.ensurePlayerExists(
-        mockPlayerId,
-        "New Name"
-      )
-
-      expect(result.id).toBe(mockPlayerId)
-      expect(result.name).toBe("New Name")
-      expect(setDoc).toHaveBeenCalled()
-    })
+    await gameService.applyAction(game, { type: "guess", itemId: 1 })
+    expect(await AsyncStorage.getItem("game-action-v2:p1")).toBeNull()
   })
-
-  describe("fetchOrCreatePlayerGame", () => {
-    it("should return an existing game if found", async () => {
-      const mockExistingGame = {
-        ...defaultPlayerGame,
-        id: "existing-id",
-        guessesMax: 3,
-      }
-      ;(getDoc as jest.Mock).mockResolvedValue({
-        exists: () => true,
-        data: () => mockExistingGame,
-      })
-
-      const result = await gameService.fetchOrCreatePlayerGame(
-        mockPlayerId,
-        mockDateId,
-        {} as any,
-        5
-      )
-      expect(result.id).toBe("existing-id")
-      expect(result.guessesMax).toBe(5)
-    })
-
-    it("should create a NEW game if document does not exist", async () => {
-      ;(getDoc as jest.Mock).mockResolvedValue({ exists: () => false })
-
-      await gameService.fetchOrCreatePlayerGame(
-        mockPlayerId,
-        mockDateId,
-        { id: 99 } as any,
-        5
-      )
-
-      expect(setDoc).toHaveBeenCalled()
-      const savedData = (setDoc as jest.Mock).mock.calls[0][1]
-      expect(savedData.playerID).toBe(mockPlayerId)
-      expect(savedData.triviaItem.id).toBe(99)
-    })
+  it("keeps unsent moves intact and blocks new commands while merge recovery is pending", async () => {
+    await AsyncStorage.setItem("account-merge-v1", JSON.stringify({ sourceUid: "p1", targetUid: "saved", operationId: "confirmation-00001", status: "pending" }))
+    await expect(gameService.applyAction(game, { type: "giveUp" })).rejects.toThrow("account recovery")
+    expect(await AsyncStorage.getItem("game-action-v2:p1")).toBeNull()
+    await AsyncStorage.setItem("game-action-v2:p1", JSON.stringify({ type: "giveUp", actionId: "old" }))
+    await expect(gameService.resumePendingAction("p1")).rejects.toThrow("account recovery")
+    expect(await AsyncStorage.getItem("game-action-v2:p1")).not.toBeNull()
+    expect(mockCall).not.toHaveBeenCalled()
   })
-
-  describe("fetchPlayerGameById", () => {
-    it("should return null if game does not exist", async () => {
-      ;(getDoc as jest.Mock).mockResolvedValue({ exists: () => false })
-      const result = await gameService.fetchPlayerGameById("bad-id")
-      expect(result).toBeNull()
-    })
-
-    it("should return data if game exists", async () => {
-      ;(getDoc as jest.Mock).mockResolvedValue({
-        exists: () => true,
-        data: () => ({ id: "game-1" }),
-      })
-      const result = await gameService.fetchPlayerGameById("game-1")
-      expect(result).toEqual({ id: "game-1" })
-    })
-
-    it("should return mocked game in E2E mode", async () => {
-      Constants.expoConfig!.extra!.isE2E = true
-      const result = await gameService.fetchPlayerGameById("any-id")
-      expect(result).not.toBeNull()
-      expect(result?.triviaItem.title).toBe("Inception")
-      expect(result?.id).toBe("any-id")
-    })
+  it("blocks new moves and pending replay once a deletion receipt exists", async () => {
+    ;(deletionStorage.read as jest.Mock).mockResolvedValue({ uid: "p1", status: "submitting" })
+    await expect(gameService.applyAction(game, { type: "giveUp" })).rejects.toThrow("deletion is in progress")
+    expect(await AsyncStorage.getItem("game-action-v2:p1")).toBeNull()
+    await AsyncStorage.setItem("game-action-v2:p1", JSON.stringify({ type: "giveUp", actionId: "old" }))
+    await expect(gameService.resumePendingAction("p1")).rejects.toThrow("deletion is in progress")
+    expect(mockCall).not.toHaveBeenCalled()
+    await gameService.clearLocalProgress("p1")
+    expect(await AsyncStorage.getItem("game-action-v2:p1")).toBeNull()
   })
-
-  describe("fetchOrCreatePlayerStats", () => {
-    it("should return existing stats", async () => {
-      ;(getDoc as jest.Mock).mockResolvedValue({
-        exists: () => true,
-        data: () => ({ ...defaultPlayerStats, games: 5 }),
-      })
-      const result = await gameService.fetchOrCreatePlayerStats(mockPlayerId)
-      expect(result.games).toBe(5)
-    })
-
-    it("should create default stats if missing", async () => {
-      ;(getDoc as jest.Mock).mockResolvedValue({ exists: () => false })
-      const result = await gameService.fetchOrCreatePlayerStats(mockPlayerId)
-      expect(result.hintsAvailable).toBe(3)
-      expect(setDoc).toHaveBeenCalled()
-    })
+  it("replays the identical action after a lost response, including on startup", async () => {
+    mockCall.mockRejectedValueOnce(Object.assign(new Error("Response lost"), { code: "functions/unavailable" }))
+    await expect(gameService.applyAction(game, { type: "guess", itemId: 1 })).rejects.toThrow("Response lost")
+    const original = mockCall.mock.calls[0][1]
+    await gameService.startGame("p1", "LEVEL_3")
+    expect(mockCall.mock.calls[1]).toEqual(["applyGameAction", original])
+    expect(mockCall.mock.calls[2][0]).toBe("startGame")
+    expect(await AsyncStorage.getItem("game-action-v2:p1")).toBeNull()
   })
-
-  describe("submitGameResult", () => {
-    it("should call the cloud function with correctly formatted payload", async () => {
-      const mockCallable = jest
-        .fn()
-        .mockResolvedValue({ data: { success: true } })
-      ;(getFunctions as jest.Mock).mockReturnValue({})
-      ;(httpsCallable as jest.Mock).mockReturnValue(mockCallable)
-
-      const mockGame = {
-        ...defaultPlayerGame,
-        id: "g1",
-        playerID: "p1",
-        startDate: new Date("2023-01-01"),
-        endDate: new Date("2023-01-01"),
-      }
-
-      await gameService.submitGameResult(mockGame)
-
-      expect(httpsCallable).toHaveBeenCalledWith({}, "submitGameResult")
-      expect(mockCallable).toHaveBeenCalledWith({
-        playerGame: expect.objectContaining({
-          id: "g1",
-          startDate: "2023-01-01T00:00:00.000Z",
-          endDate: "2023-01-01T00:00:00.000Z",
-        }),
-      })
-    })
-
-    it("should skip network call and return in E2E mode", async () => {
-      Constants.expoConfig!.extra!.isE2E = true
-      const mockCallable = jest.fn()
-      ;(httpsCallable as jest.Mock).mockReturnValue(mockCallable)
-
-      await gameService.submitGameResult(defaultPlayerGame)
-
-      expect(mockCallable).not.toHaveBeenCalled()
-    })
+  it("does not send a new command over an unacknowledged move", async () => {
+    mockCall.mockRejectedValueOnce(new Error("offline"))
+    await gameService.applyAction(game, { type: "guess", itemId: 1 }).catch(() => undefined)
+    await expect(gameService.applyAction(game, { type: "giveUp" })).rejects.toThrow("pending move")
+    expect(mockCall).toHaveBeenCalledTimes(1)
   })
-
-  describe("fetchGameHistory", () => {
-    it("should return mapped data from Firestore", async () => {
-      ;(collection as jest.Mock).mockReturnValue(mockDocRef)
-      const mockData = [{ id: 1 }, { id: 2 }]
-      ;(getDocs as jest.Mock).mockResolvedValue({
-        docs: mockData.map((d) => ({ data: () => d })),
-      })
-
-      const result = await gameService.fetchGameHistory(mockPlayerId)
-      expect(result).toHaveLength(2)
-    })
-
-    it("should return mocked history in E2E mode", async () => {
-      Constants.expoConfig!.extra!.isE2E = true
-
-      const result = await gameService.fetchGameHistory("player-id")
-      expect(result).toHaveLength(1)
-      expect(result[0].itemTitle).toBe("Inception")
-    })
+  it("discards definitively rejected stale revisions so refresh can recover", async () => {
+    mockCall.mockRejectedValueOnce(Object.assign(new Error("Refresh"), { code: "functions/aborted" }))
+    await expect(gameService.applyAction(game, { type: "guess", itemId: 1 })).rejects.toThrow("Refresh")
+    expect(await AsyncStorage.getItem("game-action-v2:p1")).toBeNull()
+    await gameService.startGame("p1", "LEVEL_3")
+    expect(mockCall).toHaveBeenCalledTimes(2)
   })
-
-  describe("savePlayerProgress (Deprecated)", () => {
-    it("should throw an error indicating deprecation", async () => {
-      await expect(
-        gameService.savePlayerProgress(defaultPlayerGame, defaultPlayerStats)
-      ).rejects.toThrow("Client-side save is deprecated")
+  it("never sends a pending move under another account", async () => {
+    mockCall.mockRejectedValueOnce(new Error("offline"))
+    await gameService.applyAction(game, { type: "guess", itemId: 1 }).catch(() => undefined)
+    ;(auth as any).currentUser = { uid: "p2" }
+    await expect(gameService.resumePendingAction("p1")).rejects.toThrow("account changed")
+    expect(mockCall).toHaveBeenCalledTimes(1)
+    expect(await AsyncStorage.getItem("game-action-v2:p1")).not.toBeNull()
+  })
+  it("does not send a move if durable storage fails", async () => {
+    ;(AsyncStorage.setItem as jest.Mock).mockRejectedValueOnce(new Error("storage full"))
+    await expect(gameService.applyAction(game, { type: "guess", itemId: 1 })).rejects.toThrow("storage full")
+    expect(mockCall).not.toHaveBeenCalled()
+  })
+  it("anchors a valid UTC reset to monotonic receipt time, not the device date", async () => {
+    const clock = jest.spyOn(performance, "now").mockReturnValue(500)
+    const saved = await gameService.startGame("p1", "LEVEL_3")
+    expect(saved.receivedAtMonotonic).toBe(500)
+    expect(Date.parse(saved.resetAt) - Date.parse(saved.serverNow)).toBe(3600000)
+    clock.mockRestore()
+  })
+  it.each([{ serverNow: "bad" }, { resetAt: "2026-10-14T05:00:00Z" }])("rejects invalid server timing %j", async override => {
+    mockCall.mockResolvedValue({ data: { ...result, ...override } })
+    await expect(gameService.startGame("p1", "LEVEL_3")).rejects.toThrow("could not be read")
+  })
+  it("reads saved account statistics without starting today's game", async () => {
+    ;(getDoc as jest.Mock).mockResolvedValueOnce({ exists: () => true, data: () => result.stats })
+    expect(await gameService.fetchPlayerStats("p1")).toEqual(result.stats)
+    expect(mockCall).not.toHaveBeenCalled()
+  })
+  it("rejects a statistics response after the active account changes", async () => {
+    let finish!: (value: unknown) => void
+    ;(getDoc as jest.Mock).mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+    const read = gameService.fetchPlayerStats("p1")
+    ;(auth as any).currentUser = { uid: "p2" }
+    finish({ exists: () => true, data: () => result.stats })
+    await expect(read).rejects.toThrow("account changed")
+  })
+  it("pages history with a stable cursor, bounded lookahead and no empty trailing page", async () => {
+    const docs = Array.from({ length: 21 }, (_, i) => ({ id: `result-${i}`, data: () => ({ dateId: "2026-10-13", itemTitle: `Movie ${i}` }) }))
+    ;(getDocs as jest.Mock).mockResolvedValueOnce({ docs }).mockResolvedValueOnce({ docs: docs.slice(20) })
+    const first = await gameService.fetchGameHistory("p1")
+    expect(first.entries).toHaveLength(20)
+    expect(first.next).toEqual({ uid: "p1", dateId: "2026-10-13", id: "result-19" })
+    const last = await gameService.fetchGameHistory("p1", first.next)
+    expect(last.entries).toEqual([docs[20].data()])
+    expect(last.next).toBeNull()
+    expect(limit).toHaveBeenCalledWith(21)
+    expect(orderBy).toHaveBeenCalledWith("__name__", "desc")
+    expect(startAfter).toHaveBeenCalledWith("2026-10-13", "result-19")
+  })
+  it.each([0, 20])("ends history pagination at exactly %i records", async count => {
+    ;(getDocs as jest.Mock).mockResolvedValueOnce({ docs: Array.from({ length: count }, () => ({ data: () => ({ dateId: "2026-10-13" }) })) })
+    expect((await gameService.fetchGameHistory("p1")).next).toBeNull()
+  })
+  it.each([
+    { uid: "other", dateId: "2026-10-13", id: "record" },
+    { uid: "p1", dateId: "2026-02-30", id: "record" },
+    { uid: "p1", dateId: "2026-10-13", id: "path/record" },
+  ])("rejects a different account or malformed history cursor (%#)", async cursor => {
+    await expect(gameService.fetchGameHistory("p1", cursor)).rejects.toThrow("Refresh")
+    expect(getDocs).not.toHaveBeenCalled()
+  })
+  it("rejects history reads before and after an account switch", async () => {
+    await expect(gameService.fetchGameHistory("other")).rejects.toThrow("account changed")
+    expect(getDocs).not.toHaveBeenCalled()
+    ;(getDocs as jest.Mock).mockImplementationOnce(async () => {
+      ;(auth as any).currentUser = { uid: "other" }
+      return { docs: [] }
     })
+    await expect(gameService.fetchGameHistory("p1")).rejects.toThrow("account changed")
   })
 })

@@ -58,7 +58,7 @@ describe("App: ProfileScreen", () => {
   })
 
   it("should show loading indicator if authentication is loading", () => {
-    mockUseAuth.mockReturnValue({ player: null, user: null, loading: false })
+    mockUseAuth.mockReturnValue({ player: null, user: null, loading: true })
     mockUseGameStore.mockImplementation((selector: any) =>
       selector({ loading: true })
     )
@@ -66,6 +66,8 @@ describe("App: ProfileScreen", () => {
     renderWithTheme(<ProfileScreen />)
 
     expect(screen.getByTestId("loading-indicator-container")).toBeTruthy()
+    expect(screen.getByText("Settings")).toBeTruthy()
+    expect(screen.getByText("Privacy Policy")).toBeTruthy()
   })
 
   it("should render guest profile correctly", async () => {
@@ -78,21 +80,24 @@ describe("App: ProfileScreen", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Welcome, Guest!")).toBeTruthy()
-      expect(screen.getByText("Save Your Progress")).toBeTruthy()
+      expect(screen.getByText("Link Your Guest Account")).toBeTruthy()
+      expect(screen.queryByText("Preserved guest games")).toBeNull()
     })
   })
 
   it("should render signed-in user profile correctly", async () => {
     mockUseAuth.mockReturnValue({
-      player: { name: "Test User" },
-      user: { isAnonymous: false },
+      player: { id: "saved", name: "Test User" },
+      user: { uid: "saved", isAnonymous: false },
     })
 
     renderWithTheme(<ProfileScreen />)
 
     await waitFor(() => {
       expect(screen.getByText("Welcome, Test User!")).toBeTruthy()
-      expect(screen.queryByText("Save Your Progress")).toBeNull()
+      expect(screen.queryByText("Link Your Guest Account")).toBeNull()
+      expect(screen.getByText("Preserved guest games")).toBeTruthy()
+      expect(screen.getAllByTestId("lazy-component").filter(item => item.props.uid === "saved")).toHaveLength(1)
     })
   })
 
@@ -108,5 +113,12 @@ describe("App: ProfileScreen", () => {
       expect(screen.getByText(/Version/)).toBeTruthy()
       expect(screen.getByText(/uses the TMDB API/)).toBeTruthy()
     })
+  })
+  it("keeps settings and the footer reachable after an account error", () => {
+    mockUseAuth.mockReturnValue({ player: null, user: null, loading: false, error: "Account unavailable", retryAuthentication: jest.fn() })
+    renderWithTheme(<ProfileScreen />)
+    expect(screen.getByText("Account unavailable")).toBeTruthy()
+    expect(screen.getByText("Settings")).toBeTruthy()
+    expect(screen.getByText("Privacy Policy")).toBeTruthy()
   })
 })

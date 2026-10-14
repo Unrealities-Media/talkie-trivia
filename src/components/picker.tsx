@@ -3,6 +3,7 @@ import React, {
   memo,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react"
@@ -15,7 +16,6 @@ import {
   withSequence,
   withTiming,
 } from "react-native-reanimated"
-import { search } from "fast-fuzzy"
 import { BasicTriviaItem, TriviaItem } from "../models/trivia"
 import { PickerUI } from "./pickerUI"
 import PickerSkeleton from "./pickerSkeleton"
@@ -24,7 +24,7 @@ import { hapticsService } from "../utils/hapticsService"
 import { useGameStore } from "../state/gameStore"
 import TutorialTooltip from "./tutorialTooltip"
 import { useShallow } from "zustand/react/shallow"
-import { normalizeSearchString } from "../utils/stringUtils"
+import { createMovieSearch } from "../utils/movieSearch"
 import { GAME_MODE_CONFIG } from "../config/difficulty"
 
 if (
@@ -45,9 +45,10 @@ const PickerContainer: FC = memo(() => {
     dismissGuessInputTip,
     dismissResultsTip,
     gameMode,
+    playerGame,
   } = useGameStore(
     useShallow((state) => ({
-      isInteractionsDisabled: state.isInteractionsDisabled,
+      isInteractionsDisabled: state.isInteractionsDisabled || state.syncStatus === "saving" || state.syncStatus === "pending",
       basicItems: state.basicItems,
       fullItems: state.fullItems,
       makeGuess: state.makeGuess,
@@ -56,6 +57,7 @@ const PickerContainer: FC = memo(() => {
       dismissGuessInputTip: state.dismissGuessInputTip,
       dismissResultsTip: state.dismissResultsTip,
       gameMode: state.gameMode,
+      playerGame: state.playerGame,
     }))
   )
 
@@ -68,6 +70,7 @@ const PickerContainer: FC = memo(() => {
   const [detailedItem, setDetailedItem] = useState<TriviaItem | null>(null)
 
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const guessedIds = useMemo(() => new Set(playerGame?.guesses.map(guess => String(guess.itemId)) || []), [playerGame?.guesses])
   const shakeAnimation = useSharedValue(0)
 
   const triggerShake = useCallback(() => {
@@ -78,20 +81,7 @@ const PickerContainer: FC = memo(() => {
     )
   }, [shakeAnimation])
 
-  const filterItems = useCallback(
-    (searchTerm: string): BasicTriviaItem[] => {
-      const trimmedTerm = searchTerm.trim()
-      if (trimmedTerm.length < 2) return []
-
-      const normalizedSearchTerm = normalizeSearchString(trimmedTerm)
-
-      return search(normalizedSearchTerm, [...basicItems], {
-        keySelector: (item) => normalizeSearchString(item.title),
-        threshold: 0.8,
-      }) as BasicTriviaItem[]
-    },
-    [basicItems]
-  )
+  const filterItems = useMemo(() => createMovieSearch(basicItems), [basicItems])
 
   const handleInputChange = useCallback(
     (text: string) => {
@@ -100,13 +90,14 @@ const PickerContainer: FC = memo(() => {
       setQuery(text)
       setExpandedItemId(null)
       setDetailedItem(null)
+      setResults([])
 
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current)
       }
 
       const trimmedText = text.trim()
-      if (trimmedText.length < 2) {
+      if (!trimmedText) {
         setResults([])
         setIsSearching(false)
         return
@@ -136,7 +127,16 @@ const PickerContainer: FC = memo(() => {
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [])
+  }, [filterItems, playerGame?.id, playerGame?.playerID])
+
+  useEffect(() => {
+    // Account/day/catalog changes must not retain another game's input or timer.
+    setQuery("")
+    setResults([])
+    setIsSearching(false)
+    setExpandedItemId(null)
+    setDetailedItem(null)
+  }, [filterItems, playerGame?.id, playerGame?.playerID])
 
   const animatedInputStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: shakeAnimation.value }],
@@ -144,6 +144,7 @@ const PickerContainer: FC = memo(() => {
 
   const handleLongPressItem = useCallback(
     (item: BasicTriviaItem) => {
+      if (isInteractionsDisabled || guessedIds.has(String(item.id))) return
       hapticsService.medium()
       const newId = expandedItemId === item.id ? null : item.id
       setExpandedItemId(newId)
@@ -155,17 +156,18 @@ const PickerContainer: FC = memo(() => {
         setDetailedItem(null)
       }
     },
-    [expandedItemId, fullItems]
+    [expandedItemId, fullItems, isInteractionsDisabled, guessedIds]
   )
 
   const handleSelectItem = useCallback(
     (item: BasicTriviaItem) => {
+      if (isInteractionsDisabled || guessedIds.has(String(item.id))) return
       setExpandedItemId(null)
       setDetailedItem(null)
       makeGuess(item)
       handleInputChange("")
     },
-    [makeGuess, handleInputChange]
+    [makeGuess, handleInputChange, isInteractionsDisabled, guessedIds]
   )
 
   const renderItem = useCallback(
@@ -174,6 +176,7 @@ const PickerContainer: FC = memo(() => {
         item={item}
         detailedItem={detailedItem}
         isDisabled={isInteractionsDisabled}
+        isGuessed={guessedIds.has(String(item.id))}
         isExpanded={expandedItemId === item.id}
         onSelect={handleSelectItem}
         onLongPress={handleLongPressItem}
@@ -181,6 +184,7 @@ const PickerContainer: FC = memo(() => {
     ),
     [
       isInteractionsDisabled,
+      guessedIds,
       expandedItemId,
       detailedItem,
       handleSelectItem,
@@ -188,7 +192,7 @@ const PickerContainer: FC = memo(() => {
     ]
   )
 
-  const showResults = query.length >= 2 || isSearching
+  const showResults = query.trim().length > 0 || isSearching
   const showResultsTip = results.length > 0 && tutorialState.showResultsTip
 
   if (loading) {
@@ -196,7 +200,12 @@ const PickerContainer: FC = memo(() => {
   }
 
   return (
-    <View style={{ width: "100%", zIndex: 10 }}>
+    <View style={{ width: "100%" }}>
+      <TutorialTooltip
+        isVisible={tutorialState.showGuessInputTip}
+        text="Search by movie title or title and year. Tap a result to submit your guess immediately. Open How to play above for the rules and a practice example."
+        onDismiss={dismissGuessInputTip}
+      />
       <PickerUI
         query={query}
         isSearching={isSearching}
@@ -209,16 +218,9 @@ const PickerContainer: FC = memo(() => {
         placeholder={GAME_MODE_CONFIG[gameMode].searchPlaceholder}
       />
       <TutorialTooltip
-        isVisible={tutorialState.showGuessInputTip}
-        text="Type here to search for the title you think it is."
-        onDismiss={dismissGuessInputTip}
-        style={{ top: -75 }}
-      />
-      <TutorialTooltip
         isVisible={showResultsTip}
-        text="Pro Tip: Long-press any result to see a preview before you guess!"
+        text="Long-press a result to preview its title, year and poster. A normal tap submits the guess."
         onDismiss={dismissResultsTip}
-        style={{ top: 60 }}
       />
     </View>
   )
