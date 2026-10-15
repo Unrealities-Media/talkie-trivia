@@ -45,7 +45,7 @@ test("dependency upgrades fail before changing source files", t => {
   const { root, dependency } = fixture(t)
   const file = path.join(dependency, changes[0].file)
   const before = fs.readFileSync(file, "utf8")
-  fs.writeFileSync(path.join(dependency, "package.json"), JSON.stringify({ name: "expo-notifications", version: "57.0.23" }))
+  fs.writeFileSync(path.join(dependency, "package.json"), JSON.stringify({ name: "expo-notifications", version: "58.0.0" }))
   assert.throws(() => prepareNotificationClock(root), /Review notification clock support/)
   assert.equal(fs.readFileSync(file, "utf8"), before)
 })
