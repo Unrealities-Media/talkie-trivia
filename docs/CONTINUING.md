@@ -11,13 +11,24 @@ checks passed. See [dependency maintenance](dependency-maintenance.md) for
 monthly batching and intentional toolchain compatibility holds. These CI results
 do not close live-deployment, rights, public-abuse or native-release gates.
 
-The live schedule covers October 14–21 UTC and needs more reviewed content
-before October 22 UTC. Production approvals and rights review remain open.
+The last recorded live schedule covers October 14–21 UTC and needs more reviewed
+content before October 22 UTC; this horizon has not been freshly queried.
+The [read-only readiness command](content-pipeline.md#read-only-schedule-readiness)
+can verify it with the deployed catalog and authorized read credentials.
+Production approvals and rights review remain open.
 The reported zero-height search results blocker is fixed locally, pending web
 export, deployment and live cold-load/restored-tab verification. Public backend
-App Check and rate limits remain unfinished; retain invited-group access policy.
+App Check remains unfinished. A per-account gameplay limit and safe browser retry
+are verified locally in [PR 14](https://github.com/Unrealities-Media/talkie-trivia/pull/14),
+pending merge/deployment; retain invited-group access policy.
 See the [latest beta audit](audits/live-beta-2026-10-14.md) for evidence and the
 remaining UX findings. Local changes have not been deployed in this stage.
+
+The [October 15 hosted-page audit](audits/2026-10-15-hosted-public-pages.md)
+confirms that privacy, support and deletion information is already published and
+renders at desktop/narrow-mobile sizes. Mailbox delivery, real account deletion,
+retention and legal/store acceptance remain unverified. The local combined
+candidate is described in [the candidate checkpoint](audits/2026-10-15-web-beta-candidate.md).
 
 The subsequent cohesion pass improves challenge confirmation, keyboard search,
 sharing, result themes and Profile hierarchy. See the
