@@ -50,7 +50,16 @@ jobs:
       # credential is provided: the config plugin leaves the artifact unsigned.
       - name: Compile unsigned Android release (ARM64)
         working-directory: android
-        run: bash gradlew :app:assembleRelease --no-daemon --console=plain -PreactNativeArchitectures=arm64-v8a
+        # The source build exhausted the generated 512 MiB metaspace and then
+        # stopped producing output until the job timeout. Bound concurrency and
+        # fail promptly on JVM exhaustion; leave time to upload diagnostics.
+        timeout-minutes: 68
+        run: |
+          set -o pipefail
+          timeout --signal=TERM --kill-after=30s 65m bash gradlew :app:assembleRelease \
+            --no-daemon --no-parallel --max-workers=2 --console=plain --stacktrace \
+            '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1536m -XX:+ExitOnOutOfMemoryError' \
+            -PreactNativeArchitectures=arm64-v8a 2>&1 | tee ../.expo/android-build.log
       - name: Verify packaged 16 KB alignment
         run: |
           NDK_VERSION=$(node -p 'require("./plugins/withAndroidPageSize.cjs").ndkVersion')
@@ -59,11 +68,12 @@ jobs:
             --zipalign "$ANDROID_HOME/build-tools/36.0.0/zipalign" \
             --report .expo/android-page-size-report.json
       - name: Retain Android build diagnostics
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: android-build-diagnostics
           path: |
+            .expo/android-build.log
             android/build/reports/
             .expo/react-native-source/ReactAndroid/build/reports/
             .expo/react-native-source/ReactAndroid/hermes-engine/build/build-hermesc.log

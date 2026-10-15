@@ -14,7 +14,12 @@ patched 1.26.9, matching the locally scanned toolchain. CodeQL flagged a
 case-sensitive test assertion; mixed-case escaping assertions now cover it.
 These corrections are published as `5af35f5`. Remote Linux unit/coverage,
 browser, emulator and Go jobs now pass, as do both CodeQL language jobs and the
-CodeQL findings gate. Native builds are still running. The remote secret scan
+CodeQL findings gate. The iOS simulator release build passed. Android reached
+the 75-minute timeout after a JVM metaspace exhaustion warning and failed Java
+compilation/lint tasks; packaged alignment was not reached. The next candidate
+increases the CI JVM allowance, bounds Gradle concurrency and fails promptly on
+JVM exhaustion, with an earlier build timeout and retained logs. A remote rerun
+must verify this correction. The remote secret scan
 completed across 878 commits and failed on exactly four credential matches,
 confirming detection and a failing required check. Because this PR is also a
 draft, its blocked state alone does not prove non-draft merge enforcement.

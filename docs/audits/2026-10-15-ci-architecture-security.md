@@ -19,8 +19,17 @@ emulator contracts and Go checks passed. Both CodeQL language analyses and the
 CodeQL findings gate passed. Frontend: 111 suites / 712 tests, coverage
 89.09% statements / 81.21% branches / 88.58% functions / 92.71% lines.
 Backend: seven suites / 158 tests, with the baseline coverage reported below.
-This supersedes the initial local split-run frontend evidence. Native builds
-are still running. The remote full-history scan completed across 878 commits
+This supersedes the initial local split-run frontend evidence. The iOS simulator
+release build passed. Android reached the 75-minute timeout in
+[native run 38746089828](https://github.com/Unrealities-Media/talkie-trivia/actions/runs/38746089828).
+The log reports JVM metaspace exhaustion at 512 MiB, then React Native lint and
+AsyncStorage Java compilation tasks failed; no compiler error details were
+emitted before the eventual cancellation. Packaged alignment was not reached.
+The next candidate raises CI heap/metaspace limits, limits Gradle concurrency,
+exits on JVM exhaustion, and retains the build log after an earlier shell timeout.
+This addresses the observed resource warning; a rerun must establish whether
+separate lint/compiler failures remain. No Android pass is claimed.
+The remote full-history scan completed across 878 commits
 and failed on exactly four credential matches; remediation remains required.
 
 The initial delivery controls allowed updates without passing checks, and the
