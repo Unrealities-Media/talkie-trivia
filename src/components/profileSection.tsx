@@ -1,6 +1,6 @@
 import React from "react"
 import { View, ViewStyle, TextStyle } from "react-native"
-import { FontAwesome } from "@expo/vector-icons"
+import FontAwesome from "@expo/vector-icons/FontAwesome"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Card } from "./ui/card"
 import { Typography } from "./ui/typography"

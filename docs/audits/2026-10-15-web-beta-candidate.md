@@ -102,6 +102,30 @@ source was compiled freshly by the runner; no frontend or native build was neede
 This change is local to the candidate and requires a Functions rollout, independently
 of Hosting, before it protects the live deletion flow.
 
+## Subsequent web download-size pass
+
+Four FontAwesome imports now use the specific family entry point rather than
+the package barrel. Startup no longer loads the unused `PremiereSerif` font;
+the source font asset is retained. The fresh normal beta export contains only
+FontAwesome and Ionicons icon-font families, instead of all families.
+
+Across all ten emitted JavaScript chunks, raw size fell from 6,699,876 to
+6,286,236 bytes; Node's default gzip estimate fell from 1,802,448 to 1,675,260
+bytes (127,188 bytes, about 7.1%). The unused startup font was another 774,220
+uncompressed bytes. These are artifact measurements, not measured Firebase
+transfer sizes or load-time claims; unused bundled icon fonts were not necessarily
+requested at runtime. Large decorative PNGs remain a performance concern.
+
+TypeScript checking, all 18 tests across the four affected component suites,
+the web export and source/artifact receipt verification passed. The test mock
+now follows the direct FontAwesome import. No native build or remote CI run was
+triggered. This replaces the previous local web artifact:
+
+- Artifact SHA-256: `1292b4691ada89849ef6da2934972a310554e8c20f2362a9bb736795f2e41fd5`.
+- Source SHA-256: `aaf0cd507f3dc4e1d6fceff26f178c67b8b6fb6d36f5ee88aa6d7dcd02fa01f1`.
+
+No deployment or new browser timing/visual acceptance is claimed by this pass.
+
 ## Publication automation evidence
 
 The October 15 follow-up found no repository Actions variables, so the explicit
