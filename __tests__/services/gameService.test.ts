@@ -48,8 +48,8 @@ describe("durable game commands", () => {
     await gameService.clearLocalProgress("p1")
     expect(await AsyncStorage.getItem("game-action-v2:p1")).toBeNull()
   })
-  it("replays the identical action after a lost response, including on startup", async () => {
-    mockCall.mockRejectedValueOnce(Object.assign(new Error("Response lost"), { code: "functions/unavailable" }))
+  it.each(["functions/unavailable", "functions/resource-exhausted"])("replays the identical action after %s, including on startup", async code => {
+    mockCall.mockRejectedValueOnce(Object.assign(new Error("Response lost"), { code }))
     await expect(gameService.applyAction(game, { type: "guess", itemId: 1 })).rejects.toThrow("Response lost")
     const original = mockCall.mock.calls[0][1]
     await gameService.startGame("p1", "LEVEL_3")

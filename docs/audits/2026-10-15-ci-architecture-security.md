@@ -60,6 +60,12 @@ backend abuse prevention remains an app-release finding.
 
 ## Initial findings, ordered by priority
 
+Subsequent SEC-01 work adds a shared per-UID gameplay request budget with
+durable retry behavior; see [gameplay request limits](../gameplay-request-limits.md).
+This is a partial mitigation, pending deployment verification. App Check,
+anonymous-account rotation, global abuse monitoring and other public endpoints
+remain open. The original evidence below describes the initial audit state.
+
 | ID | Priority | Evidence and consequence | Status / acceptance |
 | --- | --- | --- | --- |
 | CI-01 | High | GitHub branch protection API returns `Branch not protected`; repository rulesets are `[]`. A failing build does not prevent a main update. | Open. Publish these changes, prove the checks run, then require them on main, including administrators. Require PRs, prohibit force pushes/deletion, and require resolved conversations. |
