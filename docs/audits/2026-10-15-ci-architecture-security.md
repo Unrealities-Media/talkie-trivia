@@ -135,14 +135,17 @@ index modules; its percentages describe that configured scope, not every file.
 
 The audit findings are recorded; the CI rollout is not yet fully verified.
 The combined application and CI snapshot is published, and main protection is
-enabled. Native results and credential remediation remain outstanding.
+enabled. Credential remediation remains outstanding. On October 15 the owner
+requested web-beta-only automatic CI: native builds are manual-only, removed
+from required checks, and run `38763190055` was cancelled on request. The native
+workflow is disabled remotely until its manual-only definition reaches main;
+native release verification remains deferred, not declared passed.
 
 Main now requires these observed check names:
 
 - `Run Tests & Coverage`
 - `Check Go Pipeline`
 - `Firebase rules and transaction contracts`
-- `android` and `ios`
 - `CodeQL (javascript-typescript)` and `CodeQL (go)`
 - `CodeQL` (findings gate)
 - `Dependency security inventory`
@@ -151,8 +154,8 @@ Main now requires these observed check names:
 
 Require PRs and up-to-date checks, prevent bypass/force pushes, and verify a
 deliberately failing PR cannot merge. Confirm fork PRs do not require secrets.
-Do not enable an unreachable required context or relax a real failing native
-gate. A security inventory job can pass while known tooling advisories remain;
+Do not enable an unreachable required context. Restore native release gates
+when native development resumes. A security inventory job can pass while known tooling advisories remain;
 resolve them before claiming a clean security assessment.
 
 Next stages: finish remote CI verification and credential remediation; extend browser

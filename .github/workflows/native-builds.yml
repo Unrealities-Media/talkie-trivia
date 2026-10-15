@@ -1,12 +1,8 @@
 name: Native build verification
 
 on:
-  pull_request:
-    branches: [main, master]
-  push:
-    branches: [main, master]
+  # Web beta: expensive native builds run only when explicitly requested.
   workflow_dispatch:
-  merge_group:
 
 permissions:
   contents: read

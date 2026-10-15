@@ -1,5 +1,15 @@
 # CI rollout checkpoint
 
+## Web-beta build policy (October 15)
+
+At the owner's request, Android/iOS builds are manual-only and are not required
+merge checks during web beta. Native run `38763190055` was cancelled on request;
+its unfinished results are not failures or passes. The workflow is also disabled
+in GitHub until this trigger change reaches the default branch, preventing the
+old default-branch triggers from spending runner time. Re-enable it after merge
+only when an explicit native verification is wanted. Native release alignment
+and device acceptance remain deferred release requirements.
+
 Latest verification at `181af99`: Linux tests/coverage, browser, emulator, Go,
 CodeQL analyses/findings and iOS passed. The publication-summary disclosure
 regression passed remotely. The history scanner scanned 881 commits and failed
@@ -11,7 +21,7 @@ tool names. Six local tests, including that tool contract, and actionlint pass;
 remote packaged ELF alignment remains unverified.
 
 The combined snapshot is published in [draft PR #1](https://github.com/Unrealities-Media/talkie-trivia/pull/1).
-Main now requires the observed unit, Go, emulator, browser, native, CodeQL and
+Main now requires the observed unit, Go, emulator, browser, CodeQL and
 secret-history checks, up-to-date branches, PRs and resolved conversations.
 Administrators cannot bypass these rules; force pushes and branch deletion are
 disabled. Secret scanning, push protection, dependency alerts and automated
@@ -42,8 +52,8 @@ evidence remains seven suites / 158 tests and 44.02% line coverage.
 - Unit workflow: all branch pushes, PRs and merge queues; lint, TypeScript,
   script contracts, architecture boundaries, coverage floors, browser gameplay,
   real Firebase emulator contracts, web export and Go checks.
-- Native workflow: explicit Android toolchain installation, existing binary
-  alignment gates, Android and iOS builds.
+- Native workflow (manual-only during web beta): explicit Android toolchain
+  installation, existing binary alignment gates, Android and iOS builds.
 - Security workflow: CodeQL, dependency inventory, production backend dependency
   gate and full-history Gitleaks scan with redacted diagnostics.
 - Supporting files: root ESLint config and dependency locks, Jest configs,
@@ -63,8 +73,9 @@ targeted CI corrections on top. No live deployment is part of this PR.
 
 1. Review the chosen candidate commit and publish it on a `codex/` branch.
 2. Verify remote Linux installs, lint, unit/coverage, browser, emulator, Go,
-   CodeQL and native jobs against that exact commit. Local Windows passes do
-   not establish those results.
+   and CodeQL jobs against that exact commit. Local Windows passes do not
+   establish those results. Native verification is deferred until requested
+   for native development or release readiness.
 3. Resolve historical Sentry and TMDB credential exposure. The owner confirmed
    no remediation on October 15. Confirm revocation/rotation without exposing
    replacement values; retain evidence before accepting narrowly scoped
