@@ -2,11 +2,8 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import { createRequire } from "node:module"
 import { dirname, join } from "node:path"
-import { spawnSync } from "node:child_process"
 
 const require = createRequire(import.meta.url)
-const ftpPath = require.resolve("basic-ftp", { paths: [dirname(require.resolve("get-uri"))] })
-const { Client, parseList } = require(ftpPath)
 
 test("Pub/Sub trace propagation remains compatible with patched telemetry core", () => {
   const pubsubDirectory = dirname(require.resolve("@google-cloud/pubsub"))
@@ -28,30 +25,6 @@ test("Pub/Sub trace propagation remains compatible with patched telemetry core",
   } finally {
     telemetry.setGloballyEnabled(false)
   }
-})
-
-test("get-uri's FTP dependency preserves listing metadata and its client interface", () => {
-  // These are the entry fields and public methods consumed by get-uri's FTP adapter.
-  const client = new Client()
-  try {
-    for (const method of ["access", "lastMod", "list", "downloadTo", "close"]) {
-      assert.equal(typeof client[method], "function", method)
-    }
-    const [entry] = parseList("type=file;size=42;modify=20260102030405; clue.txt\r\n")
-    assert.equal(entry.name, "clue.txt")
-    assert.equal(entry.size, 42)
-    assert.equal(entry.modifiedAt.toISOString(), "2026-01-02T03:04:05.000Z")
-    assert.equal(parseList("-rw-r--r-- 1 owner group 42 Jan 02 2026 clue.txt\r\n")[0].name, "clue.txt")
-  } finally {
-    client.close()
-  }
-})
-
-test("malformed FTP listings finish within a bounded child process", () => {
-  const source = `const {parseList} = require(${JSON.stringify(ftpPath)}); try { parseList('-rw-r--r-- 1 ' + 'a '.repeat(50000) + '!'); } catch { /* Rejection is allowed. A hang is not. */ }`
-  const result = spawnSync(process.execPath, ["-e", source], { timeout: 5000, encoding: "utf8" })
-  assert.ifError(result.error)
-  assert.equal(result.status, 0, result.stderr)
 })
 
 test("gaxios creates a multipart body using its updated CommonJS UUID dependency", async () => {

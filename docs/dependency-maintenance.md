@@ -45,6 +45,10 @@ The notification-clock patch now accepts expo-notifications 57.0.23. Both patche
 upstream files have exactly the same reviewed SHA-256 hashes as 57.0.22; its
 fail-closed source checks remain in place. Native builds were not run.
 
+Firebase CLI 15.34 removes `get-uri` and `basic-ftp` from the integration lockfile.
+Their old compatibility tests and now-unused FTP override are removed; the
+remaining telemetry and multipart-upload dependency contracts still run in CI.
+
 References: [Expo SDK compatibility](https://docs.expo.dev/versions/latest/),
 [Dependabot multi-ecosystem updates](https://docs.github.com/en/code-security/concepts/supply-chain-security/multi-ecosystem-updates),
 [Dependabot limits and rebasing](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference).
