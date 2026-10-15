@@ -56,3 +56,24 @@ before merging; no failing check may be waived based on this document.
 Keep invited-group access. App Check, global abuse monitoring, content/rights,
 staging/rollback and operational support/deletion acceptance remain open.
 Android/iOS builds remain disabled throughout this web-beta stage.
+
+## Live schedule check blocked by expired authentication
+
+The subsequent read-only check targeted `talkie-trivia-beta`, today plus seven
+days ahead, using the existing Firebase CLI account. A saved account/refresh
+credential exists, but obtaining an access token fails with the CLI's
+reauthentication-required error. No Firestore reads or writes were completed;
+there is no live health result. The prior October 21 horizon remains unverified.
+
+Restore the local session interactively using the installed CLI:
+
+```powershell
+rtk proxy node .expo/dependency-upgrade.cjs node integration node_modules/firebase-tools/lib/bin/firebase.js login --reauth
+```
+
+The wrapper uses the project's local Node 24 runtime. Do not paste credentials
+or login codes into a chat or commit them. After local login is restored, run the
+read-only `-check-schedule` command with the explicit beta project and released
+catalog. The local `.expo/check-live-schedule.cjs` helper passes the short-lived
+access token only in the child environment and emits no token or answer data.
+This authentication blocker applies to live verification, not local development.
