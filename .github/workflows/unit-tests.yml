@@ -56,6 +56,9 @@ jobs:
       - name: Check architecture boundaries
         run: npm run check:architecture
 
+      - name: Test publication summary disclosure boundary
+        run: python3 -m unittest discover -s scripts -p 'test_schedule_summary.py'
+
       - name: Audit deployed backend dependencies
         run: npm --prefix functions audit --omit=dev
 

@@ -1,9 +1,24 @@
 # CI rollout checkpoint
 
-The local workflow changes are ready for review, but are not published or
-enforced on GitHub. The October 15 audit records the test evidence and open
-security findings. Main is currently unprotected and its latest unit/native
-runs failed.
+The combined snapshot is published in [draft PR #1](https://github.com/Unrealities-Media/talkie-trivia/pull/1).
+Main now requires the observed unit, Go, emulator, browser, native, CodeQL and
+secret-history checks, up-to-date branches, PRs and resolved conversations.
+Administrators cannot bypass these rules; force pushes and branch deletion are
+disabled. Secret scanning, push protection, dependency alerts and automated
+security-update PRs are enabled. Remote validation is still in progress.
+
+The first remote app test/coverage job passed. Integration installation failed
+on a missing nested picomatch lock entry; clean lock regeneration repaired it.
+The Go vulnerability gate exposed CI selecting Go 1.26.0; the module now pins
+patched 1.26.9, matching the locally scanned toolchain. CodeQL flagged a
+case-sensitive test assertion; mixed-case escaping assertions now cover it.
+These corrections are published as `5af35f5`. Remote Linux unit/coverage,
+browser, emulator and Go jobs now pass, as do both CodeQL language jobs and the
+CodeQL findings gate. Native builds are still running. The remote secret scan
+completed across 878 commits and failed on exactly four credential matches,
+confirming the intended merge gate. Remote frontend evidence is 111 suites / 712 tests passed, with
+89.09% statements, 81.21% branches, 88.58% functions and 92.71% lines. Backend
+evidence remains seven suites / 158 tests and 44.02% line coverage.
 
 ## Change scope
 
@@ -25,9 +40,8 @@ There are more than 125 modified tracked files plus new app assets/content and
 test files in this checkout. Do not publish a workflow-only commit and claim it
 tests this checkout: the tested source and its fixtures must be in the candidate
 commit. Do not silently include the existing product work in a CI-only PR.
-Select either a reviewed combined app/CI snapshot, or separate the product work
-into a prerequisite commit and put the CI changes on top. No live deployment is
-part of either option.
+The user selected one combined app/CI snapshot, published as `0e052e7` with
+targeted CI corrections on top. No live deployment is part of this PR.
 
 ## Required evidence before completion
 
@@ -54,3 +68,27 @@ Two anonymous beta accounts were accidentally created by the initial browser
 run before isolation was fixed. Cleanup was rejected by automatic approval
 review and awaits explicit user authorization. Subsequent browser runs use only
 the verified dedicated emulator project; no live account deletion is claimed.
+
+## Credential remediation handoff
+
+The four history matches cover Sentry organization-token patterns in historical
+Android/iOS `sentry.properties` and two detections of a TMDB bearer token in the
+old movie-fetching script. No provider requests have been made with those
+credentials, and their current validity is unknown.
+
+The account owner must revoke the exposed credentials in the provider consoles,
+replace any still-used credentials in the appropriate secret store, and confirm
+the provider, date and affected integration without sharing token values.
+Sentry documents organizational credential management through
+[organization integrations](https://docs.sentry.io/api/guides/create-auth-token/).
+TMDB documents its bearer credential in the account's API settings under
+[API Read Access Token](https://developer.themoviedb.org/docs/authentication-application).
+Confirm that the old bearer credential is revoked; changing a different key
+alone is not sufficient evidence. If a console cannot revoke it, contact that
+provider's support through the account owner.
+
+After revocation is confirmed, record the evidence and review exceptions for
+only the exact historical fingerprints. Keep full-history scanning enabled so
+new credentials continue to fail CI. Current exceptions cover checksums only.
+There is no authenticated Sentry/TMDB administration connector in this session;
+GitHub repository administration cannot revoke credentials issued by them.

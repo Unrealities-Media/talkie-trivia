@@ -60,6 +60,9 @@ go run . -schedule -project demo-talkie-trivia -apply
 
 The private report is `utils/data-source/schedule-plan.json`; it includes upcoming
 answers. Never put it on a public website. By default the schedule covers tomorrow
+through the chosen horizon. GitHub Actions uploads only `schedule-summary.json`
+containing slot counts and dates; it must never upload the full answer-bearing
+plan, even under an artifact name containing "private". The default horizon runs
 through 30 days ahead, filling five difficulty slots per date (150 movies).
 Each slot has a distinct answer and uses `YYYY-MM-DD_LEVEL_N` as its document ID. Rerunning on the same day makes no changes;
 rerunning a week later adds only missing days through the new horizon. The planner

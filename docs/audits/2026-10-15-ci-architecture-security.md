@@ -2,9 +2,26 @@
 
 Audited October 15, 2026 against the current working tree and GitHub API.
 The repository contains substantial pre-existing uncommitted app/backend work.
-This audit preserves it. CI hardening below is local, not committed or pushed.
+This audit preserves it. The user subsequently selected a combined app/CI
+snapshot, now published as draft PR #1. See the rollout checkpoint for current
+remote enforcement and validation; initial findings below record the baseline.
 
 ## Assessment
+
+Rollout update: main protection and repository secret/dependency security
+features are now enabled. The PR is blocked as expected while required checks
+are pending/failing. This is not yet proof of a deliberately failing non-draft
+PR enforcement test. Historical credentials remain unresolved and the app is
+not release-ready.
+
+Remote validation at `5af35f5`: Linux unit/coverage, browser gameplay, Firebase
+emulator contracts and Go checks passed. Both CodeQL language analyses and the
+CodeQL findings gate passed. Frontend: 111 suites / 712 tests, coverage
+89.09% statements / 81.21% branches / 88.58% functions / 92.71% lines.
+Backend: seven suites / 158 tests, with the baseline coverage reported below.
+This supersedes the initial local split-run frontend evidence. Native builds
+are still running. The remote full-history scan completed across 878 commits
+and failed on exactly four credential matches; remediation remains required.
 
 The project has substantial functional and authorization tests, but its delivery
 controls are not yet reliable enough to call release-ready. Tests cannot protect
@@ -122,6 +139,17 @@ dependency/native release findings. These are follow-up implementation stages,
 not findings silently declared fixed by this audit.
 
 ## Subsequent local hardening and new findings
+
+- SEC-06: the content-publishing workflow uploaded the full schedule plan,
+  including future movie IDs and clues, under a supposedly private report name.
+  This repository is public; artifact names do not restrict readers. The local
+  fix uploads only a validated summary of dates and slot counts, with two
+  disclosure-boundary tests and passing actionlint. It remains to be published
+  and remotely tested. Inspection of all 18 currently listed repository
+  artifacts found no schedule report; expired/deleted historical exposure is
+  not ruled out. Staging/production environments and repository variables are
+  still absent, so no approval policy or configured publisher is established.
+  [GitHub documents artifact read access](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts).
 
 - Root flat ESLint is implemented and wired into unit CI, including TypeScript
   and React hook rules. Findings were repaired without mass suppression; lint
