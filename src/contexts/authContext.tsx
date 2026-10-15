@@ -24,6 +24,9 @@ interface AuthState {
   handleSignIn: () => Promise<void>
   handleSignOut: () => Promise<void>
   isSigningIn: boolean
+  existingAccountPending: boolean
+  confirmAccountSwitch: () => Promise<void>
+  cancelAccountSwitch: () => void
   deletion: DeletionReceipt | null
   deletionError: string | null
   isDeleting: boolean
@@ -59,6 +62,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const recoveryBusy = useRef(false)
   const deletionBusy = useRef(false)
   const generation = useRef(0)
+  const invalidateSession = useCallback(() => { generation.current++ }, [])
   const mounted = useRef(false)
   const activeUid = useRef<string | null>(null)
   const [merge, setMerge] = useState<MergeReceipt | null>(null)
@@ -181,7 +185,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       throw failure
     }
   }, [blockForMerge, loadSession])
-  const { isLoading: isSigningIn, authError: accountError, handleSignIn, handleSignOut, withDeletionVerification, verifyGoogleAccount } = useGoogleAuth(loadSession, afterSignOut, useFirebaseEmulators ? collision : undefined)
+  const { isLoading: isSigningIn, authError: accountError, handleSignIn, handleSignOut, withDeletionVerification, verifyGoogleAccount, existingAccountPending, confirmAccountSwitch, cancelAccountSwitch } = useGoogleAuth(loadSession, afterSignOut, useFirebaseEmulators ? collision : undefined)
   const closeMergeIdentity = useCallback(async () => {
     const identity = mergeIdentity.current
     mergeIdentity.current = null
@@ -341,13 +345,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await loadSession(null, true)
   }), [deletionOperation, loadSession])
 
+  const deletionUid = deletion?.uid
+  const deletionStatus = deletion?.status
   useEffect(() => {
-    if (!deletion || deletion.status === "unknown" || deletion.status === "complete") return
+    if (!deletionUid || deletionStatus === "unknown" || deletionStatus === "complete") return
     void refreshDeletion()
     const timer = setInterval(() => { if (AppState.currentState === "active") void refreshDeletion() }, 30000)
     const subscription = AppState.addEventListener("change", state => { if (state === "active") void refreshDeletion() })
     return () => { clearInterval(timer); subscription.remove() }
-  }, [deletion?.uid, deletion?.status, refreshDeletion])
+  }, [deletionUid, deletionStatus, refreshDeletion])
 
   useEffect(() => {
     mounted.current = true
@@ -362,10 +368,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setError(sessionError)
       setLoading(false)
     })
-    return () => { mounted.current = false; generation.current++; unsubscribe(); void closeMergeIdentity().catch(() => undefined) }
-  }, [loadSession])
+    return () => { mounted.current = false; invalidateSession(); unsubscribe(); void closeMergeIdentity().catch(() => undefined) }
+  }, [loadSession, closeMergeIdentity, invalidateSession])
 
-  return <AuthContext.Provider value={{ player, user, loading, error, accountError, retryAuthentication, handleSignIn, handleSignOut, isSigningIn, deletion, deletionError, isDeleting, handleDeleteAccount, refreshDeletion, startNewGuest, lostSession, replaceLostSession, merge, mergeProposal, mergeError, isMerging, confirmMerge, continueMerge, cancelMerge, finishMerge }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ player, user, loading, error, accountError, retryAuthentication, handleSignIn, handleSignOut, isSigningIn, existingAccountPending, confirmAccountSwitch, cancelAccountSwitch, deletion, deletionError, isDeleting, handleDeleteAccount, refreshDeletion, startNewGuest, lostSession, replaceLostSession, merge, mergeProposal, mergeError, isMerging, confirmMerge, continueMerge, cancelMerge, finishMerge }}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => {

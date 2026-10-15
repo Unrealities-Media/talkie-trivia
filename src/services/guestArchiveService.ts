@@ -4,13 +4,13 @@ import { PlayerGame } from "../models/game"
 import { DIFFICULTY_MODES } from "../config/difficulty"
 import { deletionStorage } from "./deletionStorage"
 import { mergeStorage } from "./mergeStorage"
+import { validChallengeKey } from "../utils/challengeKey"
 
 export const ARCHIVE_PAGE_SIZE = 20
 export interface GuestArchiveEntry { id: string; game: PlayerGame }
 export interface GuestArchiveCursor { uid: string; dateId: string; id: string }
 export interface GuestArchivePage { entries: GuestArchiveEntry[]; next: GuestArchiveCursor | null }
-const validDate = (value: unknown): value is string => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-  Number.isFinite(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value
+const validDate = validChallengeKey
 const validId = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length <= 200 && !value.includes("/")
 const validHint = (hint: any) => hint && typeof hint.type === "string" && typeof hint.label === "string"
 function requireUser(uid: string) {

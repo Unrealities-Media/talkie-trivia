@@ -3,7 +3,6 @@ import {
   render,
   screen,
   fireEvent,
-  act,
   RenderOptions,
 } from "@testing-library/react-native"
 import { ThemeProvider } from "../../src/contexts/themeContext"
@@ -35,7 +34,7 @@ describe("DifficultySelector Component", () => {
 
     mockUseGameStore.mockImplementation((selector: (state: any) => any) => {
       const state = {
-        nextDifficulty: DEFAULT_DIFFICULTY,
+        nextDifficulty: DEFAULT_DIFFICULTY, playerGame: { playerID: "test-player" },
         setDifficulty: mockSetDifficulty,
       }
       return selector(state)
@@ -50,8 +49,8 @@ describe("DifficultySelector Component", () => {
     it("should render correctly with default difficulty selected", () => {
       renderWithTheme(<DifficultySelector />)
 
-      expect(screen.getByText("Next challenge difficulty")).toBeTruthy()
-      expect(screen.getByTestId("mock-icon-gamepad")).toBeTruthy()
+      expect(screen.getByText("Daily challenges")).toBeTruthy()
+      expect(screen.getAllByRole("button")).toHaveLength(5)
 
       const mediumElements = screen.getAllByText(
         DIFFICULTY_MODES[DEFAULT_DIFFICULTY].label
@@ -61,12 +60,27 @@ describe("DifficultySelector Component", () => {
   })
 
   describe("Interactions", () => {
-    it("should call setDifficulty when a new option is pressed", () => {
+    it.each(["In progress", "Won", "Lost"])("opens a saved %s challenge without a new-start confirmation", status => {
+      mockUseGameStore.mockImplementation(selector => selector({
+        nextDifficulty: DEFAULT_DIFFICULTY, playerGame: { playerID: "test-player" },
+        setDifficulty: mockSetDifficulty, dailyChallenges: { LEVEL_4: status }, syncStatus: "idle",
+      }))
+      renderWithTheme(<DifficultySelector />)
+      fireEvent.press(screen.getByRole("button", { name: /^Play Hard\./ }))
+      expect(mockSetDifficulty).toHaveBeenCalledWith("LEVEL_4")
+      expect(screen.queryByText("Start challenge")).toBeNull()
+    })
+
+    it("starts a new challenge only after confirmation", () => {
       renderWithTheme(<DifficultySelector />)
 
       const hardButton = screen.getByText("Hard")
       fireEvent.press(hardButton)
-
+      expect(mockSetDifficulty).not.toHaveBeenCalled()
+      fireEvent.press(screen.getByText("Keep browsing"))
+      expect(mockSetDifficulty).not.toHaveBeenCalled()
+      fireEvent.press(hardButton)
+      fireEvent.press(screen.getByText("Start challenge"))
       expect(mockSetDifficulty).toHaveBeenCalledWith("LEVEL_4")
     })
   })

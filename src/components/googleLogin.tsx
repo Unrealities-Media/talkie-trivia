@@ -6,9 +6,10 @@ import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Button } from "./ui/button"
 import { Typography } from "./ui/typography"
 import { isLocalDemoIdentity } from "../services/localDemoIdentity"
+import ConfirmationModal from "./confirmationModal"
 
 const GoogleLogin: React.FC = memo(() => {
-  const { player, user, handleSignIn, handleSignOut, isSigningIn, accountError } =
+  const { player, user, handleSignIn, handleSignOut, isSigningIn, accountError, existingAccountPending, confirmAccountSwitch, cancelAccountSwitch } =
     useAuth()
   const styles = useStyles(themedStyles)
 
@@ -36,6 +37,11 @@ const GoogleLogin: React.FC = memo(() => {
 
   return (
     <View style={styles.container}>
+      <ConfirmationModal isVisible={!!existingAccountPending && !isSigningIn}
+        title="Open your existing account?"
+        message="Your Google account already has saved progress. Opening it will leave this guest's games separate; they will not be combined or deleted. This unlinked guest may no longer be recoverable from this browser. Keep playing as guest to stay with this progress."
+        confirmText="Open existing account" cancelText="Keep playing as guest"
+        onConfirm={() => { void confirmAccountSwitch() }} onCancel={cancelAccountSwitch} />
       <Button
         title={buttonText}
         onPress={handlePress}

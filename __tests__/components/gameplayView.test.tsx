@@ -19,7 +19,7 @@ jest.mock("../../src/components/picker", () => {
   const { Text } = require("react-native")
   return () => <Text>mock-PickerContainer</Text>
 })
-jest.mock("../../src/components/hint", () => {
+jest.mock("../../src/components/seatHints", () => {
   const { Text } = require("react-native")
   return () => <Text>mock-HintContainer</Text>
 })

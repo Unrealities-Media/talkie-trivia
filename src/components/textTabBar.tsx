@@ -32,15 +32,15 @@ export default function TextTabBar({ state, descriptors, navigation, insets, fon
           flex: 1, minWidth: 48, minHeight: 48, borderRadius: 10,
           paddingHorizontal: 8, paddingVertical: 10,
           alignItems: "center", justifyContent: "center",
-          backgroundColor: pressed ? colors.surface : colors.background,
+          backgroundColor: pressed ? colors.surface : selected ? colors.backgroundLight : colors.background,
         })}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={selected ? colors.primary : colors.textSecondary} strokeWidth={1.2} aria-hidden={true}>
+        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={selected ? colors.accentText : colors.textSecondary} strokeWidth={1.2} aria-hidden={true}>
           {route.name === "game" ? <><Circle cx={11} cy={11} r={9} /><Circle cx={11} cy={11} r={1} /><Circle cx={11} cy={5.8} r={2} /><Circle cx={16.2} cy={11} r={2} /><Circle cx={11} cy={16.2} r={2} /><Circle cx={5.8} cy={11} r={2} /><Path d="M17 18l5 4" /></> : route.name === "archive" ? <><Rect x={4} y={6} width={16} height={15} rx={1} /><Path d="M3 3h18v4H3zM9 11h6" /></> : <><Circle cx={12} cy={7} r={4} /><Path d="M4 22v-3a8 8 0 0116 0v3" /></>}
         </Svg>
         <Text style={{
           fontFamily: fontsLoaded ? "PremiereSans" : undefined,
           fontSize: 12, lineHeight: 20, letterSpacing: 0.5, textAlign: "center",
-          color: selected ? colors.primary : colors.textSecondary,
+          color: selected ? colors.accentText : colors.textSecondary,
         }}>{label}</Text>
       </Pressable>
     })}

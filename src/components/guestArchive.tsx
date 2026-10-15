@@ -9,7 +9,7 @@ import DetailModal from "./detailModal"
 import { PlayerGame } from "../models/game"
 
 const outcome = (game: PlayerGame) => game.correctAnswer ? "Won" : game.gaveUp ? "Gave up" : game.statsProcessed ? "Out of guesses" : "Unfinished"
-const dateLabel = (date: string) => new Date(`${date}T00:00:00Z`).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" })
+const dateLabel = (date: string) => new Date(`${date.slice(0, 10)}T00:00:00Z`).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" })
 function hintValue(value: unknown): string {
   if (Array.isArray(value)) return value.map(hintValue).filter(Boolean).join(", ")
   if (value && typeof value === "object" && "name" in value) return hintValue(value.name)

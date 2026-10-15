@@ -2,7 +2,7 @@ import { useGameStore } from "../../../src/state/gameStore"
 import { gameService } from "../../../src/services/gameService"
 import { defaultPlayerGame, defaultPlayerStats } from "../../../src/models/default"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-jest.mock("../../../src/services/gameService", () => ({ gameService: { startGame: jest.fn(), applyAction: jest.fn(), resumePendingAction: jest.fn() } }))
+jest.mock("../../../src/services/gameService", () => ({ gameService: { fetchDailyChallenges: jest.fn().mockResolvedValue({}), startGame: jest.fn(), applyAction: jest.fn(), resumePendingAction: jest.fn() } }))
 jest.mock("../../../src/services/movieDataService", () => ({ MovieDataService: class { getCatalogLists() { return { basicItems: [], fullItems: [] } } } }))
 jest.mock("../../../src/utils/analyticsService")
 jest.mock("@react-native-async-storage/async-storage", () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"))
@@ -12,6 +12,12 @@ const response = { game, stats: { ...defaultPlayerStats, id: "p1" }, challengeId
 describe("authoritative game state", () => {
   beforeEach(() => { jest.clearAllMocks(); jest.spyOn(performance, "now").mockReturnValue(100); useGameStore.getState().resetSession(); useGameStore.setState(initial, true); (gameService.startGame as jest.Mock).mockResolvedValue(response) })
   afterEach(() => jest.restoreAllMocks())
+  it('explains service failures without exposing raw Firebase errors', async () => {
+    ;(gameService.startGame as jest.Mock).mockRejectedValue(Object.assign(new Error('internal [0]'), { code: 'functions/internal' }))
+    await useGameStore.getState().initializeGame({ id: 'p1', name: 'Player' })
+    expect(useGameStore.getState().error).toContain("couldn't reach the game service")
+    expect(useGameStore.getState().error).not.toContain('internal')
+  })
   it("opens the daily game when optional tutorial preference reads fail", async () => {
     ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null)
       .mockRejectedValueOnce(new Error("Tutorial storage unavailable"))
@@ -19,6 +25,13 @@ describe("authoritative game state", () => {
     await useGameStore.getState().initializeGame({ id: "p1", name: "Player" })
     expect(gameService.startGame).toHaveBeenCalledTimes(1)
     expect(useGameStore.getState()).toMatchObject({ loading: false, error: null, playerGame: { id: game.id }, tutorialState: { showGuessInputTip: true, showResultsTip: true } })
+  })
+  it("restores the selected difficulty even while the game service is unavailable", async () => {
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce("LEVEL_5")
+    ;(gameService.startGame as jest.Mock).mockRejectedValue(new Error("offline"))
+    await useGameStore.getState().initializeGame({ id: "p1", name: "Player" })
+    expect(useGameStore.getState().nextDifficulty).toBe("LEVEL_5")
+    expect(gameService.startGame).toHaveBeenCalledWith("p1", "LEVEL_5")
   })
   it("restores the saved difficulty instead of overwriting it with preferences", async () => {
     ;(gameService.startGame as jest.Mock).mockResolvedValue({ ...response, game: { ...game, difficulty: "LEVEL_5", guessesMax: 3, guesses: [{ itemId: 2 }] } })

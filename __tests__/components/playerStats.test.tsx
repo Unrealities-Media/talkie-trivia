@@ -92,7 +92,8 @@ describe("PlayerStatsContainer Component", () => {
       expect(screen.getByText("Max Streak: 5")).toBeTruthy()
 
       // Hints Available
-      expect(screen.getByText("Hints Available: 2")).toBeTruthy()
+      expect(screen.queryByText(/Hints Available/)).toBeNull()
+      expect(screen.getByText(/Each Easy challenge includes three optional hints/)).toBeTruthy()
     })
 
     it("should format large score numbers with commas", () => {

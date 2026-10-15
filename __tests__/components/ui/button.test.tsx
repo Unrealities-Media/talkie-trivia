@@ -46,12 +46,12 @@ describe("UI Component: Button", () => {
       const button = screen.getByRole("button")
       const text = screen.getByText("Secondary")
 
-      // Secondary usually has transparent bg and primary border/text
+      // Secondary uses the readable accent for both outline and label.
       expect(button.props.style).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             backgroundColor: "transparent",
-            borderColor: darkColors.primary,
+            borderColor: darkColors.accentText,
           }),
         ])
       )

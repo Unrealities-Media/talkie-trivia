@@ -1,6 +1,7 @@
 node_modules/
 .expo/
 dist/
+dist-ci/
 npm-debug.*
 *.jks
 *.keystore
@@ -32,6 +33,7 @@ google-services*.json
 repomix-output.txt
 
 # firebase emulator
+.firebase/
 emulator_data/
 firebase-export-**/
 

@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState } from "react"
+import React, { memo, useEffect, useState, useId } from "react"
 import {
   View,
   Text,
@@ -10,8 +10,10 @@ import {
   ImageStyle,
 } from "react-native"
 import { Image } from "expo-image"
+import Svg, { Defs, Pattern, Rect, Text as SvgText } from "react-native-svg"
 import { BasicTriviaItem, TriviaItem } from "../models/trivia"
 import { API_CONFIG } from "../config/constants"
+import { useTheme } from "../contexts/themeContext"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { releaseYear as getReleaseYear } from "../utils/dateDisplay"
 import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
@@ -28,11 +30,40 @@ interface ItemProps {
 
 const defaultPoster = require("../../assets/premiere/theatre.png")
 
+// A small, stable emulsion pattern: no animation or random changes while typing.
+function FilmGrain() {
+  const id = `grain-${useId().replace(/:/g, "")}`
+  return <View pointerEvents="none" accessible={false} aria-hidden style={{ position: "absolute", inset: 0, opacity: 0.18 }}>
+    <Svg width="100%" height="100%">
+      <Defs><Pattern id={id} patternUnits="userSpaceOnUse" width={83} height={79}>
+        {Array.from({ length: 160 }, (_, i) => <Rect key={i} x={Math.abs(Math.sin(i * 127.1) * 43758.5453) % 83} y={Math.abs(Math.sin(i * 311.7) * 96453.1337) % 79}
+          width={i % 3 ? 0.6 : 1} height={i % 4 ? 0.7 : 1.2} fill={i % 2 ? "#D6C5A1" : "#000000"} />)}
+      </Pattern></Defs>
+      <Rect width="100%" height="100%" fill={`url(#${id})`} />
+    </Svg>
+  </View>
+}
+
+function FilmEdge({ side }: { side: "left" | "right" }) {
+  const patternId = `film-${useId().replace(/:/g, "")}`
+  return <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={{ position: "absolute", top: 0, bottom: 0, [side]: 0, width: 14 }}>
+    <Svg width="100%" height="100%" aria-hidden>
+      <Defs><Pattern id={patternId} patternUnits="userSpaceOnUse" width={14} height={18}>
+        <Rect x={3} y={4} width={8} height={11} rx={1.5} fill="#071A20" stroke="#806D49" strokeWidth={0.6} />
+        <Rect x={4} y={5} width={6} height={8} rx={1} fill="#C8B993" opacity={0.75} />
+      </Pattern></Defs>
+      <Rect width="100%" height="100%" fill={`url(#${patternId})`} />
+    </Svg>
+  </View>
+}
+
 const PickerItem = memo<ItemProps>(
   ({ item, detailedItem, isDisabled, isGuessed = false, isExpanded, onSelect, onLongPress }) => {
     const styles = useStyles(themedStyles)
+    const { colors } = useTheme()
     const reduced = usePremiereMotion()
     const [failedPoster, setFailedPoster] = useState<string | null>(null)
+    const [hovered, setHovered] = useState(false)
 
     useEffect(() => {
       if (Platform.OS !== "web" && !reduced) {
@@ -45,7 +76,7 @@ const PickerItem = memo<ItemProps>(
     const titleWithYear = `${item.title}${releaseYear}`
 
     const imageSource = item.posterPath && failedPoster !== item.posterPath
-      ? { uri: `${API_CONFIG.TMDB_IMAGE_BASE_URL_W92}${item.posterPath}` }
+      ? { uri: `${API_CONFIG.TMDB_IMAGE_BASE_URL_W500}${item.posterPath}` }
       : defaultPoster
     const fullImageSource = item.posterPath && failedPoster !== item.posterPath
       ? { uri: `${API_CONFIG.TMDB_IMAGE_BASE_URL_W500}${item.posterPath}` }
@@ -62,13 +93,25 @@ const PickerItem = memo<ItemProps>(
           onPress={() => onSelect(item)}
           onLongPress={() => onLongPress(item)}
           delayLongPress={200}
+          onHoverIn={() => setHovered(true)}
+          onHoverOut={() => setHovered(false)}
           style={({ pressed }) => [
             styles.resultItem,
-            pressed && styles.pressedItem,
+            (pressed || (hovered && !isDisabled && !isGuessed)) && styles.pressedItem,
+            (isDisabled || isGuessed) && { opacity: 0.55 },
           ]}
           disabled={isDisabled || isGuessed}
         >
+          <FilmEdge side="left" />
+          <FilmEdge side="right" />
+          <View pointerEvents="none" accessible={false} aria-hidden style={styles.yearStrip}>
+            <Svg width={29} height={94} viewBox="0 0 29 94">
+              <SvgText x={47} y={-11} transform="rotate(90)" textAnchor="middle"
+                fontSize={9} letterSpacing={1.1} fill={colors.textSecondary}>{`YEAR - ${year || "UNKNOWN"}`}</SvgText>
+            </Svg>
+          </View>
           <View style={styles.resultItemContent}>
+            <FilmGrain />
             <View style={styles.imageWrapper}>
               <Image
                 source={imageSource}
@@ -78,12 +121,10 @@ const PickerItem = memo<ItemProps>(
                 contentFit="cover"
               />
             </View>
-            <Text
-              style={styles.unselected}
-            >
-              {titleWithYear}
-              {isGuessed ? " — Already guessed" : ""}
-            </Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.unselected} numberOfLines={2}>{item.title}</Text>
+              {isGuessed && <Text style={styles.expandedHint}>Already guessed</Text>}
+            </View>
           </View>
 
           {isExpanded && detailedItem && (
@@ -125,6 +166,7 @@ interface PickerItemStyles {
   imageWrapper: ViewStyle
   resultImage: ImageStyle
   unselected: TextStyle
+  yearStrip: ViewStyle
   expandedPreview: ViewStyle
   expandedImageWrapper: ViewStyle
   expandedImage: ImageStyle
@@ -136,12 +178,15 @@ interface PickerItemStyles {
 
 const themedStyles = (theme: Theme): PickerItemStyles => ({
   resultItemContainer: {
-    borderBottomWidth: 1,
+    backgroundColor: theme.colors.backgroundLight,
+    borderBottomWidth: 2,
     borderBottomColor: theme.colors.border,
   },
   resultItem: {
-    paddingVertical: theme.spacing.small,
-    paddingHorizontal: theme.spacing.medium,
+    paddingVertical: 7,
+    paddingLeft: 17,
+    paddingRight: 44,
+    minHeight: 108,
     overflow: "hidden",
   },
   pressedItem: {
@@ -150,12 +195,19 @@ const themedStyles = (theme: Theme): PickerItemStyles => ({
   resultItemContent: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: theme.colors.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 1,
+    paddingRight: 9,
+    minHeight: 92,
+    overflow: "hidden",
   },
   imageWrapper: {
-    width: theme.responsive.scale(30),
-    height: theme.responsive.scale(45),
-    borderRadius: theme.responsive.scale(4),
-    marginRight: theme.spacing.medium,
+    width: 60,
+    height: 90,
+    borderRadius: 0,
+    marginRight: 12,
     backgroundColor: theme.colors.surface,
     overflow: "hidden",
   },
@@ -165,8 +217,16 @@ const themedStyles = (theme: Theme): PickerItemStyles => ({
   },
   unselected: {
     ...theme.typography.bodyText,
-    fontSize: theme.responsive.responsiveFontSize(14),
-    flex: 1,
+    fontSize: theme.responsive.responsiveFontSize(18),
+    lineHeight: 23,
+    fontFamily: "PremiereClue",
+    color: theme.colors.textPrimary,
+  },
+  yearStrip: {
+    position: "absolute", right: 14, top: 7, width: 29, height: 94,
+    borderTopWidth: 1, borderBottomWidth: 1, borderRightWidth: 1,
+    borderColor: theme.colors.border, alignItems: "center", justifyContent: "center",
+    backgroundColor: theme.colors.surface,
   },
   expandedPreview: {
     flexDirection: "row",
@@ -174,7 +234,9 @@ const themedStyles = (theme: Theme): PickerItemStyles => ({
     marginTop: theme.spacing.medium,
     padding: theme.spacing.small,
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.responsive.scale(8),
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   expandedImageWrapper: {
     width: theme.responsive.scale(80),

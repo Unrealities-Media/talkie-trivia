@@ -78,5 +78,5 @@ it("does not offer native notification controls on web", () => {
   snapshot = { ...snapshot, status: "unsupported" }
   show()
   expect(screen.queryByRole("button")).toBeNull()
-  expect(screen.getByText(/Android and iOS app/)).toBeTruthy()
+  expect(screen.queryByText(/Android and iOS app/)).toBeNull()
 })

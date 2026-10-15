@@ -36,7 +36,7 @@ describe("UI Component: Typography", () => {
     expect(text.props.style).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          fontFamily: "PremiereDisplay-Bold",
+          fontFamily: "PremiereDisplay",
           color: darkColors.textPrimary,
         }),
       ])

@@ -42,6 +42,13 @@ def inspect_headers(headers):
     return {"loadAlignments": loads, "relroEnds": relro_ends, "problems": problems}
 
 
+def read_headers(tool, library):
+    # llvm-readelf can be a symlink to llvm-readobj. Resolving that symlink
+    # changes argv[0] and therefore LLVM's default CLI/output mode. Specify
+    # the format and long option explicitly so either executable is safe.
+    return run([str(tool.absolute()), "--program-headers", "--elf-output-style=GNU", str(library)])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("apk", type=Path)
@@ -76,7 +83,7 @@ def main():
             file = Path(temporary) / "library.so"
             file.write_bytes(archive.read(name))
             try:
-                headers = run([str(args.readelf.resolve()), "-lW", str(file)])
+                headers = read_headers(args.readelf, file)
                 inspection = inspect_headers(headers)
             except (RuntimeError, ValueError, IndexError) as error:
                 inspection = {"problems": [str(error)]}

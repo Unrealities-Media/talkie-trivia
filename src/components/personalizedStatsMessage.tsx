@@ -17,6 +17,6 @@ export default function PersonalizedStatsMessage() {
   return <View style={{ width: "100%", padding: 16, gap: 8 }}>
     {game.correctAnswer && game.guesses.length === 1 && <Typography>Found it on your first guess!</Typography>}
     <Typography>You have won {wins} of {stats.games} completed daily {stats.games === 1 ? "game" : "games"}.</Typography>
-    <Typography>See your saved games and progress in Profile. A new movie arrives at 00:00 UTC.</Typography>
+    <Typography>Try another difficulty in Daily challenges above, or view your saved games in Profile. Five new movies arrive at 00:00 UTC.</Typography>
   </View>
 }

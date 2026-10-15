@@ -56,7 +56,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
       setIsLoading(true)
       setError(null)
       try {
-        const playerGameId = `movies_${historyItem.dateId}`
+        const playerGameId = `movies_${historyItem.challengeId ?? historyItem.dateId}`
         const fetchedPlayerGame = await gameService.fetchPlayerGameById(playerGameId)
         const fetchedItem = fetchedPlayerGame?.triviaItem
         const { basicItems } = new MovieDataService().getCatalogLists()

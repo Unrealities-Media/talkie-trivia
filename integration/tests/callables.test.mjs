@@ -46,7 +46,7 @@ async function call(name, data, token) {
   return body.result
 }
 const start = (user, overrides = {}) => call("startGame", { difficulty: "LEVEL_2", catalogVersion, ...overrides }, user?.token)
-const command = (overrides = {}) => ({ challengeId: day, expectedRevision: 0, actionId: randomUUID(), type: "guess", itemId: answer.i, ...overrides })
+const command = (overrides = {}) => ({ challengeId: `${day}_LEVEL_2`, expectedRevision: 0, actionId: randomUUID(), type: "guess", itemId: answer.i, ...overrides })
 const move = (user, data) => call("applyGameAction", data, user.token)
 const saved = async (user, path) => (await db.doc(`players/${user.uid}/${path}`).get()).data()
 const deletionData = async user => ({ confirmation: "DELETE", secret: (await accountDeletion(db, getAdminAuth(admin)).prepare({ auth: { uid: user.uid }, data: {} })).secret })
@@ -56,8 +56,8 @@ beforeEach(async () => {
   assert.equal(reset.status, 200)
   day = new Date().toISOString().slice(0, 10)
   const description = "An editorially reviewed test clue about a character confronting an unexpected challenge and choosing a different future."
-  await db.doc(`dailyGames/${day}`).set({
-    movieId: answer.i, schemaVersion: 1, catalogVersion, date: new Date(`${day}T00:00:00Z`),
+  for (let level = 1; level <= 5; level++) await db.doc(`dailyGames/${day}_LEVEL_${level}`).set({
+    movieId: answer.i, difficulty: `LEVEL_${level}`, schemaVersion: 1, catalogVersion, date: new Date(`${day}T00:00:00Z`),
     content: { description, imdbId: "", tagline: "" },
     contentHash: createHash("sha256").update(`${answer.i}\n${description}\n\n`).digest("hex"),
     reviewedBy: "automated-fixture-only", reviewedAt: new Date(Date.now() - 86400000).toISOString(),
@@ -66,17 +66,39 @@ beforeEach(async () => {
 after(async () => { await Promise.all(apps.map(deleteApp)); await db.terminate(); await deleteAdmin(admin) })
 
 describe("merge policy with real server-owned game snapshots", () => {
+  it("resumes five independent games and credits a single daily streak and All Five day", async () => {
+    const user = await guest()
+    for (let level = 1; level <= 5; level++) {
+      const difficulty = `LEVEL_${level}`
+      const first = await start(user, { difficulty })
+      assert.equal(first.game.revision, 0)
+      const action = command({ challengeId: `${day}_${difficulty}`, type: 'giveUp', itemId: undefined })
+      const completed = await move(user, action)
+      assert.equal(completed.stats.games, level)
+      assert.equal(completed.stats.currentStreak, 1)
+      assert.equal(completed.stats.byDifficulty[difficulty].games, 1)
+      assert.deepEqual((await move(user, action)).stats, completed.stats)
+    }
+    for (let level = 1; level <= 5; level++) {
+      const resumed = await start(user, { difficulty: `LEVEL_${level}` })
+      assert.equal(resumed.game.gaveUp, true)
+      assert.equal(resumed.game.revision, 1)
+      assert.equal(resumed.stats.games, 5)
+      assert.deepEqual(resumed.stats.allFiveDays, [day])
+    }
+    assert.equal((await db.collection(`players/${user.uid}/gameHistoryV2`).get()).size, 5)
+  })
   it("blocks all gameplay callables for either reservation role without changing saved progress", async () => {
     const user = await guest()
     await start(user)
-    const game = await saved(user, `games/movies_${day}`)
+    const game = await saved(user, `games/movies_${day}_LEVEL_2`)
     const stats = await saved(user, "privateStats/summary")
     for (const role of ["source", "target"]) {
       await db.doc(`accountMergeLocks/${user.uid}`).set({ jobId: user.uid, role })
       await assert.rejects(start(user), { code: "FAILED_PRECONDITION" })
       await assert.rejects(move(user, command()), { code: "FAILED_PRECONDITION" })
-      await assert.rejects(call("submitGameResult", { challengeId: day }, user.token), { code: "FAILED_PRECONDITION" })
-      assert.deepEqual(await saved(user, `games/movies_${day}`), game)
+      await assert.rejects(call("submitGameResult", { challengeId: `${day}_LEVEL_2` }, user.token), { code: "FAILED_PRECONDITION" })
+      assert.deepEqual(await saved(user, `games/movies_${day}_LEVEL_2`), game)
       assert.deepEqual(await saved(user, "privateStats/summary"), stats)
     }
   })
@@ -88,7 +110,7 @@ describe("merge policy with real server-owned game snapshots", () => {
     // are implemented. Both synthetic accounts are controlled by this test.
     await start(source)
     await move(source, command({ type: "hint", hintType: "director", itemId: undefined }))
-    const original = await saved(source, `games/movies_${day}`)
+    const original = await saved(source, `games/movies_${day}_LEVEL_2`)
     const targetGameRef = db.doc(`players/${destination.uid}/games/${original.id}`)
     const targetStatsRef = db.doc(`players/${destination.uid}/privateStats/summary`)
     await db.runTransaction(async tx => {
@@ -116,7 +138,7 @@ describe("merge policy with real server-owned game snapshots", () => {
     assert.equal(completed.stats.games, 1)
     assert.equal(completed.stats.allTimeScore, 500)
     assert.deepEqual(await saved(source, `games/${original.id}`), original)
-    const history = await saved(destination, `gameHistoryV2/${day}`)
+    const history = await saved(destination, `gameHistoryV2/${day}_LEVEL_2`)
     assert.equal(history.score, 500)
     assert.equal(history.guessCount, 1)
     const again = planAccountMergePage({
@@ -164,7 +186,7 @@ describe("account deletion against real Auth and Firestore", () => {
     await assert.rejects(getAdminAuth(admin).getUser(user.uid), { code: "auth/user-not-found" })
     await assert.rejects(start(user), { code: "PERMISSION_DENIED" })
     await assert.rejects(move(user, command()), { code: "PERMISSION_DENIED" })
-    await assert.rejects(call("submitGameResult", { challengeId: day }, user.token), { code: "PERMISSION_DENIED" })
+    await assert.rejects(call("submitGameResult", { challengeId: `${day}_LEVEL_2` }, user.token), { code: "PERMISSION_DENIED" })
     assert.equal((await start(other)).game.playerID, other.uid)
     assert.deepEqual(await call("deleteAccount", { confirmation: "DELETE" }, user.token), { accepted: true, complete: true })
     const secret = secrets.get(user.token)
@@ -304,18 +326,18 @@ describe("real Auth, callable HTTP and Firestore transaction contract", () => {
   })
   it("does not create partial games or stats when reviewed content is unavailable", async () => {
     const user = await guest()
-    await db.doc(`dailyGames/${day}`).delete()
+    await db.doc(`dailyGames/${day}_LEVEL_2`).delete()
     await assert.rejects(start(user), { code: "UNAVAILABLE" })
     assert.equal(await saved(user, "privateStats/summary"), undefined)
-    assert.equal(await saved(user, `games/movies_${day}`), undefined)
+    assert.equal(await saved(user, `games/movies_${day}_LEVEL_2`), undefined)
   })
-  it("concurrent starts preserve one immutable difficulty and server UTC challenge", async () => {
+  it("concurrent starts preserve separate challenges and server UTC reset", async () => {
     const user = await guest()
     const results = await Promise.all(Array.from({ length: 6 }, (_, index) => start(user, { difficulty: index % 2 ? "LEVEL_5" : "LEVEL_2" })))
-    assert.equal(new Set(results.map(result => result.game.difficulty)).size, 1)
-    assert.equal((await db.collection(`players/${user.uid}/games`).get()).size, 1)
+    assert.equal(new Set(results.map(result => result.game.difficulty)).size, 2)
+    assert.equal((await db.collection(`players/${user.uid}/games`).get()).size, 2)
     for (const result of results) {
-      assert.equal(result.challengeId, day)
+      assert.equal(result.challengeId, `${day}_${result.game.difficulty}`)
       assert.equal(Date.parse(result.resetAt), Date.parse(`${day}T00:00:00Z`) + 86400000)
       assert.ok(Math.abs(Date.parse(result.serverNow) - Date.now()) < 60000)
     }
@@ -342,7 +364,7 @@ describe("real Auth, callable HTTP and Firestore transaction contract", () => {
     const results = await Promise.allSettled([move(user, command({ itemId: catalog[1].i })), move(user, command({ itemId: catalog[2].i }))])
     assert.equal(results.filter(result => result.status === "fulfilled").length, 1)
     assert.equal(results.find(result => result.status === "rejected").reason.code, "ABORTED")
-    const game = await saved(user, `games/movies_${day}`)
+    const game = await saved(user, `games/movies_${day}_LEVEL_2`)
     assert.equal(game.revision, 1)
     assert.equal(game.guesses.length, 1)
     assert.equal((await saved(user, "privateStats/summary")).games, 0)
@@ -369,7 +391,7 @@ describe("real Auth, callable HTTP and Firestore transaction contract", () => {
     await start(victim)
     await assert.rejects(move(attacker, command()), { code: "NOT_FOUND" })
     await assert.rejects(move(attacker, command({ playerID: victim.uid })), { code: "INVALID_ARGUMENT" })
-    assert.equal((await saved(victim, `games/movies_${day}`)).revision, 0)
+    assert.equal((await saved(victim, `games/movies_${day}_LEVEL_2`)).revision, 0)
     assert.equal((await saved(victim, "privateStats/summary")).games, 0)
   })
   it("preserves guest-owned progress after a real emulator credential link and returning sign-in", async () => {

@@ -1,4 +1,4 @@
-import React, { memo } from "react"
+import React from "react"
 import { View, Text, ViewStyle, TextStyle } from "react-native"
 import Animated from "react-native-reanimated"
 import { useSkeletonAnimation } from "../../utils/hooks/useSkeletonAnimation"

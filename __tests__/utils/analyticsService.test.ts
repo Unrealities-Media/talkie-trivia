@@ -14,7 +14,7 @@ jest.mock("firebase/analytics", () => ({
 import { analyticsService } from "../../src/utils/analyticsService"
 
 describe("Utils: analyticsService", () => {
-  const mockConsoleLog = jest.spyOn(console, "log").mockImplementation(() => {})
+  jest.spyOn(console, "log").mockImplementation(() => {})
   const mockConsoleError = jest
     .spyOn(console, "error")
     .mockImplementation(() => {})

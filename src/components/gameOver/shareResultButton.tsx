@@ -1,9 +1,9 @@
-import React, { useState } from "react"
-import { View, Alert, ViewStyle } from "react-native"
+import React, { useState, useEffect } from "react"
+import { View, Alert, ViewStyle, Text, Platform } from "react-native"
 import { PlayerGame } from "../../models/game"
-import { shareGameResult } from "../../utils/shareUtils"
+import { shareGameResult, generateShareMessage } from "../../utils/shareUtils"
 import { Button } from "../ui/button"
-import { useStyles, Theme } from "../../utils/hooks/useStyles"
+import { useStyles, Theme, useThemeTokens } from "../../utils/hooks/useStyles"
 import { u } from "../../styles/utils"
 import { savedScore } from "../../utils/resultSummary"
 import Svg, { Path } from "react-native-svg"
@@ -16,16 +16,32 @@ const ShareResultButton: React.FC<ShareResultButtonProps> = ({
   playerGame,
 }) => {
   const styles = useStyles(themedStyles)
+  const { colors } = useThemeTokens()
   const [isSharing, setIsSharing] = useState(false)
+  const [status, setStatus] = useState("")
+  const [copyText, setCopyText] = useState("")
+  useEffect(() => { setStatus(""); setCopyText("") }, [playerGame.id])
 
   const handleShare = async () => {
     if (isSharing) return
     setIsSharing(true)
+    setStatus("")
+    setCopyText("")
     try {
-      await shareGameResult(playerGame)
+      if (Platform.OS === "web" && typeof navigator !== "undefined" && !navigator.share) {
+        const text = generateShareMessage(playerGame)
+        try {
+          await navigator.clipboard.writeText(text)
+          setStatus("Result copied. Share it with a fellow movie lover.")
+        } catch {
+          setCopyText(text)
+          setStatus("Select and copy your result below.")
+        }
+      } else await shareGameResult(playerGame)
     } catch (error) {
       console.error("Error during sharing process:", error)
-      Alert.alert(
+      setStatus("Could not share your result. Please try again.")
+      if (Platform.OS !== "web") Alert.alert(
         "Sharing Failed",
         "An error occurred while trying to share your results."
       )
@@ -45,6 +61,8 @@ const ShareResultButton: React.FC<ShareResultButtonProps> = ({
         variant="primary"
         style={styles.button}
       />
+      {!!status && <Text accessibilityLiveRegion="polite" style={{ fontFamily: "PremiereSans", color: colors.textPrimary, fontSize: 13, lineHeight: 20, marginTop: 10, textAlign: "center" }}>{status}</Text>}
+      {!!copyText && <Text selectable style={{ fontFamily: "PremiereSans", color: colors.textPrimary, fontSize: 14, lineHeight: 22, marginTop: 12 }}>{copyText}</Text>}
     </View>
   )
 }

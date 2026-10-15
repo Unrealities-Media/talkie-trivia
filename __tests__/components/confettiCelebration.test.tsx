@@ -1,4 +1,3 @@
-import React from "react"
 import { render, screen, act } from "@testing-library/react-native"
 import { ThemeProvider } from "../../src/contexts/themeContext"
 import ConfettiCelebration from "../../src/components/confettiCelebration"

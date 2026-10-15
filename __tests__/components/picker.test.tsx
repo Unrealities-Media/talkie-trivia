@@ -62,7 +62,7 @@ jest.mock("../../src/components/pickerUI", () => {
 
 // Mock PickerItem: Renders pressables to drive selection logic
 jest.mock("../../src/components/pickerItem", () => {
-  const { View, Text, Pressable } = require("react-native")
+  const { Text, Pressable } = require("react-native")
   return (props: any) => (
     <Pressable
       testID={`picker-item-${props.item.id}`}
@@ -84,7 +84,7 @@ jest.mock("../../src/components/pickerSkeleton", () => {
 
 // Mock TutorialTooltip
 jest.mock("../../src/components/tutorialTooltip", () => {
-  const { View, Text } = require("react-native")
+  const { Text } = require("react-native")
   return ({ isVisible, text }: any) =>
     isVisible ? <Text testID="mock-tooltip">{text}</Text> : null
 })
@@ -172,7 +172,7 @@ describe("PickerContainer Component", () => {
       ).toBeTruthy()
     })
 
-    it("should show tutorial tooltip if enabled in state", () => {
+    it("keeps search available without an automatic tutorial panel", () => {
       mockUseGameStore.mockImplementation((selector: any) =>
         selector({
           ...defaultStoreState,
@@ -180,7 +180,7 @@ describe("PickerContainer Component", () => {
         })
       )
       renderWithTheme(<PickerContainer />)
-      expect(screen.getByTestId("mock-tooltip")).toBeTruthy()
+      expect(screen.queryByTestId("mock-tooltip")).toBeNull()
     })
   })
 

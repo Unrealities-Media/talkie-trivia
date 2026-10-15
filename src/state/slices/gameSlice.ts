@@ -10,7 +10,11 @@ import { generateImplicitHint } from "../../utils/guessFeedbackUtils"
 import { DEFAULT_DIFFICULTY, DIFFICULTY_MODES, DifficultyLevel } from "../../config/difficulty"
 
 const finished = (game: GameResponse["game"]) => game.correctAnswer || game.gaveUp || game.guesses.length >= game.guessesMax
-const message = (error: unknown) => error instanceof Error ? error.message : "Please check your connection and try again."
+const message = (error: unknown) => {
+  const code = (error as { code?: string })?.code?.replace("functions/", "")
+  if (["internal", "unavailable", "deadline-exceeded"].includes(code ?? "")) return "We couldn't reach the game service. Please try again shortly. Your saved progress is safe."
+  return error instanceof Error ? error.message : "Please check your connection and try again."
+}
 const emptyGame = () => ({ ...defaultPlayerGame, guesses: [], hintsUsed: {} })
 const emptyStats = () => ({ ...defaultPlayerStats, wins: [...defaultPlayerStats.wins] })
 
@@ -20,6 +24,9 @@ export const createGameSlice: StateCreator<GameStoreState, [], [], GameSlice> = 
   const accept = (result: GameResponse, reveal = false) => {
     const over = finished(result.game)
     set({
+      challengeDate: result.challengeId.slice(0, 10),
+      dailyChallenges: { ...(get().challengeDate === result.challengeId.slice(0, 10) ? get().dailyChallenges : {}),
+        [result.game.difficulty]: over ? (result.game.correctAnswer ? "Won" : "Lost") : "In progress" },
       playerGame: result.game,
       playerStats: { ...result.stats, hintsAvailable: result.game.difficulty === "LEVEL_2" ? Math.max(0, 3 - Object.values(result.game.hintsUsed || {}).filter(Boolean).length) : 0 },
       difficulty: result.game.difficulty,
@@ -61,6 +68,7 @@ export const createGameSlice: StateCreator<GameStoreState, [], [], GameSlice> = 
     }
   }
   return {
+    dailyChallenges: {}, challengeDate: null,
     playerGame: emptyGame(), playerStats: emptyStats(),
     gameStatus: "playing", isInteractionsDisabled: true, lastGuessResult: null,
     syncStatus: "idle", syncError: null, resetDeadline: null,
@@ -68,17 +76,17 @@ export const createGameSlice: StateCreator<GameStoreState, [], [], GameSlice> = 
       // Invalidate in-flight work immediately, before another account is loaded.
       generation++
       loadingUid = null
-      set({ playerGame: emptyGame(), playerStats: emptyStats(), gameStatus: "playing",
+      set({ dailyChallenges: {}, challengeDate: null, playerGame: emptyGame(), playerStats: emptyStats(), gameStatus: "playing",
         loading: false, error: null, isInteractionsDisabled: true, lastGuessResult: null,
         showModal: false, showConfetti: false, flashMessage: null, syncStatus: "idle", syncError: null, resetDeadline: null })
     },
-    initializeGame: async player => {
+    initializeGame: async (player, requestedDifficulty) => {
       if (get().loading && loadingUid === player.id) return
       loadingUid = player.id
       const token = ++generation
       const sameAccount = get().playerGame.playerID === player.id
       set({ loading: true, error: null, isInteractionsDisabled: true, lastGuessResult: null, showModal: false, showConfetti: false, syncStatus: "idle", syncError: null,
-        ...(sameAccount ? {} : { playerGame: emptyGame(), playerStats: emptyStats(), resetDeadline: null }) })
+        ...(sameAccount ? {} : { dailyChallenges: {}, challengeDate: null, playerGame: emptyGame(), playerStats: emptyStats(), resetDeadline: null }) })
       try {
         const [storedDifficulty, inputTip, resultsTip] = await Promise.all([
           AsyncStorage.getItem(ASYNC_STORAGE_KEYS.DIFFICULTY_SETTING),
@@ -86,13 +94,19 @@ export const createGameSlice: StateCreator<GameStoreState, [], [], GameSlice> = 
           AsyncStorage.getItem(ASYNC_STORAGE_KEYS.TUTORIAL_GUESS_INPUT_SEEN).catch(() => null),
           AsyncStorage.getItem(ASYNC_STORAGE_KEYS.TUTORIAL_RESULTS_SEEN).catch(() => null),
         ])
-        const preference = storedDifficulty && Object.hasOwn(DIFFICULTY_MODES, storedDifficulty) ? storedDifficulty as DifficultyLevel : DEFAULT_DIFFICULTY
+        const preference = requestedDifficulty ?? (storedDifficulty && Object.hasOwn(DIFFICULTY_MODES, storedDifficulty) ? storedDifficulty as DifficultyLevel : DEFAULT_DIFFICULTY)
+        if (generation !== token) return
+        set({ nextDifficulty: preference })
         const result = await gameService.startGame(player.id, preference)
         if (generation !== token) return
         const lists = new MovieDataService().getCatalogLists()
         set({ ...lists, nextDifficulty: preference, loading: false,
           tutorialState: { showGuessInputTip: inputTip === null, showResultsTip: resultsTip === null } })
         accept(result)
+        // Progress reads never block playing; unknown statuses remain unlabeled.
+        void gameService.fetchDailyChallenges(player.id, result.challengeId.slice(0, 10)).then(statuses => {
+          if (generation === token) set({ dailyChallenges: { ...statuses, [get().difficulty]: get().dailyChallenges[get().difficulty] } })
+        }).catch(() => undefined)
       } catch (error) {
         if (generation !== token) return
         set({ error: message(error), loading: false, isInteractionsDisabled: true })

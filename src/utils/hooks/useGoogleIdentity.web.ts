@@ -14,6 +14,7 @@ export function useGoogleIdentity() {
   const [request, , promptAsync] = Google.useIdTokenAuthRequest({
     clientId: extra?.webClientId || "google-sign-in-not-configured",
     webClientId: extra?.webClientId,
+    ...(extra?.publicSiteUrl ? { redirectUri: `${extra.publicSiteUrl.replace(/\/$/, "")}/` } : {}),
   })
   return useCallback(async (): Promise<string | null> => {
     if (isLocalDemoIdentity()) return requestLocalDemoIdentity()

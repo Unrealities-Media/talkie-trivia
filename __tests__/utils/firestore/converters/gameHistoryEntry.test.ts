@@ -41,6 +41,12 @@ describe("Firestore Converter: GameHistoryEntry", () => {
   })
 
   describe("fromFirestore", () => {
+    it.each(['LEVEL_1', 'LEVEL_5'])('preserves the %s document identity when dates match', level => {
+      const snapshot = { id: `2023-01-01_${level}`, data: () => ({ ...mockEntry, difficulty: level }) }
+      const result = gameHistoryEntryConverter.fromFirestore(snapshot as any, {})
+      expect(result.dateId).toBe('2023-01-01')
+      expect(result.challengeId).toBe(`2023-01-01_${level}`)
+    })
     it("should correctly map firestore data to model", () => {
       const snapshot = {
         data: () => ({
@@ -60,7 +66,7 @@ describe("Firestore Converter: GameHistoryEntry", () => {
 
       // @ts-ignore
       const result = gameHistoryEntryConverter.fromFirestore(snapshot, {})
-      expect(result).toEqual(mockEntry)
+      expect(result).toEqual({ ...mockEntry, challengeId: mockEntry.dateId })
     })
 
     it("should handle legacy field names (movieId vs itemId)", () => {

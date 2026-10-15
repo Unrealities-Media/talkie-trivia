@@ -84,6 +84,25 @@ describe("CluesContainer Component", () => {
   };
 
   describe("Rendering States", () => {
+    it("replaces the visible clue when another challenge has the same reveal count", () => {
+      setMockStoreState();
+      const { rerender } = renderWithTheme(<CluesContainer />);
+      expect(screen.getByText(summaryChunks[0])).toBeTruthy();
+      setMockStoreState({ playerGame: { triviaItem: { ...defaultTriviaItem,
+        description: "Different heroes begin another journey across distant planets beyond their home." } } });
+      rerender(<ThemeProvider><CluesContainer /></ThemeProvider>);
+      expect(screen.queryByText(summaryChunks[0])).toBeNull();
+      expect(screen.getByText("Different heroes begin")).toBeTruthy();
+    });
+    it("shows the entire Very Hard clue before the first guess", () => {
+      setMockStoreState({ difficulty: "LEVEL_5", playerGame: { guesses: [] } });
+      renderWithTheme(<CluesContainer />);
+      act(() => jest.advanceTimersByTime(2000));
+      expect(screen.getByText(fullSummaryText)).toBeTruthy();
+      expect(screen.queryByTestId("next-clue-projector")).toBeNull();
+      const words = mockSummary.trim().split(/\s+/).length;
+      expect(screen.getByText(`${words}/${words} words revealed`)).toBeTruthy();
+    });
     it("should render the skeleton component when loading", () => {
       setMockStoreState({ loading: true });
       renderWithTheme(<CluesContainer />);
@@ -96,10 +115,14 @@ describe("CluesContainer Component", () => {
       renderWithTheme(<CluesContainer />);
 
       act(() => {
-        jest.runAllTimers();
+        jest.advanceTimersByTime(2000);
       });
       
       expect(screen.getByText(summaryChunks[0])).toBeTruthy();
+      expect(screen.queryByText(fullSummaryText)).toBeNull();
+      expect(screen.queryByText(fullSummaryText, { includeHiddenElements: true })).toBeNull();
+      expect(screen.getByTestId("next-clue-projector")).toBeTruthy();
+      expect(scrollToEndSpy).not.toHaveBeenCalled();
 
       const revealedWords = summaryChunks[0].split(" ").length;
       const totalWords = mockSummary.trim().split(/\s+/).length;
@@ -123,7 +146,7 @@ describe("CluesContainer Component", () => {
       setMockStoreState({ playerGame: { guesses: [] } });
       const { rerender } = renderWithTheme(<CluesContainer />);
 
-      act(() => jest.runAllTimers());
+      act(() => jest.advanceTimersByTime(2000));
       expect(screen.getByText(summaryChunks[0])).toBeTruthy();
 
       (hapticsService.light as jest.Mock).mockClear();
@@ -137,13 +160,13 @@ describe("CluesContainer Component", () => {
         );
       });
 
-      act(() => jest.runAllTimers());
+      act(() => jest.advanceTimersByTime(2000));
 
       const expectedText = `${summaryChunks[0]} ${summaryChunks[1]}`;
       expect(screen.getByText(expectedText)).toBeTruthy();
 
       expect(hapticsService.light).toHaveBeenCalledTimes(1);
-      expect(scrollToEndSpy).toHaveBeenCalledWith({ animated: true });
+      expect(scrollToEndSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -152,13 +175,13 @@ describe("CluesContainer Component", () => {
       setMockStoreState();
       renderWithTheme(<CluesContainer />);
 
-      act(() => jest.runAllTimers());
+      act(() => jest.advanceTimersByTime(2000));
 
       expect(screen.getByText(summaryChunks[0])).toBeTruthy();
       (hapticsService.light as jest.Mock).mockClear();
 
       const pressableArea = screen.getByLabelText(
-        "Tap to reveal the full clue immediately"
+        "Skip the current clue's text animation"
       );
       fireEvent.press(pressableArea);
 
@@ -171,7 +194,7 @@ describe("CluesContainer Component", () => {
       (hapticsService.light as jest.Mock).mockClear();
 
       expect(
-        screen.queryByLabelText("Tap to reveal the full clue immediately")
+        screen.queryByLabelText("Skip the current clue's text animation")
       ).toBeNull();
 
       fireEvent.press(screen.getByText(fullSummaryText));

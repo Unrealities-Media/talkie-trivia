@@ -45,7 +45,11 @@ go run . -upload -project demo-talkie-trivia -apply
 ## Review and publication
 
 Prepare entries according to [the editorial contract](../content/README.md).
-The checked-in approval list has no approved production clues yet.
+The checked-in approval list has no approved production clues yet. New entries
+must contain all five difficulty variants; see [clue difficulty](clue-difficulty.md).
+Schema-2 publication snapshots hash the entire set, and the server selects the
+requested variant when creating a player's game. Existing schema-1 snapshots
+remain readable and are never overwritten by normal publication.
 
 Preview against an emulator (start it separately); then apply the reviewed plan:
 
@@ -56,16 +60,22 @@ go run . -schedule -project demo-talkie-trivia -apply
 
 The private report is `utils/data-source/schedule-plan.json`; it includes upcoming
 answers. Never put it on a public website. By default the schedule covers tomorrow
-through 30 days ahead, filling gaps only. Rerunning on the same day makes no changes;
+through the chosen horizon. GitHub Actions uploads only `schedule-summary.json`
+containing slot counts and dates; it must never upload the full answer-bearing
+plan, even under an artifact name containing "private". The default horizon runs
+through 30 days ahead, filling five difficulty slots per date (150 movies).
+Each slot has a distinct answer and uses `YYYY-MM-DD_LEVEL_N` as its document ID. Rerunning on the same day makes no changes;
 rerunning a week later adds only missing days through the new horizon. The planner
-avoids repeats across the preceding 90 days and the future window. Use
+avoids repeats across all difficulties in the preceding 90 days and the future
+window, including legacy date-only records. Repeats may become eligible after
+that cooldown. Keep adding reviewed sets before the schedule runs out. Use
 `-include-today` only for an explicit first-time bootstrap; it cannot overwrite
 today if a document exists. `-horizon-days` accepts 1–90.
 
 The publisher reads the entire bounded window in one Firestore transaction, aborts
 on read/validation failures, and creates missing dates with existence preconditions.
-Concurrent runs retry against the updated window. At most 91 new documents are
-committed atomically. Each date contains its reviewed clue, link metadata, content
+Concurrent runs retry against the updated window. At most 455 new documents are
+committed atomically. Each challenge contains its difficulty, reviewed clues, link metadata, content
 digest, review metadata, and catalog version. Functions read this snapshot, never
 the mutable upstream movie record, when starting a game. Firestore's transaction
 API supplies retry/commit semantics; local pure-planner tests do not substitute
@@ -133,7 +143,7 @@ Before enabling real publication, prove: enough reviewed content; catalog parity
 source-fetch failure retains drafts; preview causes no database changes; import
 preserves editorial data; repeat/concurrent publication cannot overwrite or repeat;
 permission/read/commit failures exit nonzero; a deployed app receives identical
-clues for all players on one day; backup/restore and an alert reach the responsible
+clues for all players at the same difficulty on one day; backup/restore and an alert reach the responsible
 operator. Local Go/Functions tests and the [emulator suite](emulator-testing.md)
 cover planning, preview, concurrent publication, immutable reruns and failed-plan
 atomicity. Staging, actual editorial and operational evidence remains pending.

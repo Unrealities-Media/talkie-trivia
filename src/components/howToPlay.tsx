@@ -46,16 +46,16 @@ export default function HowToPlay({ summary }: { summary?: React.ReactNode } = {
     />
     </View>
     {expanded && <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, gap: 16 }}>
-      <Typography variant="h2" accessibilityRole="header">One movie each day</Typography>
+      <Typography variant="h2" accessibilityRole="header">Five movies each day</Typography>
       <Typography>Read the plot clue and find the movie. Search by title or title and year. Tapping a search result immediately submits a guess. Long-press a result to preview its title, year and poster first.</Typography>
-      <Typography>An incorrect guess uses one attempt and reveals more of the plot while you still have guesses left. You cannot guess the same movie twice. Guess correctly to win. Running out of guesses or confirming Give Up ends today's game and reveals the answer.</Typography>
+      <Typography>An incorrect guess uses one attempt. Except on Very Hard, it reveals more clue text while you still have guesses left. You cannot guess the same movie twice. Guess correctly to win. Running out of guesses or confirming Give Up ends that challenge and reveals the answer.</Typography>
       <Button title={practice ? "Hide practice" : "Try a practice example"} variant="secondary" accessibilityState={{ expanded: practice }} onPress={() => setPractice(value => !value)} />
       {practice && <>
         <PracticeExample />
         <Button title="Back to daily game" onPress={close} />
       </>}
       <Typography variant="h2" accessibilityRole="header">Choose your challenge</Typography>
-      <Typography>Today's difficulty is locked when the game opens. Change it in Profile for your next challenge. Plot clues reveal gradually in every difficulty.</Typography>
+      <Typography>Each difficulty has a different daily movie. Play one or all five, and switch between them using Daily challenges. Each saves its own progress. Finish saving or retry a pending move before switching. Clues become more vague at higher levels. Very Hard shows its short clue in full; other levels reveal text gradually.</Typography>
       {Object.entries(DIFFICULTY_MODES).map(([level, mode]) => <View key={level} style={{ gap: 4 }}>
         <Typography accessibilityRole="header">{mode.label}: {mode.guessesMax} guesses, up to {Math.round(mode.scoreMultiplier * 1000)} points</Typography>
         <Typography>{mode.description}</Typography>
@@ -63,7 +63,7 @@ export default function HowToPlay({ summary }: { summary?: React.ReactNode } = {
       <Typography>Medium matches can reveal the director, main genre, decade or cast. A shared category is a clue, not a correct answer. Easy hints are optional: three per game, with no points to earn or purchases to unlock them.</Typography>
       <Typography variant="h2" accessibilityRole="header">Scoring and the next movie</Typography>
       <Typography>Fewer guesses earn more points when you win. Each Easy hint subtracts 50 points from your winning score. Other modes have no hint penalty. A loss or Give Up scores zero. There is no speed bonus, so take your time.</Typography>
-      <Typography>A new movie arrives worldwide at 00:00 UTC, which may be a different time where you live. The countdown shows when. Finishing early does not unlock another daily game.</Typography>
+      <Typography>Five new movies arrive worldwide at 00:00 UTC. The countdown shows when. After finishing one, try another difficulty. Complete any challenge to maintain your daily streak; wins and losses both count. Complete all five for an All Five day.</Typography>
       <Typography variant="h2" accessibilityRole="header">Play as a guest</Typography>
       <Typography>You can play without signing in with Google. An internet connection is needed to load and save the daily game. Wait for each move to save; if it cannot save, use Retry save.</Typography>
       <Typography>Guest progress is saved to your guest account. Link an account in Profile if you want to keep access across devices. Losing the guest session, such as after reinstalling, can leave unlinked progress inaccessible. Daily reminders are optional in Profile.</Typography>

@@ -1,27 +1,33 @@
 import { Dimensions, PixelRatio, Platform } from "react-native"
 import { lightColors, ThemeColors } from "./themes"
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window")
-
 const baseWidth = 375
 const baseHeight = 812
 
-const isSmallScreen = () => SCREEN_WIDTH < 375
-const isMediumScreen = () => SCREEN_WIDTH >= 375 && SCREEN_WIDTH < 768
-const isLargeScreen = () => SCREEN_WIDTH >= 768
+const windowSize = () => {
+  const { width, height } = Dimensions.get("window")
+  return {
+    width: Number.isFinite(width) && width > 0 ? width : baseWidth,
+    height: Number.isFinite(height) && height > 0 ? height : baseHeight,
+  }
+}
+const isSmallScreen = () => windowSize().width < 375
+const isMediumScreen = () => windowSize().width >= 375 && windowSize().width < 768
+const isLargeScreen = () => windowSize().width >= 768
 
 const scale = (size: number) => {
-  const scaleWidth = SCREEN_WIDTH / baseWidth
-  const scaleHeight = SCREEN_HEIGHT / baseHeight
+  const { width, height } = windowSize()
+  const scaleWidth = width / baseWidth
+  const scaleHeight = height / baseHeight
   const scaleFactor = Math.min(scaleWidth, scaleHeight)
   return PixelRatio.roundToNearestPixel(size * scaleFactor)
 }
 
 const responsiveFontSize = (size: number) => {
-  let scaleFactor = 1
+  let scaleFactor: number
 
   if (isSmallScreen()) {
-    scaleFactor = (SCREEN_WIDTH / baseWidth) * 0.9
+    scaleFactor = (windowSize().width / baseWidth) * 0.9
   } else if (isMediumScreen()) {
     scaleFactor = 1.0
   } else {
@@ -37,10 +43,10 @@ const responsiveFontSize = (size: number) => {
 export const responsive = {
   scale,
   responsiveFontSize,
-  isSmallDevice: SCREEN_WIDTH < 375,
-  isTablet: SCREEN_WIDTH >= 768,
-  screenWidth: SCREEN_WIDTH,
-  screenHeight: SCREEN_HEIGHT,
+  get isSmallDevice() { return windowSize().width < 375 },
+  get isTablet() { return windowSize().width >= 768 },
+  get screenWidth() { return windowSize().width },
+  get screenHeight() { return windowSize().height },
   platform: Platform.OS,
   isSmallScreen,
   isMediumScreen,
@@ -49,13 +55,13 @@ export const responsive = {
 
 export const getTypography = (colors: typeof lightColors) => ({
   heading1: {
-    fontFamily: "PremiereDisplay-Bold",
+    fontFamily: "PremiereDisplay",
     fontSize: responsive.responsiveFontSize(28),
     lineHeight: responsive.responsiveFontSize(34),
     color: colors.textPrimary,
   },
   heading2: {
-    fontFamily: "PremiereSerif",
+    fontFamily: "PremiereDisplay",
     fontSize: responsive.responsiveFontSize(22),
     lineHeight: responsive.responsiveFontSize(28),
     color: colors.textPrimary,
@@ -80,11 +86,11 @@ export const getTypography = (colors: typeof lightColors) => ({
 })
 
 export const spacing = {
-  extraSmall: scale(4),
-  small: scale(8),
-  medium: scale(16),
-  large: scale(24),
-  extraLarge: scale(32),
+  get extraSmall() { return scale(4) },
+  get small() { return scale(8) },
+  get medium() { return scale(16) },
+  get large() { return scale(24) },
+  get extraLarge() { return scale(32) },
 }
 
 export const shadows = {
@@ -110,7 +116,7 @@ export const shadows = {
   }),
 }
 
-export const getButtonStyles = (colors: ThemeColors) => ({
+export const getButtonStyles = (_colors: ThemeColors) => ({
   base: {
     minHeight: 48,
     minWidth: 48,

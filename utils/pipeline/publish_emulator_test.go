@@ -35,19 +35,24 @@ func readWindow(t *testing.T, ctx context.Context, client *firestore.Client, now
 	t.Helper()
 	result := map[string]DailyGame{}
 	for day := 0; day <= days; day++ {
-		key := utcDay(now).AddDate(0, 0, day).Format("2006-01-02")
-		snapshot, err := client.Collection("dailyGames").Doc(key).Get(ctx)
-		if status.Code(err) == codes.NotFound {
-			continue
+		for _, suffix := range append([]string{""}, clueLevels...) {
+			key := utcDay(now).AddDate(0, 0, day).Format("2006-01-02")
+			if suffix != "" {
+				key += "_" + suffix
+			}
+			snapshot, err := client.Collection("dailyGames").Doc(key).Get(ctx)
+			if status.Code(err) == codes.NotFound {
+				continue
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			var game DailyGame
+			if err := snapshot.DataTo(&game); err != nil {
+				t.Fatal(err)
+			}
+			result[key] = game
 		}
-		if err != nil {
-			t.Fatal(err)
-		}
-		var game DailyGame
-		if err := snapshot.DataTo(&game); err != nil {
-			t.Fatal(err)
-		}
-		result[key] = game
 	}
 	return result
 }
@@ -73,7 +78,7 @@ func TestEmulatorConcurrentPublicationIsAtomicAndImmutable(t *testing.T) {
 		}
 	}
 	first := readWindow(t, ctx, client, now, 3)
-	if len(first) != 3 {
+	if len(first) != 15 {
 		t.Fatalf("want 3 committed future dates, got %d", len(first))
 	}
 	used := map[int]bool{}
@@ -89,7 +94,8 @@ func TestEmulatorConcurrentPublicationIsAtomicAndImmutable(t *testing.T) {
 	changedPool := pool(20)
 	for id, movie := range changedPool {
 		movie.Description = testClue + " Edited source content."
-		movie.ContentHash = contentHash(id, PublishedContent{Description: movie.Description})
+		movie.Clues["LEVEL_1"] = movie.Description
+		movie.ContentHash = contentHash(id, reviewedContent(movie))
 		changedPool[id] = movie
 	}
 	if err := publishSchedule(ctx, client, changedPool, testVersion, now, 3, false, true, filepath.Join(directory, "retry.json")); err != nil {

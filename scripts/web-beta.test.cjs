@@ -1,0 +1,53 @@
+const { test } = require("node:test")
+const assert = require("node:assert/strict")
+const fs = require("node:fs")
+const path = require("node:path")
+const { betaConfig, publicPages, digestTree, verifyBuild } = require("./web-beta.cjs")
+const { readEnvironment } = require("../config/appEnvironment.cjs")
+const env = {
+  FIREBASE_PROJECTID_PREVIEW: "talkie-staging", FIREBASE_APIKEY_PREVIEW: "public-key",
+  FIREBASE_APPID_PREVIEW: "public-app", FIREBASE_MESSAGING_SENDERID_PREVIEW: "123",
+  CLIENTID_WEB_PREVIEW: "123-web.apps.googleusercontent.com",
+  PUBLIC_SITE_URL_PREVIEW: "https://talkie-staging.web.app", BETA_OPERATOR: "Beta Operator", BETA_SUPPORT_EMAIL: "tom@unrealities.media",
+}
+test("web beta requires only the web Google registration and cannot use emulators or production", () => {
+  const config = betaConfig(env)
+  assert.equal(config.emulator, false)
+  assert.equal(config.googleConfigured, true)
+  assert.throws(() => betaConfig({ ...env, FIREBASE_PROJECTID_PREVIEW: "demo-talkie" }), /live/)
+  assert.throws(() => betaConfig({ ...env, FIREBASE_PROJECTID: "talkie-staging" }), /distinct/)
+  assert.throws(() => betaConfig({ ...env, CLIENTID_WEB_PREVIEW: "" }), /webClientId/)
+  assert.throws(() => readEnvironment({ ...env, APP_VARIANT: "production", WEB_BETA: "true" }), /preview web/)
+  assert.throws(() => betaConfig({ ...env, EAS_BUILD: "true" }), /preview web/)
+})
+test("public pages require operator/contact and an HTTPS origin", () => {
+  for (const url of ["http://beta.example.com", "https://user:pass@beta.example.com", "https://beta.example.com/path", "https://beta.example.com/?x=1"]) {
+    assert.throws(() => betaConfig({ ...env, PUBLIC_SITE_URL_PREVIEW: url }), /HTTPS origin/)
+  }
+  assert.throws(() => betaConfig({ ...env, BETA_OPERATOR: "" }), /operator/)
+  const pages = publicPages(betaConfig({ ...env, BETA_OPERATOR: "<script>bad</script>" }))
+  assert.match(pages.privacy, /&lt;script&gt;/)
+  assert.doesNotMatch(pages.privacy, /<script\b/i)
+  const mixedCase = publicPages(betaConfig({ ...env, BETA_OPERATOR: '<ScRiPt src="x">bad</ScRiPt>' }))
+  assert.match(mixedCase.privacy, /&lt;ScRiPt/)
+  assert.doesNotMatch(mixedCase.privacy, /<script\b/i)
+  assert.match(pages["delete-account"], /mailto:tom@unrealities.media/)
+  assert.match(pages["delete-account"], /href="\/profile"/)
+})
+test("deploy rejects the wrong project, emulator receipts and modified output", () => {
+  const parent = path.resolve(__dirname, "../.expo")
+  fs.mkdirSync(parent, { recursive: true })
+  const temp = fs.mkdtempSync(path.join(parent, "beta-test-"))
+  const output = path.join(temp, "output"), receipt = path.join(temp, "receipt.json")
+  fs.mkdirSync(output)
+  fs.writeFileSync(path.join(output, "index.html"), "beta")
+  const manifest = { project: "talkie-staging", variant: "preview", emulator: false, sha256: digestTree(output) }
+  fs.writeFileSync(receipt, JSON.stringify(manifest))
+  assert.equal(verifyBuild("talkie-staging", output, receipt).project, "talkie-staging")
+  assert.throws(() => verifyBuild("talkie-production", output, receipt), /does not match/)
+  fs.writeFileSync(receipt, JSON.stringify({ ...manifest, emulator: true }))
+  assert.throws(() => verifyBuild("talkie-staging", output, receipt), /does not match/)
+  fs.writeFileSync(receipt, JSON.stringify(manifest))
+  fs.writeFileSync(path.join(output, "index.html"), "changed")
+  assert.throws(() => verifyBuild("talkie-staging", output, receipt), /output changed/)
+})

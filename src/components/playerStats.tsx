@@ -7,6 +7,7 @@ import StatItem from "./statItem"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { u } from "../styles/utils"
 import { Typography } from "./ui/typography"
+import { DIFFICULTY_MODES, DifficultyLevel } from "../config/difficulty"
 
 export interface PlayerStatsContainerProps {
   player: Player | null
@@ -39,6 +40,7 @@ const PlayerStatsContainer = memo(
             valueStyle={styles.scoreText}
           />
           <StatItem label="Games Played" value={playerStats.games} />
+          <StatItem label="All Five Days" value={playerStats.allFiveDays?.length ?? 0} />
           <StatItem
             label="Current Streak"
             value={playerStats.currentStreak}
@@ -49,11 +51,14 @@ const PlayerStatsContainer = memo(
             value={playerStats.maxStreak}
             valueStyle={styles.streakText}
           />
-          <StatItem
-            label="Hints Available"
-            value={playerStats.hintsAvailable}
-          />
         </View>
+        <Typography variant="h2">By difficulty</Typography>
+        {(Object.keys(DIFFICULTY_MODES) as DifficultyLevel[]).map(level => {
+          const stats = playerStats.byDifficulty?.[level]
+          return <Typography key={level}>{DIFFICULTY_MODES[level].label}: {stats?.wins ?? 0} wins / {stats?.games ?? 0} played · {stats?.score ?? 0} points</Typography>
+        })}
+        <Typography>Complete any challenge to keep your daily streak. Wins and losses both count.</Typography>
+        <Typography variant="caption">Each Easy challenge includes three optional hints. Each hint costs 50 points from a winning score.</Typography>
       </View>
     )
   }

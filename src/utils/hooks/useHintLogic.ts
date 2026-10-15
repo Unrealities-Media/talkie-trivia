@@ -8,6 +8,7 @@ import { DIFFICULTY_MODES } from "../../config/difficulty"
 import { Hint } from "../../models/trivia"
 
 type HintStatus = "available" | "used" | "disabled"
+const emptyHints: Hint[] = []
 
 export function useHintLogic() {
   const {
@@ -15,7 +16,7 @@ export function useHintLogic() {
     isInteractionsDisabled,
     playerStats,
     difficulty,
-    useHint,
+    useHint: requestHint,
     syncStatus,
   } = useGameStore(
     useShallow((state) => ({
@@ -35,7 +36,7 @@ export function useHintLogic() {
   const prevHintsUsedRef = useRef<Partial<Record<string, boolean>>>(undefined)
 
   const hintsAvailable = playerStats?.hintsAvailable ?? 0
-  const allHints: Hint[] = playerGame.triviaItem?.hints || []
+  const allHints: Hint[] = playerGame.triviaItem?.hints || emptyHints
 
   const currentHintStrategy = DIFFICULTY_MODES[difficulty].hintStrategy
 
@@ -130,10 +131,10 @@ export function useHintLogic() {
       setSelectedHint({ gameKey, type: hintType })
 
       if (status === "available") {
-        void useHint(hintType)
+        void requestHint(hintType)
       }
     },
-    [hintStatuses, currentHintStrategy, isInteractionsDisabled, syncStatus, gameKey, useHint]
+    [hintStatuses, currentHintStrategy, isInteractionsDisabled, syncStatus, gameKey, requestHint]
   )
 
   // Selecting is only intent. The server-confirmed state authorizes display,

@@ -28,8 +28,9 @@ it("uses the loaded challenge day rather than the device date", () => {
   expect(screen.getByText("DAILY / OCT 18")).toBeTruthy()
 })
 
-it.each(["revealing", "gameOver"])("uses the result masthead during %s", status => {
+it.each(["revealing", "gameOver"])("keeps the compact brand masthead during %s", status => {
   mockStatus = status
   render(<PremiereMasthead />)
-  expect(screen.getByText("GREAT MOVIES LIVE ON", { includeHiddenElements: true })).toBeTruthy()
+  expect(screen.getByRole("header", { name: "TALKIE TRIVIA" })).toBeTruthy()
+  expect(screen.queryByText("GREAT MOVIES LIVE ON", { includeHiddenElements: true })).toBeNull()
 })

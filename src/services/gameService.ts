@@ -10,12 +10,15 @@ import Player from "../models/player"
 import PlayerStats from "../models/playerStats"
 import { PlayerGame } from "../models/game"
 import { GameHistoryEntry } from "../models/gameHistory"
-import { DifficultyLevel } from "../config/difficulty"
+import { DifficultyLevel, DIFFICULTY_MODES } from "../config/difficulty"
+import { validChallengeKey } from "../utils/challengeKey"
 import { version as catalogVersion } from "../data/catalogVersion.json"
 import { deletionStorage } from "./deletionStorage"
 import { mergeStorage } from "./mergeStorage"
 
 export interface GameResponse { game: PlayerGame; stats: PlayerStats; challengeId: string; resetAt: string; serverNow: string; receivedAtMonotonic: number }
+export type ChallengeStatus = "Not started" | "In progress" | "Won" | "Lost"
+export type DailyChallenges = Partial<Record<DifficultyLevel, ChallengeStatus>>
 export const HISTORY_PAGE_SIZE = 20
 export interface HistoryCursor { uid: string; dateId: string; id: string }
 export interface HistoryPage { entries: GameHistoryEntry[]; next: HistoryCursor | null }
@@ -39,7 +42,9 @@ function decode(data: unknown, uid: string): GameResponse {
   const result = data as GameResponse
   if (!result?.game || result.game.playerID !== uid || !result.stats || !Array.isArray(result.game.guesses) || !Number.isInteger(result.game.revision) ||
     !Number.isFinite(Date.parse(result.serverNow)) || !Number.isFinite(Date.parse(result.resetAt)) ||
-    Date.parse(result.resetAt) !== Date.parse(`${result.challengeId}T00:00:00Z`) + 86400000) {
+    !validChallengeKey(result.challengeId) || result.game.challengeId !== result.challengeId ||
+    (result.challengeId.includes("_LEVEL_") && !result.challengeId.endsWith(`_${result.game.difficulty}`)) ||
+    Date.parse(result.resetAt) !== Date.parse(`${result.challengeId.slice(0, 10)}T00:00:00Z`) + 86400000) {
     throw new Error("The saved game could not be read. Please try again.")
   }
   return { ...result, receivedAtMonotonic: performance.now(), game: { ...result.game, startDate: new Date(result.game.startDate), endDate: new Date(result.game.endDate) } }
@@ -73,6 +78,18 @@ async function replay(uid: string): Promise<GameResponse | null> {
 }
 
 export const gameService = {
+  fetchDailyChallenges: async (uid: string, day: string): Promise<DailyChallenges> => {
+    requireUser(uid)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !validChallengeKey(day)) throw new Error("Invalid challenge day")
+    const statuses = await Promise.all((Object.keys(DIFFICULTY_MODES) as DifficultyLevel[]).map(async level => {
+      const snapshot = await getDoc(doc(db, "players", uid, "games", `movies_${day}_${level}`))
+      const game = snapshot.exists() ? snapshot.data() : null
+      const status: ChallengeStatus = !game ? "Not started" : game.correctAnswer ? "Won" : game.gaveUp || game.guesses.length >= game.guessesMax ? "Lost" : "In progress"
+      return [level, status]
+    }))
+    requireUser(uid)
+    return Object.fromEntries(statuses)
+  },
   ensurePlayerExists: async (playerId: string, playerName: string): Promise<Player> => {
     const ref = doc(db, "players", playerId).withConverter(playerConverter)
     const snapshot = await getDoc(ref)
@@ -106,9 +123,10 @@ export const gameService = {
   },
   fetchPlayerGameById: async (gameId: string): Promise<PlayerGame | null> => {
     const uid = auth.currentUser?.uid
-    if (!uid || !/^movies_\d{4}-\d{2}-\d{2}$/.test(gameId)) return null
+    if (!uid || !gameId.startsWith("movies_") || !validChallengeKey(gameId.slice(7))) return null
     const ref = doc(db, "players", uid, "games", gameId).withConverter(playerGameConverter)
     const snapshot = await getDoc(ref)
+    requireUser(uid)
     return snapshot.exists() ? snapshot.data() : null
   },
   fetchGameHistory: async (uid: string, cursor: HistoryCursor | null = null): Promise<HistoryPage> => {

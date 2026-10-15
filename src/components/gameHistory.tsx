@@ -172,7 +172,7 @@ const HistoryForAccount = ({ uid, onHistoryItemPress }: GameHistoryProps & { uid
       <FlashList
         data={history}
         renderItem={renderItem}
-        keyExtractor={(item) => `${item.dateId}-${item.itemId}`}
+        keyExtractor={(item) => item.challengeId ?? `${item.dateId}-${item.difficulty}-${item.itemId}`}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>

@@ -1,251 +1,63 @@
-import React, { useCallback, useMemo, useState, useEffect } from "react"
-import { View, Pressable, ViewStyle, TextStyle } from "react-native"
-import Animated, {
-  useSharedValue,
-  withTiming,
-  useAnimatedStyle,
-  Easing,
-  runOnJS,
-} from "react-native-reanimated"
+import React, { useState } from "react"
+import { View, Pressable } from "react-native"
 import { hapticsService } from "../utils/hapticsService"
 import { useGameStore } from "../state/gameStore"
 import { useAuth } from "../contexts/authContext"
-import { FontAwesome } from "@expo/vector-icons"
-import {
-  DifficultyLevel,
-  DIFFICULTY_MODES,
-  DifficultyMode,
-} from "../config/difficulty"
-import { useStyles, Theme } from "../utils/hooks/useStyles"
+import { DifficultyLevel, DIFFICULTY_MODES } from "../config/difficulty"
+import { useThemeTokens } from "../utils/hooks/useStyles"
 import { Typography } from "./ui/typography"
-
-type Option = DifficultyMode & { value: DifficultyLevel }
-
-const options: Option[] = (
-  Object.keys(DIFFICULTY_MODES) as DifficultyLevel[]
-).map((key) => ({
-  value: key,
-  ...DIFFICULTY_MODES[key],
-}))
+import ConfirmationModal from "./confirmationModal"
 
 const DifficultySelector = () => {
   const { player } = useAuth()
-  const difficulty = useGameStore((state) => state.nextDifficulty)
-  const setDifficulty = useGameStore((state) => state.setDifficulty)
-  const styles = useStyles(themedStyles)
-
-  const [hoveredDifficulty, setHoveredDifficulty] =
-    useState<DifficultyLevel | null>(null)
-
-  const handleSelect = useCallback(
-    (newDifficulty: DifficultyLevel) => {
-      if (player) {
-        hapticsService.medium()
-        setDifficulty(newDifficulty)
-      }
-    },
-    [setDifficulty, player]
-  )
-
-  const descriptionToDisplay = useMemo(() => {
-    const key = hoveredDifficulty || difficulty
-    return options.find((o) => o.value === key)?.description || ""
-  }, [hoveredDifficulty, difficulty])
-
-  const [currentDescription, setCurrentDescription] =
-    useState(descriptionToDisplay)
-  const descriptionOpacity = useSharedValue(1)
-
-  useEffect(() => {
-    descriptionOpacity.value = withTiming(
-      0,
-      { duration: 150, easing: Easing.ease },
-      (finished) => {
-        if (finished) {
-          runOnJS(setCurrentDescription)(descriptionToDisplay)
-        }
-      }
-    )
-  }, [descriptionToDisplay])
-
-  useEffect(() => {
-    descriptionOpacity.value = withTiming(1, {
-      duration: 150,
-      easing: Easing.ease,
-    })
-  }, [currentDescription])
-
-  const animatedDescriptionStyle = useAnimatedStyle(() => ({
-    opacity: descriptionOpacity.value,
-  }))
-
-  const handleLongPress = (value: DifficultyLevel) => {
-    hapticsService.light()
-    setHoveredDifficulty(value)
+  const { colors } = useThemeTokens()
+  const difficulty = useGameStore(state => state.nextDifficulty)
+  const setDifficulty = useGameStore(state => state.setDifficulty)
+  const statuses = useGameStore(state => state.dailyChallenges)
+  const saving = useGameStore(state => state.syncStatus)
+  const loading = useGameStore(state => state.loading)
+  const gameUid = useGameStore(state => state.playerGame?.playerID)
+  const initializeGame = useGameStore(state => state.initializeGame)
+  const disabled = loading || (saving !== undefined && saving !== "idle")
+  const [pending, setPending] = useState<DifficultyLevel | null>(null)
+  const start = (value: DifficultyLevel) => {
+    if (!player || disabled) return
+    hapticsService.medium()
+    setDifficulty(value)
+    if (!gameUid && !disabled) void initializeGame(player, value)
   }
-
-  const selectedOptionLabel =
-    options.find((o) => o.value === difficulty)?.label || "Medium"
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.row}>
-        <View style={styles.labelContainer}>
-          <FontAwesome
-            name="gamepad"
-            size={styles.icon.fontSize}
-            color={styles.icon.color}
-          />
-          <Typography style={styles.title}>Next challenge difficulty</Typography>
-        </View>
-        <View style={styles.selectedOptionDisplay}>
-          <Typography style={styles.selectedOptionTextDisplay}>
-            {selectedOptionLabel}
-          </Typography>
-        </View>
-      </View>
-
-      <View style={styles.optionsContainer}>
-        {options.map((option) => (
-          <Pressable
-            key={option.value}
-            onPress={() => handleSelect(option.value)}
-            onLongPress={() => handleLongPress(option.value)}
-            onPressOut={() => setHoveredDifficulty(null)}
-            delayLongPress={200}
-            style={({ pressed }) => [
-              styles.option,
-              difficulty === option.value && styles.selectedOption,
-              pressed && { opacity: 0.7 },
-            ]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: difficulty === option.value }}
-            accessibilityLabel={`Set next challenge difficulty to ${option.label}. ${option.description}`}
-          >
-            <Typography
-              style={[
-                styles.optionText,
-                difficulty === option.value && styles.selectedOptionText,
-              ]}
-            >
-              {option.label}
-            </Typography>
-          </Pressable>
-        ))}
-      </View>
-      <Animated.View
-        style={[styles.descriptionContainer, animatedDescriptionStyle]}
-      >
-        <Typography style={styles.descriptionText}>
-          {currentDescription}
-        </Typography>
-      </Animated.View>
+  const handleSelect = (value: DifficultyLevel) => {
+    if (!player || disabled) return
+    const status = statuses?.[value]
+    if (status === "Won" || status === "Lost" || status === "In progress") start(value)
+    else setPending(value)
+  }
+  const completed = Object.values(statuses ?? {}).filter(status => status === "Won" || status === "Lost").length
+  return <View style={{ width: "100%", gap: 6 }}>
+    <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
+      <Typography style={{ fontSize: 12, color: colors.textSecondary }}>Daily challenges</Typography>
+      <Typography accessibilityLabel={`${completed} of 5 daily challenges completed`} style={{ fontSize: 12, color: colors.textSecondary }}>{completed} / 5 complete</Typography>
     </View>
-  )
+    <View style={{ flexDirection: "row", gap: 4 }}>
+      {(Object.keys(DIFFICULTY_MODES) as DifficultyLevel[]).map(value => {
+        const option = DIFFICULTY_MODES[value]
+        const selected = difficulty === value
+        const status = statuses?.[value]
+        const mark = status === "Won" ? " ✓" : status === "Lost" ? " —" : status === "In progress" ? " ·" : ""
+        return <Pressable key={value} onPress={() => handleSelect(value)} disabled={disabled}
+          accessibilityRole="button" accessibilityState={{ selected, disabled }}
+          accessibilityLabel={`Play ${option.label}. ${status ?? "Progress not loaded"}. ${option.description}`}
+          style={({ pressed }) => ({ flex: 1, minHeight: 44, paddingVertical: 8, paddingHorizontal: 2, justifyContent: "center", borderRadius: 6, backgroundColor: selected ? colors.primary : colors.surface, opacity: pressed || disabled ? 0.7 : 1 })}>
+          <Typography style={{ fontSize: 12, lineHeight: 16, textAlign: "center", color: selected ? colors.onAccent : colors.textPrimary }}>{option.label}{mark}</Typography>
+        </Pressable>
+      })}
+    </View>
+    {completed === 5 && <Typography>All five completed today!</Typography>}
+    {saving === "pending" && <Typography>Retry your pending move before switching challenges.</Typography>}
+    <ConfirmationModal isVisible={pending !== null} title={pending ? `${DIFFICULTY_MODES[pending].label} · today's movie` : "Today's movie"}
+      message={pending ? `${DIFFICULTY_MODES[pending].description} Your progress is saved, so you can come back anytime today.` : ""}
+      confirmText="Start challenge" cancelText="Keep browsing" onCancel={() => setPending(null)}
+      onConfirm={() => { const value = pending; setPending(null); if (value) start(value) }} />
+  </View>
 }
-
-interface DifficultySelectorStyles {
-  container: ViewStyle
-  row: ViewStyle
-  labelContainer: ViewStyle
-  icon: TextStyle
-  title: TextStyle
-  selectedOptionDisplay: ViewStyle
-  selectedOptionTextDisplay: TextStyle
-  optionsContainer: ViewStyle
-  option: ViewStyle
-  selectedOption: ViewStyle
-  optionText: TextStyle
-  selectedOptionText: TextStyle
-  descriptionContainer: ViewStyle
-  descriptionText: TextStyle
-}
-
-const themedStyles = (theme: Theme): DifficultySelectorStyles => ({
-  container: {
-    width: "100%",
-    alignItems: "center",
-  },
-  row: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-  },
-  labelContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexShrink: 1,
-  },
-  icon: {
-    fontSize: theme.responsive.responsiveFontSize(16),
-    color: theme.colors.textSecondary,
-  },
-  title: {
-    flexShrink: 1,
-    fontFamily: "PremiereSans",
-    fontSize: theme.responsive.responsiveFontSize(16),
-    color: theme.colors.textPrimary,
-    marginLeft: theme.spacing.small,
-  },
-  selectedOptionDisplay: {
-    backgroundColor: theme.colors.background,
-    paddingVertical: theme.spacing.extraSmall,
-    paddingHorizontal: theme.spacing.small,
-    borderRadius: theme.responsive.scale(6),
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  selectedOptionTextDisplay: {
-    fontFamily: "PremiereSans",
-    fontSize: theme.responsive.responsiveFontSize(14),
-    color: theme.colors.textSecondary,
-  },
-  optionsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.responsive.scale(6),
-    marginTop: theme.spacing.extraSmall,
-    padding: theme.spacing.extraSmall,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  option: {
-    paddingVertical: theme.spacing.extraSmall,
-    paddingHorizontal: theme.spacing.extraSmall,
-    borderRadius: theme.responsive.scale(6),
-    margin: theme.spacing.extraSmall,
-    backgroundColor: theme.colors.surface,
-  },
-  selectedOption: {
-    backgroundColor: theme.colors.primary,
-  },
-  optionText: {
-    fontFamily: "PremiereSans",
-    fontSize: theme.responsive.responsiveFontSize(14),
-    color: theme.colors.textPrimary,
-  },
-  selectedOptionText: {
-    fontFamily: "PremiereSans",
-    color: theme.colors.onAccent,
-  },
-  descriptionContainer: {
-    marginTop: theme.spacing.extraSmall,
-    minHeight: theme.responsive.scale(60),
-    paddingHorizontal: theme.spacing.extraSmall,
-    justifyContent: "center",
-  },
-  descriptionText: {
-    fontFamily: "PremiereSans",
-    fontSize: theme.responsive.responsiveFontSize(12),
-    color: theme.colors.textSecondary,
-    textAlign: "center",
-    lineHeight: theme.responsive.responsiveFontSize(16),
-  },
-})
-
 export default DifficultySelector

@@ -21,17 +21,18 @@ const HintSkeleton = memo(() => {
   )
 })
 
-const BasicHints = memo(() => {
+const BasicHints = memo(({ earnedOnly = false }: { earnedOnly?: boolean }) => {
   const { getHintText } = useHintLogic()
   const styles = useStyles(themedStyles)
 
-  const hintTypes: HintType[] = ["decade", "director", "actors", "genre"]
+  const earned = useGameStore(state => state.playerGame?.hintsUsed)
+  const hintTypes: HintType[] = earnedOnly
+    ? (["director", "actors"] as HintType[]).filter(type => earned?.[type])
+    : ["director", "actors"]
+  if (!hintTypes.length) return null
 
   return (
     <View style={styles.basicHintsContainer}>
-      <Typography variant="h2" style={styles.basicHintsTitle}>
-        All Hints Revealed
-      </Typography>
       {hintTypes.map((type) => (
         <View key={type} style={styles.basicHintsRow}>
           <Typography style={styles.basicHintsLabel}>
@@ -69,16 +70,14 @@ const MainHintComponent = () => {
 
   if (!hintLabelText) return null
 
-  // Implicit Feedback mode only shows the label.
+  // Genre/decade appear on the projection; keep earned people hints visible too.
   if (
     DIFFICULTY_MODES[useGameStore.getState().difficulty].hintStrategy ===
       "IMPLICIT_FEEDBACK"
   ) {
     return (
       <View style={styles.container}>
-        <Typography variant="caption" style={styles.hintLabelDisabled}>
-          {hintLabelText}
-        </Typography>
+        <BasicHints earnedOnly />
       </View>
     )
   }
@@ -164,11 +163,11 @@ const themedStyles = (theme: Theme): HintStyles => ({
     paddingVertical: theme.spacing.small,
   },
   basicHintsContainer: {
-    width: "90%",
+    width: "100%",
     backgroundColor: theme.colors.surface,
     borderRadius: theme.responsive.scale(8),
-    padding: theme.spacing.medium,
-    marginVertical: theme.spacing.small,
+    padding: 10,
+    marginVertical: 4,
   },
   basicHintsTitle: {
     fontSize: theme.responsive.responsiveFontSize(16),
@@ -177,16 +176,22 @@ const themedStyles = (theme: Theme): HintStyles => ({
     marginBottom: theme.spacing.medium,
   },
   basicHintsRow: {
-    alignItems: "stretch",
-    paddingVertical: theme.spacing.extraSmall,
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 2,
   },
   basicHintsLabel: {
     ...theme.typography.bodyText,
-    fontFamily: "PremiereDisplay",
+    fontFamily: "PremiereSans",
+    fontSize: 14,
+    lineHeight: 20,
     color: theme.colors.textPrimary,
   },
   basicHintsValue: {
     ...theme.typography.bodyText,
+    fontSize: 14,
+    lineHeight: 20,
+    flex: 1,
   },
 })
 

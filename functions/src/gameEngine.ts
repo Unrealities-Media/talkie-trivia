@@ -47,6 +47,10 @@ export interface Stats {
   wins: number[]; allTimeScore: number; hintsAvailable: number; hintsUsedCount: number
   lastCompletedDate: string | null
   winningDays: string[]
+  completedDays?: string[]
+  completedDifficulties?: Record<string, string[]>
+  allFiveDays?: string[]
+  byDifficulty?: Partial<Record<DifficultyLevel, { games: number; wins: number; score: number }>>
 }
 
 function invalid(message = "Invalid game command."): never {
@@ -70,9 +74,15 @@ export function parseStart(value: unknown): { difficulty: DifficultyLevel; catal
   if (typeof data.catalogVersion !== "string" || !/^[a-f0-9]{64}$/.test(data.catalogVersion)) invalid()
   return data as unknown as { difficulty: DifficultyLevel; catalogVersion: string }
 }
+export function challengeKey(value: unknown): string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:_LEVEL_[1-5])?$/.test(value)) invalid()
+  dateId(value.slice(0, 10))
+  return value
+}
+export const challengeDay = (value: string) => challengeKey(value).slice(0, 10)
 export function parseAction(value: unknown): GameAction {
   const data = record(value, ["challengeId", "expectedRevision", "actionId", "type", "itemId", "hintType"])
-  dateId(data.challengeId)
+  challengeKey(data.challengeId)
   if (!Number.isSafeInteger(data.expectedRevision) || Number(data.expectedRevision) < 0 || Number(data.expectedRevision) > 9) invalid()
   if (typeof data.actionId !== "string" || !/^[a-zA-Z0-9_-]{16,80}$/.test(data.actionId)) invalid()
   if (data.type === "guess") {
@@ -121,7 +131,7 @@ export function transition(game: Game, action: GameAction, catalog: Map<number, 
   }
   if (game.revision !== action.expectedRevision) throw new HttpsError("aborted", "This game changed on another device. Refresh to continue.")
   if (terminal(game)) throw new HttpsError("failed-precondition", "This challenge is already complete.")
-  if (now.getTime() - Date.parse(`${game.challengeId}T00:00:00Z`) > 48 * 60 * 60 * 1000) {
+  if (now.getTime() - Date.parse(`${challengeDay(game.challengeId)}T00:00:00Z`) > 48 * 60 * 60 * 1000) {
     throw new HttpsError("failed-precondition", "The save window for this challenge has ended.")
   }
   const next = structuredClone(game)
@@ -158,17 +168,28 @@ export function completeStats(stats: Stats, game: Game): Stats {
   next.allTimeScore += game.score
   if (game.correctAnswer) next.wins[game.guesses.length - 1]++
   // Dates, rather than request arrival order, determine daily win streaks.
-  next.lastCompletedDate = [next.lastCompletedDate || "", game.challengeId].sort().at(-1)!
-  if (game.correctAnswer) next.winningDays = [...new Set([...next.winningDays, game.challengeId])].sort()
+  const day = challengeDay(game.challengeId)
+  next.lastCompletedDate = [next.lastCompletedDate || "", day].sort().at(-1)!
+  if (game.correctAnswer) next.winningDays = [...new Set([...next.winningDays, day])].sort()
+  if (game.challengeId.includes("_LEVEL_") || next.completedDays) {
+    next.completedDays = [...new Set([...(next.completedDays ?? next.winningDays), day])].sort()
+    next.completedDifficulties ??= {}
+    next.completedDifficulties[day] = [...new Set([...(next.completedDifficulties[day] ?? []), game.difficulty])].sort()
+    next.allFiveDays = Object.keys(next.completedDifficulties).filter(date => next.completedDifficulties![date].length === 5).sort()
+    next.byDifficulty ??= {}
+    const level = next.byDifficulty[game.difficulty] ?? { games: 0, wins: 0, score: 0 }
+    next.byDifficulty[game.difficulty] = { games: level.games + 1, wins: level.wins + Number(game.correctAnswer), score: level.score + game.score }
+  }
   let run = 0
   let previousTime = 0
   next.maxStreak = 0
-  for (const day of next.winningDays) {
+  const streakDays = next.completedDays ?? next.winningDays
+  for (const day of streakDays) {
     const time = Date.parse(`${day}T00:00:00Z`)
     run = time - previousTime === 86400000 ? run + 1 : 1
     previousTime = time
     next.maxStreak = Math.max(next.maxStreak, run)
   }
-  next.currentStreak = next.winningDays.at(-1) === next.lastCompletedDate ? run : 0
+  next.currentStreak = streakDays.at(-1) === next.lastCompletedDate ? run : 0
   return next
 }

@@ -45,7 +45,7 @@ describe("Utils: guessFeedbackUtils", () => {
       expect(result.feedback).toContain(
         "You're on the right track with the Director!"
       )
-      expect(result.feedback).toContain("(Hint Revealed)")
+      expect(result.feedback).not.toContain("(Hint Revealed)")
       expect(result.revealedHints).toEqual({ director: true })
       expect(result.hintInfo).toHaveLength(1)
       expect(result.hintInfo![0].value).toBe("Nolan")
@@ -68,7 +68,7 @@ describe("Utils: guessFeedbackUtils", () => {
       expect(result.feedback).toContain(
         "You're on the right track with the Actors!"
       )
-      expect(result.feedback).toContain("(Hint Revealed)")
+      expect(result.feedback).not.toContain("(Hint Revealed)")
       expect(result.revealedHints).toEqual({ actors: true })
     })
 

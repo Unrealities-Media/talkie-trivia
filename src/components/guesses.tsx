@@ -1,3 +1,4 @@
+import { useTheme } from "../contexts/themeContext"
 import React, { memo, useMemo, useCallback } from "react"
 import { Text, View, ViewStyle } from "react-native"
 import { BasicTriviaItem } from "../models/trivia"
@@ -40,6 +41,7 @@ const GuessesContainer = memo(
       }))
     )
     const styles = useStyles(themedStyles)
+    const { colors } = useTheme()
 
     const isDataLoading = gameForDisplay ? false : loading
     const currentGame = gameForDisplay || playerGame
@@ -59,7 +61,7 @@ const GuessesContainer = memo(
       }
 
       return guesses.map((guess, index) => ({ type: "guess", guess, index }))
-    }, [isDataLoading, guesses, guessesMax, completed])
+    }, [isDataLoading, guesses, guessesMax])
 
     const renderListItem = useCallback(
       (item: ListItem) => {
@@ -94,7 +96,7 @@ const GuessesContainer = memo(
     return (
       <View style={[styles.listWrapper, styles.container]}>
         {listData.map(item => <React.Fragment key={item.index}>{renderListItem(item)}</React.Fragment>)}
-        {!completed && !isDataLoading && <Text accessibilityLiveRegion="polite" style={{ fontFamily: "PremiereSans", fontSize: 9, letterSpacing: 2, color: "#85959A", textAlign: "center", marginTop: 4 }}>{Math.max(0, (guessesMax || 5) - guesses.length)} GUESSES REMAINING</Text>}
+        {!completed && !isDataLoading && <Text accessibilityLiveRegion="polite" style={{ fontFamily: "PremiereSans", fontSize: 11, lineHeight: 16, letterSpacing: 1.5, color: colors.textSecondary, textAlign: "center", marginTop: 4 }}>{Math.max(0, (guessesMax || 5) - guesses.length)} GUESSES REMAINING</Text>}
       </View>
     )
   }

@@ -9,7 +9,6 @@ import { useGameStore } from "../../src/state/gameStore"
 import { deletionStorage, DeletionReceipt } from "../../src/services/deletionStorage"
 import { accountDeletionService } from "../../src/services/accountDeletionService"
 import { sessionStorage, SavedSession } from "../../src/services/sessionStorage"
-import { mergeStorage } from "../../src/services/mergeStorage"
 jest.mock("../../src/services/mergeStorage", () => ({ mergeStorage: { read: jest.fn(), write: jest.fn(), clear: jest.fn() } }))
 jest.mock("../../src/services/accountMergeService", () => ({ accountMergeService: { discover: jest.fn() } }))
 jest.mock("../../src/services/mergeIdentity", () => ({ openMergeIdentity: jest.fn() }))

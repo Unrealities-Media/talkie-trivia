@@ -78,12 +78,13 @@ describe("PickerItem Component", () => {
       )
 
       // Check title and year formatting
-      expect(screen.getByText("The Matrix (1999)")).toBeTruthy()
+      expect(screen.getByText("The Matrix")).toBeTruthy()
+      expect(screen.getByRole("button", { name: /The Matrix \(1999\)/ })).toBeTruthy()
 
       // Check Image source
       const image = screen.getByTestId("mock-expo-image")
       expect(image.props["data-source"]).toBe(
-        `${API_CONFIG.TMDB_IMAGE_BASE_URL_W92}${mockBasicItem.posterPath}`
+        `${API_CONFIG.TMDB_IMAGE_BASE_URL_W500}${mockBasicItem.posterPath}`
       )
     })
 

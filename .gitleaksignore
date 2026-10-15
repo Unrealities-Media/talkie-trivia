@@ -1,0 +1,32 @@
+# Exact reviewed fingerprints only; no file, rule, or credential-value allowlists.
+# Historical credentials: owner confirmed Sentry revocation and TMDB API Read
+# Access Token regeneration on 2026-10-15. See docs/ci-rollout.md for evidence
+# limits. These exceptions apply only to the original commits and locations.
+8108c8aaabdcdf297e0d0652dd36b4fd495b9b32:android/sentry.properties:sentry-org-token:2
+8108c8aaabdcdf297e0d0652dd36b4fd495b9b32:ios/sentry.properties:sentry-org-token:2
+f12fa4de5cb3475787e58e21d305960571582853:utils/fetchPopularMovies/fetchPopularMovies.go:jwt:5
+f12fa4de5cb3475787e58e21d305960571582853:utils/fetchPopularMovies/fetchPopularMovies.go:curl-auth-header:3
+# vendored file SHA256
+674a9718d7e4790195148c9e09a9b1760cc7f906:vendor/fbjni/upstream.json:generic-api-key:20
+# Go module checksum
+ed8aa8de2906683c89f4cb0bf18aa58aa055346c:repomix-output.txt:generic-api-key:22673
+# Go module checksum
+ed8aa8de2906683c89f4cb0bf18aa58aa055346c:repomix-output.txt:generic-api-key:22675
+# Go module checksum
+ed8aa8de2906683c89f4cb0bf18aa58aa055346c:repomix-output.txt:generic-api-key:22739
+# CocoaPods checksum
+4af445310091910d83db6817a6bf7ca1dac8f363:ios/Podfile.lock:generic-api-key:2349
+# CocoaPods checksum
+4af445310091910d83db6817a6bf7ca1dac8f363:ios/Podfile.lock:generic-api-key:2394
+# Go module checksum
+68257138d1ef873b59a75157d5a8c5b6ccc3c15b:repomix-output.txt:generic-api-key:21432
+# Go module checksum
+68257138d1ef873b59a75157d5a8c5b6ccc3c15b:repomix-output.txt:generic-api-key:21469
+# Go module checksum
+68257138d1ef873b59a75157d5a8c5b6ccc3c15b:repomix-output.txt:generic-api-key:21660
+# Go module checksum
+68257138d1ef873b59a75157d5a8c5b6ccc3c15b:repomix-output.txt:generic-api-key:21662
+# Go module checksum
+68257138d1ef873b59a75157d5a8c5b6ccc3c15b:repomix-output.txt:generic-api-key:21715
+# Go module checksum
+68257138d1ef873b59a75157d5a8c5b6ccc3c15b:repomix-output.txt:generic-api-key:21725

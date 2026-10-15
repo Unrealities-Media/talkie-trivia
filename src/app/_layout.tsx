@@ -1,5 +1,6 @@
 import React from "react"
 import { Slot } from "expo-router"
+import Head from "expo-router/head"
 import ErrorBoundary from "../components/errorBoundary"
 import { NetworkProvider, useNetwork } from "../contexts/networkContext"
 import { AuthProvider, useAuth } from "../contexts/authContext"
@@ -27,7 +28,7 @@ function RootLayoutNav() {
   useDailyChallenge(player, isNetworkConnected)
   useNotifications(loading || !!deletion)
   // Daily-game failures belong to the Game screen. Settings remain reachable.
-  return <Slot />
+  return <><Head><title>Talkie Trivia</title></Head><Slot /></>
 }
 
 function RootLayout() {

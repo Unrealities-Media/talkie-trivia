@@ -42,6 +42,13 @@ Profile opt-in; broader native acceptance remains open.
 
 ## Local development
 
+For outside testers, see [hosted web beta setup](docs/hosted-web-beta.md).
+`npm run beta:build` prepares a live staging web export with Google login and
+public privacy/support/deletion pages; `npm run beta:deploy -- PROJECT_ID`
+publishes the verified website after staging services and content are ready.
+Configuration starts from `beta.env.example`. These commands do not create
+Firebase projects or approve content.
+
 Use Node.js 24.21.0 (`.nvmrc`), the Go version in `utils/pipeline/go.mod`, and Java 21.
 The emulator CLI is pinned in `integration/package-lock.json`. Android and iOS development also require the corresponding
 native SDKs. Native projects are generated from the pinned Expo template and app
@@ -61,7 +68,7 @@ npm run dev
 ```
 
 Open **http://localhost:8081** after the terminal reports that the demo is ready.
-This command builds Functions, starts the pinned local backend, seeds eight
+This command builds Functions, starts the pinned local backend, seeds eight days of five
 playable demo days, restores saved local data, and starts Expo web. It uses only
 `demo-talkie-trivia`; no Firebase account or Google credentials are needed.
 Type `q` then Enter (or Ctrl+C) to save an emulator snapshot and stop.
@@ -108,8 +115,17 @@ disabled pending privacy disclosures and controls.
 
 ## Validation
 
+See the [CI, testing, architecture and security audit](docs/audits/2026-10-15-ci-architecture-security.md)
+for current evidence, local CI hardening, and remaining merge/release gates.
+The commit workflow runs all script contracts (`npm run test:scripts`),
+architecture boundaries (`npm run check:architecture`), lint, TypeScript, coverage-gated
+unit tests, emulator contracts, desktop/mobile browser gameplay, Go checks, and a web export.
+The security workflow adds CodeQL, dependency reports and redacted secret-history scanning. GitHub enforcement
+still requires publishing the workflow changes and configuring required checks.
+
 ```sh
 npm run typecheck
+npm run lint
 npm run test:config
 npm test -- --ci --runInBand --coverage=false
 npm --prefix functions run build
@@ -126,6 +142,14 @@ behavior. Run `npm --prefix integration ci` then `npm --prefix integration test`
 for real Auth/Firestore/Functions and publisher transaction tests; see the
 [emulator runbook](docs/emulator-testing.md). Native-device and staging verification
 remain separate release requirements.
+
+For browser contracts, install root, Functions and integration dependencies, then
+run `node integration/node_modules/@playwright/test/cli.js install chromium` and
+`npm --prefix integration run test:browser`. Node 24 and Java 21 are required.
+The runner builds fresh assets, verifies their embedded emulator configuration,
+and uses an isolated `demo-talkie-web-test` project on `127.0.0.2`. Browser
+requests to live Firebase are blocked. Run `npm --prefix integration run
+test:browser-safety` to check those safeguards independently.
 
 When updating native dependencies, follow the [Expo SDK upgrade guide](https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/)
 and run `npx expo install --check`. Use the SDK-compatible versions together rather

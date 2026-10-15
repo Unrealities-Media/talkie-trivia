@@ -1,0 +1,107 @@
+name: Security
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main, master]
+  merge_group:
+  schedule:
+    - cron: '23 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: Secret history scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: utils/pipeline/go.mod
+          cache-dependency-path: utils/pipeline/go.sum
+      - name: Scan all history without exposing credential values
+        run: go run github.com/zricethezav/gitleaks/v8@v8.30.1 git --redact --report-format json --report-path secret-history.json .
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: redacted-secret-history
+          path: secret-history.json
+          retention-days: 3
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
+          - language: go
+            build-mode: manual
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        if: matrix.language == 'go'
+        with:
+          go-version-file: utils/pipeline/go.mod
+          cache-dependency-path: utils/pipeline/go.sum
+      - uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+      - name: Build Go for analysis
+        if: matrix.language == 'go'
+        working-directory: utils/pipeline
+        run: go build ./...
+      - uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4
+
+  dependencies:
+    name: Dependency security inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+      # Outstanding tooling advisories are findings, not accepted exceptions.
+      # Preserve every full report; enforce the deployed backend separately.
+      - name: Collect full dependency reports
+        shell: bash
+        run: |
+          mkdir -p dependency-reports
+          for scope in app functions integration; do
+            directory=.
+            if [ "$scope" != app ]; then directory="$scope"; fi
+            npm --prefix "$directory" audit --json > "dependency-reports/$scope.json" || test "$?" -eq 1
+            node -e 'const r=require("./dependency-reports/"+process.argv[1]+".json"); if(r.error || !r.metadata) process.exit(1); console.log(process.argv[1], r.metadata.vulnerabilities)' "$scope"
+          done
+      - name: Enforce clean deployed backend dependencies
+        run: npm --prefix functions audit --omit=dev
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: dependency-security-reports
+          path: dependency-reports/
+          retention-days: 14

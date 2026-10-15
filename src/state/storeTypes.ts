@@ -1,12 +1,15 @@
-import { PlayerGame, Guess, HintInfo } from "../models/game"
+import { PlayerGame, HintInfo } from "../models/game"
 import PlayerStats from "../models/playerStats"
 import { BasicTriviaItem, TriviaItem, GameMode } from "../models/trivia"
 import { DifficultyLevel } from "../config/difficulty"
 import Player from "../models/player"
+import { DailyChallenges } from "../services/gameService"
 
 export type GameStatus = "playing" | "revealing" | "gameOver"
 
 export interface GameSlice {
+  dailyChallenges: DailyChallenges
+  challengeDate: string | null
   syncStatus: "idle" | "saving" | "pending"
   syncError: string | null
   retryPendingAction: () => Promise<void>
@@ -23,7 +26,7 @@ export interface GameSlice {
     hintInfo?: HintInfo[] | null
   } | null
 
-  initializeGame: (player: Player) => Promise<void>
+  initializeGame: (player: Player, difficulty?: DifficultyLevel) => Promise<void>
   makeGuess: (selectedItem: BasicTriviaItem) => Promise<void>
   useHint: (hintType: string) => Promise<void>
   giveUp: () => Promise<void>

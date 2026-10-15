@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef } from "react"
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View, ViewStyle } from "react-native"
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, TextInput, View, ViewStyle } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { LinearGradient } from "expo-linear-gradient"
 import LoadingIndicator from "../../components/loadingIndicator"
@@ -13,10 +13,9 @@ import ErrorMessage from "../../components/errorMessage"
 import AccountDeletion from "../../components/accountDeletion"
 import SessionRecovery from "../../components/sessionRecovery"
 import AccountMerge from "../../components/accountMerge"
-import GameDifficultyToggle from "../../components/gameDifficultyToggle"
+import DifficultySelector from "../../components/difficultySelector"
 import HowToPlay from "../../components/howToPlay"
 import PremiereMasthead from "../../components/premiereMasthead"
-import { useThemeTokens } from "../../utils/hooks/useStyles"
 
 const GameplayContainer = lazy(
   () => import("../../components/gameplayContainer")
@@ -27,7 +26,6 @@ const ConfettiCelebration = lazy(
 const FlashMessages = lazy(() => import("../../components/flashMessages"))
 const GameLayout = ({ children, showDifficulty }: { children: React.ReactNode; showDifficulty: boolean }) => {
   const styles = useStyles(themedStyles)
-  const { colors } = useThemeTokens()
   const insets = useSafeAreaInsets()
   const scroll = useRef<ScrollView>(null)
   const gameStatus = useGameStore(state => state.gameStatus)
@@ -82,16 +80,17 @@ const GameLayout = ({ children, showDifficulty }: { children: React.ReactNode; s
       onContentSizeChange={revealSearch}
       contentContainerStyle={styles.scrollContentContainer}
       style={u.flex}
-      showsVerticalScrollIndicator={false}
+      showsVerticalScrollIndicator
       keyboardShouldPersistTaps="handled"
       automaticallyAdjustKeyboardInsets
     >
       <View style={styles.headerContainer}>
         <PremiereMasthead />
       </View>
+      {showDifficulty && gameStatus !== "gameOver" && gameStatus !== "revealing" && <View style={[styles.headerContainer, { paddingHorizontal: 20 }]}><DifficultySelector /></View>}
       {children}
       <View style={[styles.headerContainer, { paddingHorizontal: 20 }]}>
-        <HowToPlay summary={showDifficulty ? <GameDifficultyToggle /> : undefined} />
+        <HowToPlay />
       </View>
     </ScrollView>
     </KeyboardAvoidingView>
@@ -130,7 +129,7 @@ const GameScreen = () => {
       colors={[colors.background, colors.backgroundLight]}
       style={u.flex}
     >
-      <GameLayout showDifficulty={Boolean(player && hasGame && !deletion && !lostSession && !authLoading && !authError && !loading && !error && isNetworkConnected !== false)}>
+      <GameLayout showDifficulty={Boolean(player && !deletion && !merge && !mergeProposal && !lostSession && !authLoading && !authError && isNetworkConnected !== false)}>
         {content}
       </GameLayout>
       <Suspense fallback={null}>

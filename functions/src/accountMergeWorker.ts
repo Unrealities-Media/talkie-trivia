@@ -2,7 +2,7 @@ import { isDeepStrictEqual } from "node:util"
 import { DocumentData, FieldPath, FieldValue, Firestore, Query, Timestamp, Transaction } from "firebase-admin/firestore"
 import { HttpsError } from "firebase-functions/v2/https"
 import { MERGE_PAGE_SIZE, MERGE_POLICY_VERSION, MergeGame, planAccountMergePage, validateMergeGame, validateMergeStats } from "./accountMergePolicy"
-import { Stats, completeStats, dateId, initialStats } from "./gameEngine"
+import { Stats, completeStats, challengeKey, initialStats } from "./gameEngine"
 import { gameHistory } from "./gameHistory"
 
 const phases = ["source-games", "source-history", "target-games", "target-history", "copy", "copied"] as const
@@ -23,7 +23,7 @@ function cursorValid(cursor: unknown, phase: MergePhase): boolean {
   if (cursor === null) return true
   if (typeof cursor !== "string") return false
   const value = phase.endsWith("history") ? cursor : cursor.replace(/^movies_/, "")
-  try { return dateId(value) === value && (phase.endsWith("history") || cursor === `movies_${value}`) } catch { return false }
+  try { return challengeKey(value) === value && (phase.endsWith("history") || cursor === `movies_${value}`) } catch { return false }
 }
 function page(query: Query, cursor: string | null): Query {
   const ordered = query.orderBy(FieldPath.documentId()).limit(MERGE_PAGE_SIZE)
@@ -128,7 +128,7 @@ export async function processAccountMergePage(db: Firestore, sourceUid: string):
       // The game pass catches missing histories; this reverse pass catches
       // orphaned histories, so neither account can silently lose completion data.
       const histories = await tx.get(page(db.collection(`players/${uid}/gameHistoryV2`), job.cursor))
-      for (const doc of histories.docs) { try { dateId(doc.id) } catch { review() } }
+      for (const doc of histories.docs) { try { challengeKey(doc.id) } catch { review() } }
       const games = await Promise.all(histories.docs.map(doc => tx.get(db.doc(`players/${uid}/games/movies_${doc.id}`))))
       for (const [index, doc] of histories.docs.entries()) {
         if (!games[index].exists) review()

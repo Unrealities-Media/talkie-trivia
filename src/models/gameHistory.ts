@@ -2,6 +2,7 @@ import { DifficultyLevel } from "../config/difficulty"
 import { GameMode } from "./trivia"
 
 export interface GameHistoryEntry {
+  challengeId?: string
   dateId: string // YYYY-MM-DD
   itemId: number | string
   itemTitle: string

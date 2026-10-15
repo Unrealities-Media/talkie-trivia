@@ -7,6 +7,6 @@ jest.mock("../../src/state/gameStore")
 it("presents saved difficulty without offering to mutate the current challenge", () => {
   ;(useGameStore as unknown as jest.Mock).mockImplementation(selector => selector({ difficulty: "LEVEL_3", playerGame: { difficulty: "LEVEL_5" } }))
   render(<ThemeProvider><GameDifficultyToggle /></ThemeProvider>)
-  expect(screen.getByText("Extreme · locked for today")).toBeTruthy()
+  expect(screen.getByText("Very Hard · daily challenge")).toBeTruthy()
   expect(screen.queryByRole("button")).toBeNull()
 })

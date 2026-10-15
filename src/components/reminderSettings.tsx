@@ -33,7 +33,7 @@ export default function ReminderSettings({ suspended = false }: { suspended?: bo
     accessibilityRole="button" accessibilityState={{ disabled }} style={styles.button}>
     <Text style={styles.buttonText}>{label}</Text>
   </Pressable>
-  if (state.status === "unsupported") return <Text style={styles.text}>Daily reminders are available in the Android and iOS app.</Text>
+  if (state.status === "unsupported") return null
   return <View style={styles.container}>
     <Text style={styles.title}>Daily reminder</Text>
     <Text style={styles.text}>Optional, on this device only. Remind me around this local time each day, even if I've already played. The puzzle changes worldwide at 00:00 UTC.</Text>

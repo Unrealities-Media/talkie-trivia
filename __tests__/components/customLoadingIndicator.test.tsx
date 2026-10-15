@@ -1,4 +1,4 @@
-import React, { ReactElement } from "react"
+import { ReactElement } from "react"
 import {
   render,
   screen,
@@ -15,7 +15,6 @@ import { responsive } from "../../src/styles/global"
 
 // Mock react-native-svg to test its props without actual rendering
 jest.mock("react-native-svg", () => {
-  const React = require("react")
   const { View } = require("react-native")
 
   const createMockSvgComponent = (name: string) => {

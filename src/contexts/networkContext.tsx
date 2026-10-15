@@ -14,6 +14,7 @@ export const NetworkProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [isNetworkConnected, setIsNetworkConnected] = useState<boolean | null>(null)
   const mounted = useRef(false)
   const generation = useRef(0)
+  const invalidateRefresh = useCallback(() => { generation.current++ }, [])
   const latest = useRef<boolean | null>(null)
   const accept = useCallback((value: boolean | null) => {
     if (!mounted.current) return
@@ -34,7 +35,7 @@ export const NetworkProvider: React.FC<{ children: ReactNode }> = ({ children })
     mounted.current = true
     void refreshNetwork()
     const subscription = Network.addNetworkStateListener(state => {
-      generation.current++
+      invalidateRefresh()
       accept(connection(state))
     })
     const foreground = AppState.addEventListener("change", state => {
@@ -42,11 +43,11 @@ export const NetworkProvider: React.FC<{ children: ReactNode }> = ({ children })
     })
     return () => {
       mounted.current = false
-      generation.current++
+      invalidateRefresh()
       subscription.remove()
       foreground.remove()
     }
-  }, [accept, refreshNetwork])
+  }, [accept, refreshNetwork, invalidateRefresh])
   return <NetworkContext.Provider value={{ isNetworkConnected, refreshNetwork }}>{children}</NetworkContext.Provider>
 }
 

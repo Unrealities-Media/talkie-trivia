@@ -25,9 +25,7 @@ import { API_CONFIG } from "../config/constants"
 import { imdbPersonUrl, imdbTitleUrl } from "../utils/imdbLinks"
 import { releaseYear } from "../utils/dateDisplay"
 import PremierePosterGrade from "./premierePosterGrade"
-import PremierePosterNotes from "./premierePosterNotes"
 
-type ImageSource = { uri: string } | number
 const defaultItemImage = require("../../assets/premiere/theatre.png")
 
 const InlineActors = ({ actors }: { actors: any[] }) => {
@@ -296,7 +294,6 @@ const Facts = memo(
           <Image source={imageSource} style={{ width: "100%", height: "100%" }} contentFit="cover" contentPosition={{ left: "50%", top: "25%" }} onError={() => setFailedPoster(item.posterPath)} />
           <PremierePosterGrade />
           <LinearGradient pointerEvents="none" colors={[colors.background, "transparent", "transparent", colors.background]} locations={[0, 0.14, 0.72, 1]} style={{ position: "absolute", inset: 0 }} />
-          <PremierePosterNotes />
         </View> : <Image source={imageSource} style={styles.posterImage} contentFit="cover" onError={() => setFailedPoster(item.posterPath)} />}
         {posterFooter}
         {posterFooter && item.metadata.tagline && <Typography variant="caption" style={styles.tagline}>{item.metadata.tagline}</Typography>}

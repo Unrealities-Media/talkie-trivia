@@ -9,7 +9,14 @@ Each entry has this shape (replace every example value):
 ```json
 {
   "movieId": 123,
-  "description": "A reviewed, accurate clue of 100–2500 characters, without the answer title.",
+  "description": "The original TMDB synopsis, 100–2500 characters, exactly matching LEVEL_1.",
+  "clues": {
+    "LEVEL_1": "The exact original TMDB synopsis; must equal description.",
+    "LEVEL_2": "Remove names, titles and other direct identifiers.",
+    "LEVEL_3": "Also remove gender, locations and identifying context.",
+    "LEVEL_4": "Abstract the central conflict without signature details.",
+    "LEVEL_5": "A shorter, more ambiguous version of the conflict."
+  },
   "imdbId": "",
   "tagline": "",
   "catalogVersion": "SHA-256 of the exact released searchIndex.json bytes",
@@ -37,15 +44,25 @@ digests from drafts without changing their approval fields:
 node scripts/content-digests.cjs content/reviewed-movies.json
 ```
 
-The digest is SHA-256 over UTF-8 `movieId + "\n" + description + "\n" + imdbId +
-"\n" + tagline`, with no trailing newline. Any text/link change needs another
+For new five-variant entries the digest is SHA-256 over UTF-8
+`"clues-v2\n" + movieId + "\n" + description + "\n" + imdbId + "\n" + tagline`,
+followed by each of LEVEL_1 through LEVEL_5 prefixed with a newline, with no
+trailing newline. Any text/link change needs another
 review and digest. Approved entries require a reviewer handle, an RFC3339 review
 timestamp no later than publication, and all three review booleans true. Keep
 personal contact details out of reviewer handles.
 
+`description` and LEVEL_1 must be the same original synopsis (100–2500 characters).
+All five variants must be present, each 20–2500 characters. Title/alias checks
+apply to levels 2–5 and taglines; the verbatim original is exempt. Review all five
+as one set. See [difficulty behavior](../docs/clue-difficulty.md) and the
+[40 beta sets](beta-clue-drafts.md). `beta-movies.json` is draft input, not an
+approved publication pool.
+
 Use a reviewed PR for content changes. Keep enough unused approved movies to fill
 the rolling horizon without repeating the preceding 90 days. The default needs
-30 future days; initial bootstrap including today needs 31. The publisher will
+150 movies for 30 future days; initial bootstrap including today needs 155.
+For the eight-day beta, use 40 movies with `-include-today -horizon-days 7`. The publisher will
 fail before writing if the pool is insufficient. Publication does not alter
 already scheduled days, even when their source entry changes.
 
