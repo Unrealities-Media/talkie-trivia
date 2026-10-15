@@ -36,15 +36,36 @@ local artifacts and must be rebuilt if absent or changed.
 
 The backend, rules and Go changes are unchanged from their individually tested
 PR heads; their full suites were not redundantly rerun locally in this pass.
-PRs 13, 14 and 15 have all remote checks green. PR 16 has passed app, browser,
-Firebase, Go, dependency and CodeQL checks; its full-history secret scan is still
-running at this checkpoint. Recheck final heads before merging; no failing check
-may be waived based on this document.
+PRs 13–16 have all remote checks green. PR 16's full-history secret scan passed
+in 7m57s. Recheck final heads before merging; no failing check may be waived based
+on this document. These PR checks do not cover the subsequent local focus fix below.
 
 After integrating PR 16, the existing beta artifact passed receipt verification
 again. The diff from the tested app integration contains only documentation,
 the security workflow and scanner scripts/tests. No application or backend source
 changed, so no redundant web rebuild or broad local test run was performed.
+
+## Subsequent narrow-screen keyboard fix
+
+A new 320×640 Chromium contract reproduced a confirmation-dialog focus race:
+after cancelling and reopening, deferred initialization could return focus to
+the cancel button after Tab had moved it to Start challenge. Initialization now
+preserves focus already inside the dialog. The regression checks Tab/Shift+Tab
+containment, cancel-and-reopen focus restoration, keyboard challenge start,
+search-result focus and Space-activated movie preview. The checked controls fit
+the viewport and the page has no horizontal document overflow in this scenario.
+
+After the fix, a fresh emulator-configured web export passed seven browser
+contracts in 38.9s; one duplicate narrow-viewport test is intentionally skipped
+under the mobile project. TypeScript checking and diff whitespace validation
+passed. This is Chromium keyboard/reflow evidence, not screen-reader, text-size
+scaling, Safari or physical-device acceptance.
+
+**The earlier normal beta artifact predates this app-source fix and must be
+rebuilt before deploying this candidate.** Its digest receipt only verifies the
+old artifact's integrity, not correspondence to the current source. Do not deploy
+the fresh emulator-configured test export. The fix remains local on the combined
+candidate; no additional PR, CI run or deployment was created in this pass.
 
 ## Publication automation evidence
 
