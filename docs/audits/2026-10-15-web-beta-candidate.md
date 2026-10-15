@@ -61,11 +61,30 @@ under the mobile project. TypeScript checking and diff whitespace validation
 passed. This is Chromium keyboard/reflow evidence, not screen-reader, text-size
 scaling, Safari or physical-device acceptance.
 
-**The earlier normal beta artifact predates this app-source fix and must be
-rebuilt before deploying this candidate.** Its digest receipt only verifies the
-old artifact's integrity, not correspondence to the current source. Do not deploy
-the fresh emulator-configured test export. The fix remains local on the combined
+The earlier normal beta artifact predated this app-source fix and was unsuitable
+for deploying this candidate. The subsequent build below replaces it. Do not
+deploy the emulator-configured test export. The fix remains local on the combined
 candidate; no additional PR, CI run or deployment was created in this pass.
+
+## Source-aware beta deployment receipt
+
+The next pass added a source digest to the build receipt and deployment guard.
+The old on-disk receipt was rejected as expected. Focused tests cover matching
+source, new/modified/deleted source files, documentation-only edits, old receipts,
+project mismatch, emulator configuration and changed output (three tests passed).
+A source change during export also prevents receipt creation; this guard is
+implemented but was not exercised by interrupting an actual export.
+
+One normal web beta build then completed with the focus fix and source guard,
+for `talkie-trivia-beta` with emulators disabled. Verification passed:
+
+- Artifact SHA-256: `8ea8e35dc8c0b7494bdf46b7de2d278b28ac51b7be45b438a8b44ae32a548195`.
+- Source SHA-256: `adab0e4acf915019bcb9d6a0a7701d9dbaf735f2defc8818b375ed3f3ee2bf0b`.
+
+See [the build-input scope and limitations](../hosted-web-beta.md#build-and-publish-the-website).
+This verifies the local artifact; it is not deployed acceptance. No native build,
+remote CI run or deployment was initiated. The normal receipt and generated site
+remain ignored local files and must be regenerated if absent or rejected.
 
 ## Publication automation evidence
 

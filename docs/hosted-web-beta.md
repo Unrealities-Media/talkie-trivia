@@ -88,9 +88,22 @@ ignored `web-build/`, and generates `/privacy`, `/support`, `/delete-account` an
 JavaScript or the game backend. Profile links to these pages.
 
 The deploy command publishes **Hosting only**. Its predeploy hook compares the
-target project and all output files with `.expo/web-beta-build.json`. Missing,
-modified or emulator artifacts fail closed. Rebuild after any config, content
-catalog, policy or frontend changes. Do not edit generated output by hand.
+target project, output files and local build inputs with `.expo/web-beta-build.json`.
+Missing, modified, emulator or stale-source artifacts fail closed. The source
+digest includes new/uncommitted files under app source, assets, config, plugins,
+vendor, data, public and patches, plus entry/build configuration files, package
+manifests/lockfile, `.nvmrc`, `.env.beta` and the beta build script. Documentation
+and generated outputs are excluded, so release notes alone do not force a build.
+Source changes during export prevent receipt creation. Older receipts without a
+source digest require a rebuild. No source or environment-file contents are
+copied into the receipt.
+
+Rebuild after any config, content catalog, policy or frontend changes. Do not edit
+generated output by hand. This guard detects local file drift; it does not certify
+the installed `node_modules` tree, shell environment overrides, deployed backend
+compatibility or a reproducible toolchain. Use the pinned runtime and `npm ci`,
+and rebuild after changing shell build settings. New build-input locations must
+also be added to `sourceInputs` in `scripts/web-beta.cjs`.
 
 Hosting rewrites app routes to `index.html`, serves real policy pages first and
 disables stale HTML caching. Beta pages request search-engine exclusion. This is
