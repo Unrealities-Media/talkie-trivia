@@ -16,7 +16,9 @@ These corrections are published as `5af35f5`. Remote Linux unit/coverage,
 browser, emulator and Go jobs now pass, as do both CodeQL language jobs and the
 CodeQL findings gate. Native builds are still running. The remote secret scan
 completed across 878 commits and failed on exactly four credential matches,
-confirming the intended merge gate. Remote frontend evidence is 111 suites / 712 tests passed, with
+confirming detection and a failing required check. Because this PR is also a
+draft, its blocked state alone does not prove non-draft merge enforcement.
+Remote frontend evidence is 111 suites / 712 tests passed, with
 89.09% statements, 81.21% branches, 88.58% functions and 92.71% lines. Backend
 evidence remains seven suites / 158 tests and 44.02% line coverage.
 
@@ -36,10 +38,9 @@ evidence remains seven suites / 158 tests and 44.02% line coverage.
   they are mixed into pre-existing local app changes. Browser tests also depend
   on the local catalog fixtures, seed support and gameplay interface.
 
-There are more than 125 modified tracked files plus new app assets/content and
-test files in this checkout. Do not publish a workflow-only commit and claim it
-tests this checkout: the tested source and its fixtures must be in the candidate
-commit. Do not silently include the existing product work in a CI-only PR.
+The initial checkout contained more than 125 modified tracked files plus new
+app assets/content and tests. The candidate includes the tested source and its
+fixtures; a workflow-only commit would not reproduce the tested snapshot.
 The user selected one combined app/CI snapshot, published as `0e052e7` with
 targeted CI corrections on top. No live deployment is part of this PR.
 

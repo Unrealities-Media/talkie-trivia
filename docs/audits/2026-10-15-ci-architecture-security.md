@@ -1,8 +1,8 @@
 # CI, testing, architecture and security audit
 
 Audited October 15, 2026 against the current working tree and GitHub API.
-The repository contains substantial pre-existing uncommitted app/backend work.
-This audit preserves it. The user subsequently selected a combined app/CI
+The initial checkout contained substantial pre-existing uncommitted app/backend
+work. This audit preserved it. The user subsequently selected a combined app/CI
 snapshot, now published as draft PR #1. See the rollout checkpoint for current
 remote enforcement and validation; initial findings below record the baseline.
 
@@ -23,12 +23,13 @@ This supersedes the initial local split-run frontend evidence. Native builds
 are still running. The remote full-history scan completed across 878 commits
 and failed on exactly four credential matches; remediation remains required.
 
-The project has substantial functional and authorization tests, but its delivery
-controls are not yet reliable enough to call release-ready. Tests cannot protect
-main while merges and direct pushes can bypass them. The latest remote unit run
-never reached tests. Native builds and backend abuse prevention remain gates.
+The initial delivery controls allowed updates without passing checks, and the
+initial remote unit run never reached tests. Branch protection and the passing
+Linux run above supersede those baseline observations. Native verification and
+credential remediation remain CI rollout gates; backend abuse prevention remains
+an app-release finding.
 
-## Findings, ordered by priority
+## Initial findings, ordered by priority
 
 | ID | Priority | Evidence and consequence | Status / acceptance |
 | --- | --- | --- | --- |
@@ -107,22 +108,23 @@ index modules; its percentages describe that configured scope, not every file.
 - Environment configuration separates demo, preview and production and rejects
   ambiguous live/emulator settings. Content publication requires explicit project
   selection and reviewed immutable schedule input.
-- Publishing uses scoped OIDC, protected-environment names and serialized runs.
-  Actual GitHub environment approval policies were not verified here.
+- Publishing uses scoped OIDC, environment names and serialized runs.
+  GitHub has no configured environments, so approval protection is not established.
 
 ## Rollout and required checks
 
-The audit is complete; the CI rollout is not yet proven. Local edits cannot
-change GitHub enforcement until committed and pushed. Preserve the current
-uncommitted application work when preparing that commit.
+The audit findings are recorded; the CI rollout is not yet fully verified.
+The combined application and CI snapshot is published, and main protection is
+enabled. Native results and credential remediation remain outstanding.
 
-After publishing, require these exact job names on `main` once they appear:
+Main now requires these observed check names:
 
 - `Run Tests & Coverage`
 - `Check Go Pipeline`
 - `Firebase rules and transaction contracts`
 - `android` and `ios`
 - `CodeQL (javascript-typescript)` and `CodeQL (go)`
+- `CodeQL` (findings gate)
 - `Dependency security inventory`
 - `Browser gameplay contracts`
 - `Secret history scan` (currently has unresolved historical findings)
@@ -133,7 +135,7 @@ Do not enable an unreachable required context or relax a real failing native
 gate. A security inventory job can pass while known tooling advisories remain;
 resolve them before claiming a clean security assessment.
 
-Next stages: publish/verify CI and enforce main protection; extend browser
+Next stages: finish remote CI verification and credential remediation; extend browser
 coverage for account recovery; fix public abuse controls and answer exposure; resolve
 dependency/native release findings. These are follow-up implementation stages,
 not findings silently declared fixed by this audit.
@@ -155,8 +157,8 @@ not findings silently declared fixed by this audit.
   and React hook rules. Findings were repaired without mass suppression; lint
   and typecheck passed. Affected frontend suites passed 183 tests, with a further
   clue-replacement regression suite passing 8 tests. Backend build and all 158
-  tests passed again. This closes local implementation of CI-05; remote rollout
-  is still unverified.
+  tests passed again. Remote Linux validation at `5af35f5` subsequently passed,
+  including lint, closing CI-05's implementation and execution checks.
 - Gitleaks v8.30.1 scanned 876 commits (about 277 MB) and returned 16 matches.
   These include Sentry organization-token patterns in historical Android/iOS
   `sentry.properties` and JWT/bearer-token patterns in the historical movie
@@ -173,11 +175,12 @@ not findings silently declared fixed by this audit.
   A second complete 876-commit scan verified the exceptions: exactly four
   credential matches remain and the scanner exits nonzero. Linux/x64 lockfile
   dry runs passed again after ESLint/Playwright installation; actual Linux CI
-  installation and remote job execution are still unverified.
-- GitHub API inspection found secret scanning, push protection and Dependabot
+  installation and execution subsequently passed at `5af35f5`.
+- Initial GitHub API inspection found secret scanning, push protection and Dependabot
   security updates disabled; CodeQL default setup unconfigured; no repository
   environments configured. Workflow environment names alone do not establish
-  approval policies. Repository settings and workflow rollout remain open.
+  approval policies. Secret scanning, push protection and dependency security
+  updates are now enabled; environments remain unconfigured.
 
 See [the rollout checkpoint](../ci-rollout.md) for the concrete change scope,
 publication decision and remote acceptance requirements.
