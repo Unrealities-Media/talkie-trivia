@@ -1,6 +1,6 @@
 module pipeline
 
-go 1.26.0
+go 1.26.9
 
 require (
 	cloud.google.com/go/firestore v1.26.0
