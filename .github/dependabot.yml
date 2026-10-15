@@ -1,15 +1,53 @@
 version: 2
+multi-ecosystem-groups:
+  monthly-dependencies:
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 1
 updates:
   - package-ecosystem: github-actions
+    rebase-strategy: disabled
     directory: /
-    schedule:
-      interval: weekly
+    patterns: ['*']
+    multi-ecosystem-group: monthly-dependencies
   - package-ecosystem: npm
+    rebase-strategy: disabled
     directories: [/, /functions, /integration]
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+    patterns: ['*']
+    multi-ecosystem-group: monthly-dependencies
+    groups:
+      npm-security:
+        applies-to: security-updates
+        patterns: ['*']
+    # Upgrade these together after the stable Expo/tooling stack supports them.
+    # See docs/dependency-maintenance.md; do not force peer dependencies.
+    ignore:
+      - dependency-name: expo
+        versions: ['>=58']
+      - dependency-name: 'expo-*'
+        versions: ['>=58']
+      - dependency-name: jest-expo
+        versions: ['>=58']
+      - dependency-name: '@babel/*'
+        versions: ['>=8']
+      - dependency-name: typescript
+        versions: ['>=7']
+      - dependency-name: react
+        versions: ['>=19.3']
+      - dependency-name: react-dom
+        versions: ['>=19.3']
+      - dependency-name: react-test-renderer
+        versions: ['>=19.3']
+      - dependency-name: '@types/react'
+        versions: ['>=19.3']
+      - dependency-name: react-native
+        versions: ['>=0.87']
+      - dependency-name: react-native-gesture-handler
+        versions: ['>=3']
+      - dependency-name: '@testing-library/react-native'
+        versions: ['>=14']
   - package-ecosystem: gomod
-    directory: /utils/pipeline
-    schedule:
-      interval: weekly
+    rebase-strategy: disabled
+    directories: [/, /utils/pipeline]
+    patterns: ['*']
+    multi-ecosystem-group: monthly-dependencies

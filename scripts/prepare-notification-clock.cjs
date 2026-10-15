@@ -4,7 +4,7 @@ const crypto = require("node:crypto")
 
 // Reviewed against expo-notifications 57.0.22 (MIT). Apply during Android CNG
 // generation, including EAS; never rely on an unrecorded node_modules edit.
-const version = "57.0.22"
+const version = "57.0.23"
 const changes = [
   {
     file: "android/src/main/java/expo/modules/notifications/service/NotificationsService.kt",
