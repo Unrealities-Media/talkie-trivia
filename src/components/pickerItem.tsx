@@ -88,7 +88,7 @@ const PickerItem = memo<ItemProps>(
           testID={`result-item-${item.title}`}
           accessible
           accessibilityRole="button"
-          accessibilityLabel={isGuessed ? `${titleWithYear}. Already guessed.` : `Select and guess: ${titleWithYear}. Long press to preview.`}
+          accessibilityLabel={isGuessed ? `${titleWithYear}. Already guessed.` : `Select and guess: ${titleWithYear}.`}
           accessibilityState={{ disabled: isDisabled || isGuessed }}
           onPress={() => onSelect(item)}
           onLongPress={() => onLongPress(item)}
@@ -147,11 +147,24 @@ const PickerItem = memo<ItemProps>(
                   {getReleaseYear(detailedItem.releaseDate) || "Unknown"}
                 </Text>
                 <Text style={styles.expandedHint}>
-                  Tap this item to select.
+                  Select this movie to submit a guess.
                 </Text>
               </View>
             </View>
           )}
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Preview: ${titleWithYear}`}
+          accessibilityHint="Show or hide movie details without using a guess."
+          aria-expanded={isExpanded}
+          accessibilityState={{ expanded: isExpanded, disabled: isDisabled || isGuessed }}
+          disabled={isDisabled || isGuessed}
+          onPress={() => onLongPress(item)}
+          style={({ pressed }) => [styles.previewButton, pressed && styles.pressedItem,
+            (isDisabled || isGuessed) && { opacity: 0.55 }]}
+        >
+          <Text style={styles.expandedHint}>{isExpanded ? "Hide preview" : "Preview movie"}</Text>
         </Pressable>
       </View>
     )
@@ -174,9 +187,19 @@ interface PickerItemStyles {
   expandedTitle: TextStyle
   expandedYear: TextStyle
   expandedHint: TextStyle
+  previewButton: ViewStyle
 }
 
 const themedStyles = (theme: Theme): PickerItemStyles => ({
+  previewButton: {
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 17,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
   resultItemContainer: {
     backgroundColor: theme.colors.backgroundLight,
     borderBottomWidth: 2,

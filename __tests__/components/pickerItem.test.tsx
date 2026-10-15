@@ -79,7 +79,7 @@ describe("PickerItem Component", () => {
 
       // Check title and year formatting
       expect(screen.getByText("The Matrix")).toBeTruthy()
-      expect(screen.getByRole("button", { name: /The Matrix \(1999\)/ })).toBeTruthy()
+      expect(screen.getByRole("button", { name: /Select and guess: The Matrix/ })).toBeTruthy()
 
       // Check Image source
       const image = screen.getByTestId("mock-expo-image")
@@ -118,7 +118,7 @@ describe("PickerItem Component", () => {
         />
       )
 
-      expect(screen.queryByText("Tap this item to select.")).toBeNull()
+      expect(screen.queryByText("Select this movie to submit a guess.")).toBeNull()
     })
   })
 
@@ -136,7 +136,7 @@ describe("PickerItem Component", () => {
       )
 
       // Should show the detailed view content
-      expect(screen.getByText("Tap this item to select.")).toBeTruthy()
+      expect(screen.getByText("Select this movie to submit a guess.")).toBeTruthy()
       expect(screen.getByText("Release Year: 1999")).toBeTruthy()
 
       // Should show the larger image
@@ -190,6 +190,30 @@ describe("PickerItem Component", () => {
   })
 
   describe("Interactions", () => {
+    it("previews without selecting and exposes its expanded state", () => {
+      const { rerender } = renderWithTheme(<PickerItem item={mockBasicItem}
+        detailedItem={mockDetailedItem} isDisabled={false} isExpanded={false}
+        onSelect={mockOnSelect} onLongPress={mockOnLongPress} />)
+      fireEvent.press(screen.getByRole("button", { name: "Preview: The Matrix (1999)" }))
+      expect(mockOnLongPress).toHaveBeenCalledWith(mockBasicItem)
+      expect(mockOnSelect).not.toHaveBeenCalled()
+      rerender(<ThemeProvider><PickerItem item={mockBasicItem}
+        detailedItem={mockDetailedItem} isDisabled={false} isExpanded
+        onSelect={mockOnSelect} onLongPress={mockOnLongPress} /></ThemeProvider>)
+      expect(screen.getByRole("button", { name: "Preview: The Matrix (1999)" })
+        .props.accessibilityState.expanded).toBe(true)
+      expect(screen.getByText("Hide preview")).toBeTruthy()
+    })
+
+    it.each([{ isDisabled: true, isGuessed: false }, { isDisabled: false, isGuessed: true }])(
+      "blocks preview for unavailable results: %o", props => {
+        renderWithTheme(<PickerItem item={mockBasicItem} detailedItem={null}
+          {...props} isExpanded={false} onSelect={mockOnSelect} onLongPress={mockOnLongPress} />)
+        fireEvent.press(screen.getByRole("button", { name: "Preview: The Matrix (1999)" }))
+        expect(mockOnLongPress).not.toHaveBeenCalled()
+        expect(mockOnSelect).not.toHaveBeenCalled()
+      })
+
     it("should call onSelect with the item when pressed", () => {
       renderWithTheme(
         <PickerItem
@@ -202,7 +226,7 @@ describe("PickerItem Component", () => {
         />
       )
 
-      fireEvent.press(screen.getByRole("button"))
+      fireEvent.press(screen.getByRole("button", { name: /Select and guess:/ }))
       expect(mockOnSelect).toHaveBeenCalledWith(mockBasicItem)
     })
 
@@ -218,7 +242,7 @@ describe("PickerItem Component", () => {
         />
       )
 
-      const pressable = screen.getByRole("button")
+      const pressable = screen.getByRole("button", { name: /Select and guess:/ })
       fireEvent(pressable, "longPress")
       expect(mockOnLongPress).toHaveBeenCalledWith(mockBasicItem)
     })
@@ -235,7 +259,7 @@ describe("PickerItem Component", () => {
         />
       )
 
-      const pressable = screen.getByRole("button")
+      const pressable = screen.getByRole("button", { name: /Select and guess:/ })
       expect(pressable.props.accessibilityState.disabled).toBe(true)
 
       fireEvent.press(pressable)
