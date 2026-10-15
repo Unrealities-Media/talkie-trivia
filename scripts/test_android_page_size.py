@@ -1,5 +1,6 @@
 """Regression examples based on actual llvm-readelf output from the release APK."""
 import importlib.util
+import os
 from pathlib import Path
 import unittest
 
@@ -38,6 +39,23 @@ class AlignmentChecks(unittest.TestCase):
     def test_library_without_relro_can_pass_page_size_check(self):
         headers = "LOAD 0x0 0x0 0x0 0x10000 0x10000 R E 0x10000"
         self.assertEqual(page_size.inspect_headers(headers)["problems"], [])
+
+
+@unittest.skipUnless(os.environ.get("ANDROID_NDK_HOME"), "Requires the installed Android NDK")
+class NdkToolContract(unittest.TestCase):
+    def test_readelf_and_readobj_produce_parseable_program_headers(self):
+        ndk = Path(os.environ["ANDROID_NDK_HOME"])
+        host = "windows-x86_64" if os.name == "nt" else "linux-x86_64"
+        toolchain = ndk / "toolchains" / "llvm" / "prebuilt" / host
+        library = toolchain / "sysroot/usr/lib/aarch64-linux-android/libc++_shared.so"
+        results = []
+        for name in ("llvm-readelf", "llvm-readobj"):
+            with self.subTest(tool=name):
+                tool = toolchain / "bin" / (name + (".exe" if os.name == "nt" else ""))
+                inspection = page_size.inspect_headers(page_size.read_headers(tool, library))
+                self.assertTrue(inspection["loadAlignments"])
+                results.append(inspection)
+        self.assertEqual(results[0], results[1])
 
 
 if __name__ == "__main__":

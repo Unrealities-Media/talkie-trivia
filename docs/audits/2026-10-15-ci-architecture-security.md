@@ -8,6 +8,17 @@ remote enforcement and validation; initial findings below record the baseline.
 
 ## Assessment
 
+Latest verification at `181af99`: all Linux jobs, both CodeQL analyses and the
+findings gate, plus iOS simulator release passed. The history scanner scanned
+881 commits and failed on four findings. Publication-summary disclosure tests
+passed remotely. Android compiled successfully in 33m 3s after the memory fix;
+ZIP alignment passed, but all 28 ELF inspections rejected the tool output.
+The verifier resolved the readelf executable alias and relied on its default
+format. Running the old flags with the real NDK readobj tool reproduced the
+zero-LOAD-row output locally. The correction explicitly selects GNU program
+headers and adds a real-NDK contract for both tool names; all six local verifier
+tests and actionlint pass. Packaged ELF alignment awaits remote verification.
+
 Rollout update: main protection and repository secret/dependency security
 features are now enabled. The PR is blocked as expected while required checks
 are pending/failing. This is not yet proof of a deliberately failing non-draft
@@ -155,8 +166,9 @@ not findings silently declared fixed by this audit.
   including future movie IDs and clues, under a supposedly private report name.
   This repository is public; artifact names do not restrict readers. The local
   fix uploads only a validated summary of dates and slot counts, with two
-  disclosure-boundary tests and passing actionlint. It remains to be published
-  and remotely tested. Inspection of all 18 currently listed repository
+  disclosure-boundary tests and passing actionlint. It is published and its
+  regression tests passed remotely at `181af99`; no live publication was run.
+  Inspection of all 18 repository artifacts listed during the audit
   artifacts found no schedule report; expired/deleted historical exposure is
   not ruled out. Staging/production environments and repository variables are
   still absent, so no approval policy or configured publisher is established.

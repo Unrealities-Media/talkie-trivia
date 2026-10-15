@@ -45,7 +45,9 @@ jobs:
           NDK_VERSION=$(node -p 'require("./plugins/withAndroidPageSize.cjs").ndkVersion')
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "cmake;3.30.5" "ndk;$NDK_VERSION" "build-tools;36.0.0"
       - name: Test APK alignment verifier
-        run: python3 -m unittest discover -s scripts -p 'test_android_page_size.py'
+        run: |
+          NDK_VERSION=$(node -p 'require("./plugins/withAndroidPageSize.cjs").ndkVersion')
+          ANDROID_NDK_HOME="$ANDROID_HOME/ndk/$NDK_VERSION" python3 -m unittest discover -s scripts -p 'test_android_page_size.py'
       # Release compiles/bundles the actual JS and native dependencies. No upload
       # credential is provided: the config plugin leaves the artifact unsigned.
       - name: Compile unsigned Android release (ARM64)

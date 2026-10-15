@@ -1,5 +1,15 @@
 # CI rollout checkpoint
 
+Latest verification at `181af99`: Linux tests/coverage, browser, emulator, Go,
+CodeQL analyses/findings and iOS passed. The publication-summary disclosure
+regression passed remotely. The history scanner scanned 881 commits and failed
+on four findings. Android compiled successfully in 33m 3s and ZIP alignment
+passed, but all 28 library inspections failed to parse tool output. The verifier
+resolved the readelf alias and relied on its default output format. The next
+candidate explicitly selects GNU program-header output and tests both real NDK
+tool names. Six local tests, including that tool contract, and actionlint pass;
+remote packaged ELF alignment remains unverified.
+
 The combined snapshot is published in [draft PR #1](https://github.com/Unrealities-Media/talkie-trivia/pull/1).
 Main now requires the observed unit, Go, emulator, browser, native, CodeQL and
 secret-history checks, up-to-date branches, PRs and resolved conversations.
