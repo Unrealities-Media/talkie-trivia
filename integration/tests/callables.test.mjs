@@ -275,6 +275,32 @@ describe("account deletion against real Auth and Firestore", () => {
     await assert.rejects(auth.getUser(user.uid), { code: "auth/user-not-found" })
   })
 
+  it("does not report deletion complete after another worker takes its lease", async () => {
+    const user = await guest()
+    await start(user)
+    const auth = getAdminAuth(admin)
+    const data = await deletionData(user)
+    const ref = db.doc(`accountDeletions/${user.uid}`)
+    const service = accountDeletion(db, {
+      getUser: auth.getUser.bind(auth), updateUser: auth.updateUser.bind(auth),
+      deleteUser: async uid => {
+        await auth.deleteUser(uid)
+        // Simulate takeover after this worker's lease expires during cleanup.
+        await ref.update({ lease: "replacement-worker", nextAttemptAt: Timestamp.fromMillis(Date.now() + 60_000) })
+      },
+    })
+    const result = await service.request({ auth: { uid: user.uid, token: { auth_time: Math.floor(Date.now() / 1000) } }, data })
+    assert.deepEqual(result, { accepted: true, complete: false })
+    assert.equal((await ref.get()).data().lease, "replacement-worker")
+    assert.equal((await ref.get()).data().status, "pending")
+    const statusRequest = { data: { uid: user.uid, secret: data.secret } }
+    assert.deepEqual(await service.status(statusRequest), { status: "pending" })
+    await ref.update({ nextAttemptAt: Timestamp.fromMillis(Date.now() - 1) })
+    const recovered = accountDeletion(db, auth)
+    assert.equal(await recovered.process(user.uid), true)
+    assert.deepEqual(await recovered.status(statusRequest), { status: "complete" })
+  })
+
   it("recovers a failed Auth cleanup from the durable queue and purges only expired receipts", async () => {
     const user = await guest()
     await start(user)

@@ -86,6 +86,22 @@ This verifies the local artifact; it is not deployed acceptance. No native build
 remote CI run or deployment was initiated. The normal receipt and generated site
 remain ignored local files and must be regenerated if absent or rejected.
 
+## Subsequent deletion completion fix
+
+Review found that a deletion worker could lose its lease before finalization but
+still return `complete: true`: the transaction skipped its writes, while the
+caller returned success unconditionally. Completion now comes from the transaction
+result. A lost lease reports incomplete unless another worker has already committed
+the complete state.
+
+The regression injects a replacement worker's lease after real emulator Auth
+deletion, checks both the response and receipt remain pending, then expires the
+lease and verifies recovery completes despite Auth already being absent. All 127
+Auth/Firestore/Functions contracts and the Go emulator contracts passed. Functions
+source was compiled freshly by the runner; no frontend or native build was needed.
+This change is local to the candidate and requires a Functions rollout, independently
+of Hosting, before it protects the live deletion flow.
+
 ## Publication automation evidence
 
 The October 15 follow-up found no repository Actions variables, so the explicit
