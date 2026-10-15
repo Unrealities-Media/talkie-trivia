@@ -10,7 +10,12 @@ old default-branch triggers from spending runner time. Re-enable it after merge
 only when an explicit native verification is wanted. Native release alignment
 and device acceptance remain deferred release requirements.
 
-Latest verification at `181af99`: Linux tests/coverage, browser, emulator, Go,
+Latest web-beta verification at `3cd092d`: tests/coverage, browser, emulator,
+Go, CodeQL analyses/findings and dependency inventory passed. The history scan
+failed on four findings across 883 commits before the owner-confirmed credential
+remediation below. A new scan must verify the exact historical exceptions.
+
+Earlier native verification at `181af99`: Linux tests/coverage, browser, emulator, Go,
 CodeQL analyses/findings and iOS passed. The publication-summary disclosure
 regression passed remotely. The history scanner scanned 881 commits and failed
 on four findings. Android compiled successfully in 33m 3s and ZIP alignment
@@ -76,11 +81,10 @@ targeted CI corrections on top. No live deployment is part of this PR.
    and CodeQL jobs against that exact commit. Local Windows passes do not
    establish those results. Native verification is deferred until requested
    for native development or release readiness.
-3. Resolve historical Sentry and TMDB credential exposure. The owner confirmed
-   no remediation on October 15. Confirm revocation/rotation without exposing
-   replacement values; retain evidence before accepting narrowly scoped
-   historical exceptions. Deleting a file or rewriting history does not revoke
-   a credential. Current checksum exceptions do not exempt credential matches.
+3. Verify the post-remediation history scan. On October 15 the owner confirmed
+   Sentry organization-token revocation and TMDB API Read Access Token
+   regeneration, and authorized exact historical exceptions. The confirmation
+   and its evidence limits are recorded below. New findings must still fail CI.
 4. Require the job names listed in the audit on main, require PRs and resolved
    conversations, prohibit force pushes/deletion and administrator bypass.
    Verify a deliberately failing PR cannot merge. Never substitute passing
@@ -96,26 +100,37 @@ run before isolation was fixed. Cleanup was rejected by automatic approval
 review and awaits explicit user authorization. Subsequent browser runs use only
 the verified dedicated emulator project; no live account deletion is claimed.
 
-## Credential remediation handoff
+## Credential remediation record — October 15, 2026
 
 The four history matches cover Sentry organization-token patterns in historical
 Android/iOS `sentry.properties` and two detections of a TMDB bearer token in the
 old movie-fetching script. No provider requests have been made with those
-credentials, and their current validity is unknown.
+credentials. Provider-side invalidation has not been independently tested.
 
-The account owner must revoke the exposed credentials in the provider consoles,
-replace any still-used credentials in the appropriate secret store, and confirm
-the provider, date and affected integration without sharing token values.
+The account owner reported revoking the Sentry token found under Organizations.
+The historical configuration identifies organization `tom-szymanski` and project
+`talkie-trivia`. Sentry remains disabled in the application; no replacement is
+needed for the web beta.
+
+The owner reported regenerating the TMDB key and, after checking the historical
+bearer-token identifier, explicitly confirmed a new API Read Access Token.
+This is owner-attested rotation, not a provider receipt or an independent test
+that the old token is rejected. No replacement values were requested or stored.
+The local movie importer uses `TMDB_API_KEY` when fetching; updating that local
+secret is the owner's responsibility before the next import.
+
+The owner explicitly authorized documenting this remediation, accepting the
+old historical findings and rerunning CI while keeping native builds disabled.
+The redacted report from run `38767004212` supplies the four exact fingerprints
+now listed in `.gitleaksignore`: two Sentry findings in commit `8108c8a` and two
+rules matching the TMDB bearer credential in commit `f12fa4d`. No whole paths,
+rules, token values or future commits are excluded. The 12 existing checksum
+false-positive exceptions are unchanged.
+
 Sentry documents organizational credential management through
 [organization integrations](https://docs.sentry.io/api/guides/create-auth-token/).
 TMDB documents its bearer credential in the account's API settings under
 [API Read Access Token](https://developer.themoviedb.org/docs/authentication-application).
-Confirm that the old bearer credential is revoked; changing a different key
-alone is not sufficient evidence. If a console cannot revoke it, contact that
-provider's support through the account owner.
-
-After revocation is confirmed, record the evidence and review exceptions for
-only the exact historical fingerprints. Keep full-history scanning enabled so
-new credentials continue to fail CI. Current exceptions cover checksums only.
+Full-history scanning remains enabled and new credential findings must fail CI.
 There is no authenticated Sentry/TMDB administration connector in this session;
 GitHub repository administration cannot revoke credentials issued by them.

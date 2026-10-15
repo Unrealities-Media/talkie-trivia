@@ -1,4 +1,11 @@
-# Exact reviewed checksum false positives only. Credential findings remain blocking.
+# Exact reviewed fingerprints only; no file, rule, or credential-value allowlists.
+# Historical credentials: owner confirmed Sentry revocation and TMDB API Read
+# Access Token regeneration on 2026-10-15. See docs/ci-rollout.md for evidence
+# limits. These exceptions apply only to the original commits and locations.
+8108c8aaabdcdf297e0d0652dd36b4fd495b9b32:android/sentry.properties:sentry-org-token:2
+8108c8aaabdcdf297e0d0652dd36b4fd495b9b32:ios/sentry.properties:sentry-org-token:2
+f12fa4de5cb3475787e58e21d305960571582853:utils/fetchPopularMovies/fetchPopularMovies.go:jwt:5
+f12fa4de5cb3475787e58e21d305960571582853:utils/fetchPopularMovies/fetchPopularMovies.go:curl-auth-header:3
 # vendored file SHA256
 674a9718d7e4790195148c9e09a9b1760cc7f906:vendor/fbjni/upstream.json:generic-api-key:20
 # Go module checksum

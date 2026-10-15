@@ -8,7 +8,16 @@ remote enforcement and validation; initial findings below record the baseline.
 
 ## Assessment
 
-Latest verification at `181af99`: all Linux jobs, both CodeQL analyses and the
+Current credential update (October 15): the owner reports Sentry organization-token
+revocation and TMDB API Read Access Token regeneration, and explicitly authorized
+four exact historical fingerprint exceptions. This is owner-attested remediation;
+no provider-side validity test or replacement-secret collection was performed.
+See `docs/ci-rollout.md` for the record and limitations. At `3cd092d`, all web-beta
+test and CodeQL checks passed; the pre-exception scan found four matches across
+883 commits. Post-exception CI verification is pending. Native builds remain
+disabled remotely and manual-only in the candidate, per the owner's request.
+
+Earlier verification at `181af99`: all Linux jobs, both CodeQL analyses and the
 findings gate, plus iOS simulator release passed. The history scanner scanned
 881 commits and failed on four findings. Publication-summary disclosure tests
 passed remotely. Android compiled successfully in 33m 3s after the memory fix;
@@ -22,8 +31,8 @@ tests and actionlint pass. Packaged ELF alignment awaits remote verification.
 Rollout update: main protection and repository secret/dependency security
 features are now enabled. The PR is blocked as expected while required checks
 are pending/failing. This is not yet proof of a deliberately failing non-draft
-PR enforcement test. Historical credentials remain unresolved and the app is
-not release-ready.
+PR enforcement test. Historical credential remediation is now owner-confirmed;
+the app's separate release findings remain open.
 
 Remote validation at `5af35f5`: Linux unit/coverage, browser gameplay, Firebase
 emulator contracts and Go checks passed. Both CodeQL language analyses and the
@@ -41,13 +50,13 @@ exits on JVM exhaustion, and retains the build log after an earlier shell timeou
 This addresses the observed resource warning; a rerun must establish whether
 separate lint/compiler failures remain. No Android pass is claimed.
 The remote full-history scan completed across 878 commits
-and failed on exactly four credential matches; remediation remains required.
+and failed on exactly four credential matches before the remediation recorded above.
 
 The initial delivery controls allowed updates without passing checks, and the
 initial remote unit run never reached tests. Branch protection and the passing
-Linux run above supersede those baseline observations. Native verification and
-credential remediation remain CI rollout gates; backend abuse prevention remains
-an app-release finding.
+Linux run above supersede those baseline observations. The post-remediation
+secret scan remains a CI gate. Native verification is deferred during web beta;
+backend abuse prevention remains an app-release finding.
 
 ## Initial findings, ordered by priority
 
@@ -67,7 +76,7 @@ an app-release finding.
 | TEST-03 | Medium | Browser scenarios live in ignored `.expo` scripts; no reproducible browser E2E job. Native keyboard, screen reader, provider auth, reminders and release signing are not established by Jest or web builds. | Desktop/mobile emulator browser contracts now pass for start, guess, hint purchase, reload, results/share feedback and history. Isolation regressions pass. Provider recovery and release-device acceptance remain open. |
 | CI-05 | Medium | Functions `.eslintrc.js` references dependencies/config absent from its package scripts; there is no active JS/TS lint gate. | Implemented locally: root flat ESLint, TypeScript correctness and React hooks checks; findings fixed without mass suppression. Lint and affected tests pass; remote rollout remains open. |
 | ARCH-02 | Low | Root `go.mod`/`go.sum` have no tracked Go source outside the nested pipeline module. Root Go commands encounter the unrelated JS/native `vendor` directory and inconsistent vendoring. | Open cleanup. Keep commands scoped to `utils/pipeline`; remove the obsolete root module after confirming no external consumer. |
-| SEC-05 | Medium | No CI secret-history scanner was found. Tracked filename checks found no `.env`, PEM/private-key, service-account or credentials files, but filenames are not a content/history scan. | Full-history scanner implemented; 16 matches classified into 12 checksum false positives and four credential-pattern matches. Credential remediation and repository settings remain open; see details below. |
+| SEC-05 | Medium | No CI secret-history scanner was found. Tracked filename checks found no `.env`, PEM/private-key, service-account or credentials files, but filenames are not a content/history scan. | Full-history scanner implemented; 12 checksum false positives and four owner-remediated historical credential fingerprints have exact exceptions. Secret scanning and push protection are enabled. Post-remediation CI scan pending; see evidence limits below. |
 
 ## Fresh verification
 
@@ -135,7 +144,7 @@ index modules; its percentages describe that configured scope, not every file.
 
 The audit findings are recorded; the CI rollout is not yet fully verified.
 The combined application and CI snapshot is published, and main protection is
-enabled. Credential remediation remains outstanding. On October 15 the owner
+enabled. Credential remediation is owner-confirmed; its scan rerun is pending. On October 15 the owner
 requested web-beta-only automatic CI: native builds are manual-only, removed
 from required checks, and run `38763190055` was cancelled on request. The native
 workflow is disabled remotely until its manual-only definition reaches main;
@@ -150,7 +159,7 @@ Main now requires these observed check names:
 - `CodeQL` (findings gate)
 - `Dependency security inventory`
 - `Browser gameplay contracts`
-- `Secret history scan` (currently has unresolved historical findings)
+- `Secret history scan` (exact owner-remediated historical exceptions only)
 
 Require PRs and up-to-date checks, prevent bypass/force pushes, and verify a
 deliberately failing PR cannot merge. Confirm fork PRs do not require secrets.
@@ -158,7 +167,7 @@ Do not enable an unreachable required context. Restore native release gates
 when native development resumes. A security inventory job can pass while known tooling advisories remain;
 resolve them before claiming a clean security assessment.
 
-Next stages: finish remote CI verification and credential remediation; extend browser
+Next stages: verify the post-remediation scan; extend browser
 coverage for account recovery; fix public abuse controls and answer exposure; resolve
 dependency/native release findings. These are follow-up implementation stages,
 not findings silently declared fixed by this audit.
@@ -188,14 +197,12 @@ not findings silently declared fixed by this audit.
   `sentry.properties` and JWT/bearer-token patterns in the historical movie
   fetching script. All 12 generic matches were verified against historical
   source as checksums (nine Go module sums, two CocoaPods sums, one vendored
-  file SHA256). `.gitleaksignore` lists only their exact commit/file/rule/line
-  fingerprints. Four credential-pattern matches remain, not necessarily four
-  distinct credentials. The owner confirms no remediation has been performed;
-  validity/revocation remains unverified. Do not print
-  values, test credentials against providers, or suppress findings simply to
-  make CI green. Revoke/rotate affected credentials and document resolution.
-  A pinned, full-history, redacted CI scanner is now configured and will fail
-  while unresolved matches remain. SEC-05 is an active finding, not a clean scan.
+  file SHA256). The initial `.gitleaksignore` listed only their exact
+  commit/file/rule/line fingerprints. Four credential-pattern matches remained,
+  not necessarily four distinct credentials. The owner subsequently confirmed
+  Sentry revocation and TMDB bearer-token regeneration and authorized four exact
+  historical exceptions; see the current remediation record above. The pinned,
+  full-history, redacted scanner remains enabled; new findings remain blocking.
   A second complete 876-commit scan verified the exceptions: exactly four
   credential matches remain and the scanner exits nonzero. Linux/x64 lockfile
   dry runs passed again after ESLint/Playwright installation; actual Linux CI
