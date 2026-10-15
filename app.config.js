@@ -1,4 +1,4 @@
-require("dotenv").config({ quiet: true })
+if (process.env.EXPO_NO_DOTENV !== "1") require("dotenv").config({ quiet: true })
 const { readEnvironment } = require("./config/appEnvironment.cjs")
 
 module.exports = () => {
@@ -14,7 +14,7 @@ module.exports = () => {
       ["expo-splash-screen", { image: "./assets/splash.png", backgroundColor: "#ffffff", dark: { image: "./assets/splash.png", backgroundColor: "#121212" } }],
       "expo-notifications",
       "./plugins/withNotificationClock.cjs",
-      ...(env.googleConfigured ? [["@react-native-google-signin/google-signin", {
+      ...(env.googleConfigured && env.google.iosClientId ? [["@react-native-google-signin/google-signin", {
         iosUrlScheme: `com.googleusercontent.apps.${env.google.iosClientId.replace(".apps.googleusercontent.com", "")}`,
       }]] : []),
       ["expo-build-properties", { android: { usesCleartextTraffic: env.emulator } }],
@@ -41,6 +41,7 @@ module.exports = () => {
       firebaseApiKey: env.firebase.apiKey, firebaseAppId: env.firebase.appId,
       firebaseMessagingSenderId: env.firebase.messagingSenderId, firebaseProjectId: env.firebase.projectId,
       ...env.google, googleConfigured: env.googleConfigured,
+      webBeta: env.webBeta, publicSiteUrl: env.publicSiteUrl,
     },
   }
 }

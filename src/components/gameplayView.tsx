@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react"
 import { View, ViewStyle, StyleProp } from "react-native"
 import PickerContainer from "./picker"
-import HintContainer from "./hint"
+import SeatHints from "./seatHints"
 import ConfirmationModal from "./confirmationModal"
 import { hapticsService } from "../utils/hapticsService"
 import { useGameStore } from "../state/gameStore"
@@ -53,9 +53,9 @@ const GameplayView: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
         <Typography style={{ textAlign: "center" }}>{saveErrorText || "Your move is waiting to be saved."}</Typography>
         <Button title="Retry save" onPress={() => { void retryPendingAction() }} />
       </View>}
-      <HintContainer />
-      {children}
+      <SeatHints />
       <PickerContainer />
+      {children}
 
       <Button
         title="Give Up?"

@@ -1,6 +1,5 @@
 const { createRequire } = require('node:module')
 const { resolve } = require('node:path')
-const { createHash } = require('node:crypto')
 const root = resolve(__dirname, '..')
 const projectId = 'demo-talkie-trivia'
 const dayMs = 86400000
@@ -40,23 +39,28 @@ async function withDemo(run) {
 async function seed(db, now) {
   const movies = require('../src/data/searchIndex.json')
   const { version: catalogVersion } = require('../src/data/catalogVersion.json')
-  const fixtures = require('./demo-movies.cjs')
+  // Draft variants are permitted only in this hardcoded local emulator workflow.
+  const fixtures = require('../content/beta-movies.json')
   const start = Math.floor(now / dayMs)
   let created = 0
+  if (fixtures.length < 40) throw Error('Five challenges across eight days require at least 40 demo movies')
   for (let index = 0; index < 8; index++) {
     const day = new Date((start + index) * dayMs).toISOString().slice(0, 10)
-    const fixture = fixtures[((start + index) % fixtures.length + fixtures.length) % fixtures.length]
-    const movie = movies.find(m => m.t === fixture.title && m.y === fixture.year)
-    if (!movie) throw Error(`Demo movie missing from catalog: ${fixture.title}`)
-    try {
-      await db.doc(`dailyGames/${day}`).create({
-        movieId: movie.i, schemaVersion: 1, catalogVersion, date: new Date(`${day}T00:00:00Z`),
-        content: { description: fixture.clue, imdbId: '', tagline: '' },
-        contentHash: createHash('sha256').update(`${movie.i}\n${fixture.clue}\n\n`).digest('hex'),
-        reviewedBy: 'LOCAL-DEMO-ONLY', reviewedAt: new Date(Date.now() - 1000).toISOString(),
-      })
-      created++
-    } catch (error) { if (error.code !== 6) throw error } // Existing snapshots are immutable.
+    for (let level = 1; level <= 5; level++) {
+      const difficulty = `LEVEL_${level}`
+      const fixture = fixtures[(((start + index) * 5 + level - 1) % fixtures.length + fixtures.length) % fixtures.length]
+      const movie = movies.find(m => m.i === fixture.movieId)
+      if (!movie) throw Error(`Demo movie missing from catalog: ${fixture.movieId}`)
+      try {
+        await db.doc(`dailyGames/${day}_${difficulty}`).create({
+          movieId: movie.i, schemaVersion: 2, difficulty, catalogVersion, date: new Date(`${day}T00:00:00Z`),
+          content: { description: fixture.description, imdbId: fixture.imdbId, tagline: fixture.tagline, clues: fixture.clues },
+          contentHash: fixture.contentHash,
+          reviewedBy: 'LOCAL-DEMO-ONLY', reviewedAt: new Date(Date.now() - 1000).toISOString(),
+        })
+        created++
+      } catch (error) { if (error.code !== 6) throw error } // Existing snapshots are immutable.
+    }
   }
   return created
 }
@@ -76,5 +80,5 @@ async function run(command = 'status') {
   })
 }
 
-module.exports = { nextOffset, run }
+module.exports = { nextOffset, seed, run }
 if (require.main === module) run(process.argv[2]).catch(error => { console.error(error.message); process.exitCode = 1 })

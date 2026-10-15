@@ -49,7 +49,7 @@ beforeEach(() => {
 it("shows the saved challenge difficulty and an accessible heading when playable", () => {
   renderGame()
   expect(screen.getByRole("header", { name: "TALKIE TRIVIA" })).toBeTruthy()
-  expect(screen.getByText("Extreme · locked for today")).toBeTruthy()
+  expect(screen.getByRole("button", { name: /^Play Very Hard\./ })).toBeTruthy()
 })
 
 it.each(["recovery", "auth loading", "auth error", "deletion", "offline", "game loading", "game error", "no game"])(
@@ -63,10 +63,10 @@ it.each(["recovery", "auth loading", "auth error", "deletion", "offline", "game 
     if (mode === "game error") state.error = "No daily movie"
     if (mode === "no game") state.playerGame = {}
     renderGame()
-    expect(screen.queryByText(/locked for today/)).toBeNull()
+    expect(screen.queryByText(/· daily challenge/)).toBeNull()
     if (mode === "recovery") expect(screen.getByText("Reopen your account")).toBeTruthy()
     fireEvent.press(screen.getByRole("button", { name: "How to play" }))
-    expect(screen.getByText("One movie each day")).toBeTruthy()
+    expect(screen.getByText("Five movies each day")).toBeTruthy()
     expect(state.initializeGame).not.toHaveBeenCalled()
   }
 )

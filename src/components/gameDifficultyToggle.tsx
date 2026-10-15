@@ -4,11 +4,11 @@ import { useGameStore } from "../state/gameStore"
 import { DIFFICULTY_MODES } from "../config/difficulty"
 import { Typography } from "./ui/typography"
 
-// Difficulty belongs to the saved challenge. Preferences apply to the next one.
+// Each difficulty is an independent daily challenge.
 export default function GameDifficultyToggle() {
   const difficulty = useGameStore(state => state.playerGame.difficulty)
   const label = DIFFICULTY_MODES[difficulty]?.label || "Medium"
-  return <View accessible accessibilityLabel={`Today's difficulty: ${label}. Change your next challenge's difficulty in Profile.`}>
-    <Typography variant="caption">{label} · locked for today</Typography>
+  return <View accessible accessibilityLabel={`Current challenge: ${label}. Switch challenges above; progress is saved separately.`}>
+    <Typography variant="caption">{label} · daily challenge</Typography>
   </View>
 }

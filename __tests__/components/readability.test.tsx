@@ -5,6 +5,8 @@ import { ThemeContext } from "../../src/contexts/themeContext"
 import { lightColors, darkColors } from "../../src/styles/themes"
 import { Button } from "../../src/components/ui/button"
 import HintUI from "../../src/components/hintUI"
+import PickerItem from "../../src/components/pickerItem"
+import TextTabBar, { TextTabBarProps } from "../../src/components/textTabBar"
 
 // WCAG relative luminance/contrast, including the actual surface behind text.
 // https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
@@ -38,6 +40,31 @@ describe.each([['light', lightColors], ['dark', darkColors]] as const)('%s reada
     for (const background of ['background', 'backgroundLight', 'surface'] as const) {
       expect(contrast(colors.border, colors[background])).toBeGreaterThanOrEqual(3)
     }
+  })
+
+  it('keeps selected navigation readable in either theme', () => {
+    const props = {
+      state: { index: 0, routes: [{ key: 'game', name: 'game' }] },
+      descriptors: { game: { options: { title: 'Play' } } },
+      navigation: { emit: jest.fn(), navigate: jest.fn() },
+      insets: { top: 0, bottom: 0, left: 0, right: 0 },
+    } as unknown as TextTabBarProps
+    render(wrap(<TextTabBar {...props} fontsLoaded />))
+    const tab = StyleSheet.flatten(screen.getByRole('tab').props.style)
+    const label = StyleSheet.flatten(screen.getByText('Play').props.style)
+    expect(contrast(label.color, tab.backgroundColor)).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('gives search results themed surfaces and readable movie titles', () => {
+    render(wrap(<PickerItem item={{ id: 1, title: 'The Matrix', releaseDate: '1999-03-31', posterPath: '' }}
+      detailedItem={null} isDisabled={false} isExpanded={false} onSelect={jest.fn()} onLongPress={jest.fn()} />))
+    const title = screen.getByText('The Matrix')
+    const foreground = StyleSheet.flatten(title.props.style).color
+    let surface = title.parent
+    while (surface && !StyleSheet.flatten(surface.props.style)?.backgroundColor) surface = surface.parent
+    const background = StyleSheet.flatten(surface?.props.style).backgroundColor
+    expect(background).toBe(colors.background)
+    expect(contrast(foreground, background)).toBeGreaterThanOrEqual(4.5)
   })
 
   it.each(['primary', 'secondary', 'tertiary', 'error'] as const)('renders a readable %s button with a usable target', variant => {

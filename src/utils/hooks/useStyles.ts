@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { StyleSheet } from "react-native"
+import { StyleSheet, useWindowDimensions } from "react-native"
 import { useTheme } from "../../contexts/themeContext"
 import {
   spacing,
@@ -13,6 +13,8 @@ import {
  * This is the heart of the themed styling system.
  */
 export const useThemeTokens = () => {
+  // Subscribe themed components to resize/orientation changes.
+  useWindowDimensions()
   const { colors, colorScheme } = useTheme()
   return {
     colors,

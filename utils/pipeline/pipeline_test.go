@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -19,7 +20,11 @@ const testClue = "A traveler returns to a distant town and discovers a mystery c
 
 func reviewed(id int) ReviewedMovie {
 	item := ReviewedMovie{MovieID: id, Description: testClue, CatalogVersion: testVersion, ReviewedBy: "test-editor", ReviewedAt: "2026-10-12T00:00:00Z", Approved: true, AgeAppropriate: true, FactsChecked: true}
-	item.ContentHash = contentHash(id, PublishedContent{Description: item.Description})
+	item.Clues = map[string]string{}
+	for _, level := range clueLevels {
+		item.Clues[level] = testClue
+	}
+	item.ContentHash = contentHash(id, reviewedContent(item))
 	return item
 }
 func pool(count int) map[int]ReviewedMovie {
@@ -30,20 +35,89 @@ func pool(count int) map[int]ReviewedMovie {
 	return items
 }
 
+func TestBetaVariantsSourceAndCrossLanguageDigests(t *testing.T) {
+	data, err := os.ReadFile("../../content/beta-movies.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var items []ReviewedMovie
+	if err := json.Unmarshal(data, &items); err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 40 {
+		t.Fatal("expected forty sets")
+	}
+	catalog, version, err := loadCatalog("../../src/data/searchIndex.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var originals []TMDBMovie
+	source, err := os.ReadFile("../../data/movies.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(source, &originals); err != nil {
+		t.Fatal(err)
+	}
+	for i := range items {
+		item := &items[i]
+		if item.Approved || item.ReviewedBy != "" {
+			t.Fatal("draft unexpectedly approved")
+		}
+		found := false
+		for _, movie := range originals {
+			if movie.ID == item.MovieID {
+				found = movie.Overview == item.Description
+			}
+		}
+		if !found {
+			t.Fatal("original TMDB synopsis not preserved")
+		}
+		if item.CatalogVersion != version || item.ContentHash != contentHash(item.MovieID, reviewedContent(*item)) {
+			t.Fatal("cross-language digest mismatch")
+		}
+		// Approval is synthetic and scoped to this validation test only.
+		item.Approved, item.AgeAppropriate, item.FactsChecked = true, true, true
+		item.ReviewedBy, item.ReviewedAt = "test-only", "2026-10-12T00:00:00Z"
+	}
+	if _, err := validateReviewed(items, catalog, testNow); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestVariantValidationAndVerbatimTitleException(t *testing.T) {
+	catalog := map[int]AppIndexItem{1: {ID: 1, Title: "Secret Answer"}}
+	item := reviewed(1)
+	item.Description += " Secret Answer"
+	item.Clues["LEVEL_1"] = item.Description
+	item.ContentHash = contentHash(1, reviewedContent(item))
+	if _, err := validateReviewed([]ReviewedMovie{item}, catalog, testNow); err != nil {
+		t.Fatal(err)
+	}
+	for _, level := range clueLevels {
+		invalid := reviewed(1)
+		delete(invalid.Clues, level)
+		invalid.ContentHash = contentHash(1, reviewedContent(invalid))
+		if _, err := validateReviewed([]ReviewedMovie{invalid}, catalog, testNow); err == nil {
+			t.Fatal("missing variant accepted")
+		}
+	}
+}
+
 func TestScheduleIdempotenceAndBoundedHorizon(t *testing.T) {
-	first, err := planSchedule(pool(100), testVersion, map[string]DailyGame{}, testNow, 30, false)
-	if err != nil || len(first) != 30 {
+	first, err := planSchedule(pool(500), testVersion, map[string]DailyGame{}, testNow, 30, false)
+	if err != nil || len(first) != 150 {
 		t.Fatalf("plan: count=%d err=%v", len(first), err)
 	}
-	if _, exists := first["2026-10-13"]; exists {
+	if _, exists := first["2026-10-13_LEVEL_1"]; exists {
 		t.Fatal("ordinary run published today")
 	}
-	again, err := planSchedule(pool(100), testVersion, first, testNow, 30, false)
+	again, err := planSchedule(pool(500), testVersion, first, testNow, 30, false)
 	if err != nil || len(again) != 0 {
 		t.Fatalf("rerun should be empty: %v %v", again, err)
 	}
-	nextWeek, err := planSchedule(pool(100), testVersion, first, testNow.AddDate(0, 0, 7), 30, false)
-	if err != nil || len(nextWeek) != 7 {
+	nextWeek, err := planSchedule(pool(500), testVersion, first, testNow.AddDate(0, 0, 7), 30, false)
+	if err != nil || len(nextWeek) != 35 {
 		t.Fatalf("weekly run should fill seven days, not a year: count=%d err=%v", len(nextWeek), err)
 	}
 	for key := range nextWeek {
@@ -53,17 +127,17 @@ func TestScheduleIdempotenceAndBoundedHorizon(t *testing.T) {
 	}
 }
 func TestScheduleFillsGapsAndNeverRepeats(t *testing.T) {
-	existing, err := planSchedule(pool(10), testVersion, map[string]DailyGame{}, testNow, 3, false)
+	existing, err := planSchedule(pool(50), testVersion, map[string]DailyGame{}, testNow, 3, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	delete(existing, "2026-10-15")
-	planned, err := planSchedule(pool(10), testVersion, existing, testNow, 3, false)
+	delete(existing, "2026-10-15_LEVEL_1")
+	planned, err := planSchedule(pool(50), testVersion, existing, testNow, 3, false)
 	if err != nil || len(planned) != 1 {
 		t.Fatalf("expected one gap: %v %v", planned, err)
 	}
 	for _, game := range existing {
-		if game.MovieID == planned["2026-10-15"].MovieID {
+		if game.MovieID == planned["2026-10-15_LEVEL_1"].MovieID {
 			t.Fatal("repeated scheduled answer")
 		}
 	}
@@ -75,10 +149,10 @@ func TestScheduleInsufficientReviewedPoolIsAtomic(t *testing.T) {
 	}
 }
 func TestScheduleRejectsBadExistingDocumentsAndWrongCatalog(t *testing.T) {
-	good, _ := planSchedule(pool(10), testVersion, map[string]DailyGame{}, testNow, 1, false)
+	good, _ := planSchedule(pool(50), testVersion, map[string]DailyGame{}, testNow, 1, false)
 	for _, kind := range []string{"date", "hash", "version", "legacy"} {
 		t.Run(kind, func(t *testing.T) {
-			game := good["2026-10-14"]
+			game := good["2026-10-14_LEVEL_1"]
 			switch kind {
 			case "date":
 				game.Date = testNow
@@ -89,12 +163,12 @@ func TestScheduleRejectsBadExistingDocumentsAndWrongCatalog(t *testing.T) {
 			case "legacy":
 				game.SchemaVersion = 0
 			}
-			if _, err := planSchedule(pool(10), testVersion, map[string]DailyGame{"2026-10-14": game}, testNow, 2, false); err == nil {
+			if _, err := planSchedule(pool(50), testVersion, map[string]DailyGame{"2026-10-14_LEVEL_1": game}, testNow, 2, false); err == nil {
 				t.Fatal("invalid published document accepted")
 			}
 		})
 	}
-	if _, err := planSchedule(pool(10), "another-catalog", map[string]DailyGame{}, testNow, 2, false); err == nil {
+	if _, err := planSchedule(pool(50), "another-catalog", map[string]DailyGame{}, testNow, 2, false); err == nil {
 		t.Fatal("wrong reviewed catalog accepted")
 	}
 }
@@ -103,11 +177,11 @@ func TestUTCAndExplicitTodayBootstrap(t *testing.T) {
 	if utcDay(local).Format("2006-01-02") != "2026-10-13" {
 		t.Fatal("used local calendar date")
 	}
-	planned, err := planSchedule(pool(3), testVersion, map[string]DailyGame{}, local, 1, true)
-	if err != nil || len(planned) != 2 {
+	planned, err := planSchedule(pool(15), testVersion, map[string]DailyGame{}, local, 1, true)
+	if err != nil || len(planned) != 10 {
 		t.Fatalf("bootstrap failed: %v", err)
 	}
-	if _, exists := planned["2026-10-13"]; !exists {
+	if _, exists := planned["2026-10-13_LEVEL_1"]; !exists {
 		t.Fatal("missing bootstrap day")
 	}
 }
@@ -133,7 +207,7 @@ func TestEditorialGateRejectsUnapprovedChangedUnknownAndSpoilerContent(t *testin
 			case "unknown":
 				item.MovieID = 2
 			case "spoiler":
-				item.Description += " Secret Answer"
+				item.Clues["LEVEL_2"] += " Secret Answer"
 			}
 			items := []ReviewedMovie{item}
 			if kind == "duplicate" {
@@ -208,9 +282,9 @@ func TestAliasesDoNotDuplicateTitleAndCannotSpoilClues(t *testing.T) {
 		if inTagline {
 			item.Tagline = "Alternate Answer"
 		} else {
-			item.Description += " Alternate Answer"
+			item.Clues["LEVEL_3"] += " Alternate Answer"
 		}
-		item.ContentHash = contentHash(1, PublishedContent{Description: item.Description, Tagline: item.Tagline})
+		item.ContentHash = contentHash(1, reviewedContent(item))
 		_, err := validateReviewed([]ReviewedMovie{item}, map[int]AppIndexItem{1: {ID: 1, Title: "Primary Movie", Aliases: []string{"Alternate Answer"}}}, testNow)
 		if err == nil {
 			t.Fatal("alias spoiler was accepted")

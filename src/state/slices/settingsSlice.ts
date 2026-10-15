@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import { ASYNC_STORAGE_KEYS } from "../../config/constants"
 import { DEFAULT_DIFFICULTY, DIFFICULTY_MODES } from "../../config/difficulty"
 
-export const createSettingsSlice: StateCreator<GameStoreState, [], [], SettingsSlice> = set => ({
+export const createSettingsSlice: StateCreator<GameStoreState, [], [], SettingsSlice> = (set, get) => ({
   gameMode: "movies",
   difficulty: DEFAULT_DIFFICULTY,
   nextDifficulty: DEFAULT_DIFFICULTY,
@@ -13,7 +13,13 @@ export const createSettingsSlice: StateCreator<GameStoreState, [], [], SettingsS
   },
   setDifficulty: difficulty => {
     if (!Object.hasOwn(DIFFICULTY_MODES, difficulty)) return
-    set({ nextDifficulty: difficulty, flashMessage: `${DIFFICULTY_MODES[difficulty].label} selected for your next daily challenge.` })
+    if (get().loading || get().syncStatus !== "idle") {
+      set({ flashMessage: "Finish saving or retry your move before switching challenges." })
+      return
+    }
+    set({ nextDifficulty: difficulty, flashMessage: null })
+    const uid = get().playerGame.playerID
+    if (uid) void get().initializeGame({ id: uid, name: "Player" }, difficulty)
     void AsyncStorage.setItem(ASYNC_STORAGE_KEYS.DIFFICULTY_SETTING, difficulty).catch(() => {
       set({ flashMessage: "Your preference could not be saved. Please try again." })
     })

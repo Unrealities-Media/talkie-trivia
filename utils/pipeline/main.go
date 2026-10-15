@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"golang.org/x/oauth2"
+	"google.golang.org/api/option"
 )
 
 type config struct {
@@ -124,7 +126,13 @@ func run(ctx context.Context, c config) error {
 		}
 	}
 	log.Printf("Project=%s live=%t apply=%t", c.project, c.live, c.apply)
-	client, err := firestore.NewClient(ctx, c.project)
+	// An operator may supply a short-lived token from an already authenticated
+	// CLI in the child process environment; never persist or log that token.
+	var clientOptions []option.ClientOption
+	if token := os.Getenv("GOOGLE_OAUTH_ACCESS_TOKEN"); c.live && token != "" {
+		clientOptions = append(clientOptions, option.WithTokenSource(oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})))
+	}
+	client, err := firestore.NewClient(ctx, c.project, clientOptions...)
 	if err != nil {
 		return fmt.Errorf("initialize Firestore: %w", err)
 	}

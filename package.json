@@ -2,7 +2,9 @@
   "name": "talkie-trivia",
   "version": "1.0.0",
   "main": "index.tsx",
-  "engines": { "node": ">=24.12.0 <25" },
+  "engines": {
+    "node": ">=24.12.0 <25"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/unrealities/talkie-trivia.git"
@@ -10,10 +12,17 @@
   "license": "MIT",
   "expo": {
     "autolinking": {
-      "android": { "buildFromSource": ["expo-notifications"] }
+      "android": {
+        "buildFromSource": [
+          "expo-notifications"
+        ]
+      }
     }
   },
   "scripts": {
+    "beta:build": "node scripts/web-beta.cjs build",
+    "beta:deploy": "node scripts/web-beta.cjs deploy",
+    "test:beta": "node --test scripts/web-beta.test.cjs",
     "dev": "node scripts/local-dev.cjs",
     "dev:backend": "node scripts/local-dev.cjs --backend-only",
     "dev:day": "node scripts/local-demo.cjs",
@@ -26,7 +35,11 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --watchAll=false",
     "typecheck": "tsc --noEmit",
-    "test:config": "node --test scripts/app-environment.test.cjs scripts/react-native-source.test.cjs scripts/reconcile-account-merge.test.cjs scripts/notification-clock.test.cjs scripts/fbjni-source.test.cjs",
+    "lint": "eslint src functions/src __tests__ index.tsx --max-warnings=0",
+    "test:scripts": "node --test scripts/*.test.cjs",
+    "check:architecture": "node scripts/check-architecture.cjs",
+    "build:web": "expo export --platform web --output-dir dist-ci",
+    "test:config": "node --test scripts/app-environment.test.cjs scripts/web-beta.test.cjs scripts/react-native-source.test.cjs scripts/reconcile-account-merge.test.cjs scripts/notification-clock.test.cjs scripts/fbjni-source.test.cjs",
     "test:dependencies": "node --test scripts/dependency-contracts.test.cjs",
     "native:generate": "node scripts/native-prebuild.cjs"
   },
@@ -80,23 +93,30 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "babel-plugin-module-resolver": "^5.0.3",
-    "jest-expo": "~57.0.6",
     "@babel/plugin-transform-class-static-block": "^7.29.7",
     "@babel/preset-typescript": "^7.29.7",
+    "@eslint/js": "^10.0.1",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "29.5.14",
     "@types/react": "~19.2.18",
     "babel-jest": "~29.7.0",
+    "babel-plugin-module-resolver": "^5.0.3",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
     "jest": "~29.7.0",
+    "jest-expo": "~57.0.6",
     "react-test-renderer": "19.2.3",
     "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.2",
     "xmlhttprequest": "^1.8.0"
   },
   "overrides": {
     "@grpc/grpc-js": "1.14.6",
-    "xcode": { "uuid": "11.1.1" },
+    "xcode": {
+      "uuid": "11.1.1"
+    },
     "decode-uri-component": "$decode-uri-component"
   }
 }

@@ -9,7 +9,7 @@ const initial = useGameStore.getState()
 const movie = { id: 101, title: "The Matrix", releaseDate: "1999", posterPath: "", description: "Neo", metadata: {}, hints: [] }
 const game = { ...defaultPlayerGame, playerID: "p1", triviaItem: movie, revision: 0, challengeId: "2026-10-13" }
 const acknowledge = (changes: Partial<typeof game>) => {
-  ;(gameService.applyAction as jest.Mock).mockResolvedValue({ game: { ...game, ...changes }, stats: { ...defaultPlayerStats, id: "p1" } })
+  ;(gameService.applyAction as jest.Mock).mockResolvedValue({ challengeId: game.challengeId, receivedAtMonotonic: performance.now(), serverNow: "2026-10-13T00:00:00Z", resetAt: "2026-10-14T00:00:00Z", game: { ...game, ...changes }, stats: { ...defaultPlayerStats, id: "p1" } })
 }
 describe("gameplay presentation after server acknowledgment", () => {
   beforeEach(() => {

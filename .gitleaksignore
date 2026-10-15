@@ -1,0 +1,25 @@
+# Exact reviewed checksum false positives only. Credential findings remain blocking.
+# vendored file SHA256
+674a9718d7e4790195148c9e09a9b1760cc7f906:vendor/fbjni/upstream.json:generic-api-key:20
+# Go module checksum
+ed8aa8de2906683c89f4cb0bf18aa58aa055346c:repomix-output.txt:generic-api-key:22673
+# Go module checksum
+ed8aa8de2906683c89f4cb0bf18aa58aa055346c:repomix-output.txt:generic-api-key:22675
+# Go module checksum
+ed8aa8de2906683c89f4cb0bf18aa58aa055346c:repomix-output.txt:generic-api-key:22739
+# CocoaPods checksum
+4af445310091910d83db6817a6bf7ca1dac8f363:ios/Podfile.lock:generic-api-key:2349
+# CocoaPods checksum
+4af445310091910d83db6817a6bf7ca1dac8f363:ios/Podfile.lock:generic-api-key:2394
+# Go module checksum
+68257138d1ef873b59a75157d5a8c5b6ccc3c15b:repomix-output.txt:generic-api-key:21432
+# Go module checksum
+68257138d1ef873b59a75157d5a8c5b6ccc3c15b:repomix-output.txt:generic-api-key:21469
+# Go module checksum
+68257138d1ef873b59a75157d5a8c5b6ccc3c15b:repomix-output.txt:generic-api-key:21660
+# Go module checksum
+68257138d1ef873b59a75157d5a8c5b6ccc3c15b:repomix-output.txt:generic-api-key:21662
+# Go module checksum
+68257138d1ef873b59a75157d5a8c5b6ccc3c15b:repomix-output.txt:generic-api-key:21715
+# Go module checksum
+68257138d1ef873b59a75157d5a8c5b6ccc3c15b:repomix-output.txt:generic-api-key:21725

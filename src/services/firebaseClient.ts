@@ -43,7 +43,7 @@ try {
   db = initializeFirestore(app, {
     experimentalForceLongPolling: useFirebaseEmulators && Platform.OS === "android",
   })
-} catch (e: any) {
+} catch {
   db = getFirestore(app)
 }
 
@@ -60,7 +60,7 @@ if (Platform.OS === "web") {
     } else {
       auth = getAuth(app)
     }
-  } catch (e: any) {
+  } catch {
     // If auth is already initialized (hot reload), use existing instance
     auth = getAuth(app)
   }

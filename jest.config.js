@@ -30,4 +30,7 @@ module.exports = {
     "/__mocks__/"
   ],
   coverageReporters: ["text", "lcov", "html"],
+  coverageThreshold: {
+    global: { statements: 88, branches: 80, functions: 88, lines: 92 },
+  },
 };

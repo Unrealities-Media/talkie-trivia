@@ -44,7 +44,7 @@ export function accountMergeReconciliation(db: Firestore, auth: Auth, projectId:
   async function owner(uid: string): Promise<UserRecord | null> {
     try { return await auth.getUser(uid) } catch (error) {
       if ((error as { code?: string })?.code === "auth/user-not-found") return null
-      throw new Error("Identity inspection failed; no reconciliation was applied.")
+      throw new Error("Identity inspection failed; no reconciliation was applied.", { cause: error })
     }
   }
   async function read(tx: Transaction, selection: Selection) {

@@ -35,7 +35,7 @@ const TabLayout = () => {
       tabBar={props => <TextTabBar {...props} fontsLoaded={fontsLoaded} />}
       screenOptions={{
         headerShown: false,
-        sceneStyle: { paddingLeft: insets.left, paddingRight: insets.right },
+        sceneStyle: { backgroundColor: colors.background, paddingLeft: insets.left, paddingRight: insets.right },
       }}
       initialRouteName="game"
     >

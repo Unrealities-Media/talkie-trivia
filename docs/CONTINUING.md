@@ -1,8 +1,21 @@
 # Continuing development
 
-Checkpoint: October 13, 2026 in America/Chicago (October 14 UTC for the browser
-playtest). **Local browser development is usable; the app is not ready for either
-app store.** This document is the starting point for the next work session.
+Checkpoint: October 14, 2026 in America/Chicago. **The invited web beta is
+playable, but wider public beta and both app stores remain blocked.** This
+document is the starting point for the next work session.
+
+The live schedule covers October 14–21 UTC and needs more reviewed content
+before October 22 UTC. Production approvals and rights review remain open.
+The reported zero-height search results blocker is fixed locally, pending web
+export, deployment and live cold-load/restored-tab verification. Public backend
+App Check and rate limits remain unfinished; retain invited-group access policy.
+See the [latest beta audit](audits/live-beta-2026-10-14.md) for evidence and the
+remaining UX findings. Local changes have not been deployed in this stage.
+
+The subsequent cohesion pass improves challenge confirmation, keyboard search,
+sharing, result themes and Profile hierarchy. See the
+[cohesion checkpoint](audits/2026-10-14-cohesion.md) for local browser evidence,
+Android bundle validation and remaining device/release limits.
 
 Launch decisions: movies only, one daily challenge with a worldwide UTC reset,
 three hints per Easy game, no paid features, and guest play with optional account
@@ -42,18 +55,18 @@ Treat these as required evidence before submission, not optional visual polish.
 
 ## Open browser playtest improvements
 
-**None of these six changes has been implemented at this checkpoint.** These are
-generally P2 product improvements; demonstrated inability to play or access a
-control raises the affected item to a release blocker.
+Several improvements have shipped to the invited beta; remaining acceptance
+gaps are listed below. Demonstrated inability to play or access a control raises
+the affected item to a release blocker.
 
-| Work | Acceptance criteria |
+| Work | Current status / remaining acceptance |
 | --- | --- |
-| Choose difficulty before first play | New players can choose before the server starts their first daily game; resuming a started game preserves its locked difficulty and progress. |
-| Reduce Give Up prominence | Use a secondary action while retaining clear confirmation, accessible targeting and no result on cancel. |
-| Compact clue and results layout | Short clues do not reserve excessive empty space; mobile results expose the answer and useful movie details early, with readable optional score explanation at large text sizes. |
-| Explicit preview action | Desktop pointer and keyboard users can discover and open preview without submitting a guess; selecting a guess still saves exactly once. |
-| Prioritize progress in Profile | Statistics/history are easy to reach before less frequent settings/deletion tasks; empty archives do not dominate the page, and account controls remain discoverable. |
-| Explain per-game hints | Profile and game copy agree that Easy gets three hints per game; no label implies a persistent account wallet. |
+| Choose difficulty before first play | New challenges now require confirmation locally; started/completed challenges open directly. Browser confirmation/cancel and saved-result navigation checked. |
+| Reduce Give Up prominence | Quiet link and confirmation shipped; cancel preserves state. Shared dialog now contains web keyboard focus, verified locally. |
+| Compact clue and results layout | Compact projection/search and score explanation shipped. Local fixes remove inactive Hard seats, hidden future clue text and web nested results scrolling. Live deployment verification pending. |
+| Explicit preview action | Preview works by long press; discoverable keyboard/pointer action and Enter behavior still need acceptance. |
+| Prioritize progress in Profile | Statistics/history now precede account/settings/deletion locally; local browser checked. |
+| Explain per-game hints | Easy plaques show cost and wait for server confirmation. Profile now explains three hints per Easy challenge rather than displaying a wallet. |
 
 Full observations and local capture references are in the
 [browser playtest](audits/2026-10-14-browser-playtest.md). Real share-sheet
@@ -88,7 +101,8 @@ are ignored and removed from version control, while local copies are retained.
 
 ## Suggested next session
 
-Start a fresh session and address the six browser UX items as a coherent stage.
+Start a fresh session with live verification of the search fix and the content
+runway, then address the remaining browser UX items as a coherent stage.
 Play the app again at desktop and mobile widths and with keyboard/large text;
 test account recovery, locked difficulty, guess submission and saved results
 where the changes touch them. Then resume the release gates above, beginning

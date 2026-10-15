@@ -51,7 +51,7 @@ jest.mock("react", () => {
   const React = jest.requireActual("react")
   return {
     ...React,
-    lazy: (factory: any) => {
+    lazy: (_factory: any) => {
       const LazyComponent = (props: any) => {
         const { View } = require("react-native")
 

@@ -1,5 +1,5 @@
 import { HttpsError } from "firebase-functions/v2/https"
-import { Game, Stats, HINT_TYPES, completeStats, dateId, terminal } from "./gameEngine"
+import { Game, Stats, HINT_TYPES, completeStats, dateId, challengeKey, terminal } from "./gameEngine"
 import { gameHistory } from "./gameHistory"
 import { DIFFICULTY_MODES } from "./utils/difficulty"
 import { calculateScore } from "./utils/scoreUtils"
@@ -39,13 +39,17 @@ function validUid(uid: string): boolean {
 function validDate(value: unknown): boolean {
   try { dateId(value); return true } catch { return false }
 }
+function validChallenge(value: unknown): boolean {
+  try { challengeKey(value); return true } catch { return false }
+}
 const count = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) >= 0
 
 // Source records are server-owned. Fail closed on incompatible or corrupt
 // records instead of silently dropping a day or manufacturing replacement stats.
 export function validateMergeGame(game: MergeGame, uid: string): void {
   if (!game || game.schemaVersion !== 2 || game.scoringVersion !== 1 || game.gameMode !== "movies" ||
-    game.playerID !== uid || !validDate(game.challengeId) || game.id !== `movies_${game.challengeId}` ||
+    game.playerID !== uid || !validChallenge(game.challengeId) || game.id !== `movies_${game.challengeId}` ||
+    (game.challengeId.includes("_LEVEL_") && !game.challengeId.endsWith(`_${game.difficulty}`)) ||
     !Object.hasOwn(DIFFICULTY_MODES, game.difficulty) ||
     game.guessesMax !== DIFFICULTY_MODES[game.difficulty].guessesMax ||
     !Array.isArray(game.guesses) || game.guesses.length > game.guessesMax ||
@@ -84,8 +88,8 @@ export function validateMergeStats(stats: Stats, uid: string): void {
     (stats.games === 0) !== (stats.lastCompletedDate === null) ||
     !Array.isArray(stats.winningDays) || !stats.winningDays.every(validDate) ||
     new Set(stats.winningDays).size !== stats.winningDays.length ||
-    stats.winningDays.length !== stats.wins.reduce((sum, value) => sum + value, 0) ||
-    stats.maxStreak > stats.winningDays.length ||
+    (stats.completedDays ? stats.winningDays.length > stats.wins.reduce((sum, value) => sum + value, 0) : stats.winningDays.length !== stats.wins.reduce((sum, value) => sum + value, 0)) ||
+    stats.maxStreak > (stats.completedDays ?? stats.winningDays).length ||
     stats.winningDays.some((day, index) => index > 0 && day <= stats.winningDays[index - 1]) ||
     stats.winningDays.some(day => !stats.lastCompletedDate || day > stats.lastCompletedDate)) inconsistent()
 }

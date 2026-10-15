@@ -82,6 +82,15 @@ describe("HintContainer Component", () => {
     jest.clearAllMocks()
     mockUseHintLogic.mockReturnValue(defaultLogicReturn)
   })
+  it("keeps earned Medium director and actor hints visible without exposing unearned hints", () => {
+    setMockStoreState({ difficulty: "LEVEL_3", playerGame: { hintsUsed: { director: true } } })
+    const { rerender } = renderWithTheme(<HintContainer />)
+    expect(screen.getByText("Mock Value for director")).toBeTruthy()
+    expect(screen.queryByText("Mock Value for actors")).toBeNull()
+    setMockStoreState({ difficulty: "LEVEL_3", playerGame: { hintsUsed: { director: true, actors: true } } })
+    rerender(<ThemeProvider><HintContainer /></ThemeProvider>)
+    expect(screen.getByText("Mock Value for actors")).toBeTruthy()
+  })
 
   describe("Loading State", () => {
     it("should render the HintSkeleton when loading is true", () => {
@@ -128,10 +137,10 @@ describe("HintContainer Component", () => {
 
       renderWithTheme(<HintContainer />)
 
-      expect(screen.getByText("All Hints Revealed")).toBeTruthy()
-      expect(screen.getByText("Decade:")).toBeTruthy()
+      expect(screen.queryByText("All Hints Revealed")).toBeNull()
+      expect(screen.queryByText("Decade:")).toBeNull()
       // Verify it calls getHintText from the hook
-      expect(screen.getByText("Mock Value for decade")).toBeTruthy()
+      expect(screen.getByText("Mock Value for director")).toBeTruthy()
     })
 
     it("should NOT render BasicHints if interactions are disabled (Game Over)", () => {
@@ -172,8 +181,8 @@ describe("HintContainer Component", () => {
 
       // Should see the text
       expect(
-        screen.getByText("Hints are revealed by successful guesses!")
-      ).toBeTruthy()
+        screen.queryByText("Hints are revealed by successful guesses!")
+      ).toBeNull()
       // Should NOT render the complex HintUI
       expect(screen.queryByTestId("mock-hint-ui")).toBeNull()
     })
@@ -192,7 +201,7 @@ describe("HintContainer Component", () => {
 
       renderWithTheme(<HintContainer />)
 
-      expect(screen.getByText("Game Over")).toBeTruthy()
+      expect(screen.queryByText("Game Over")).toBeNull()
       expect(screen.queryByTestId("mock-hint-ui")).toBeNull()
     })
   })

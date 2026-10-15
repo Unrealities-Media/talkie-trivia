@@ -69,7 +69,7 @@ export const Button: React.FC<ButtonProps> = ({
       ) : (
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 }}>
           {leadingIcon}
-          <Text style={[baseStyles.text, sizeStyles.text, variantStyles.text]}>{title}</Text>
+          <Text style={[baseStyles.text, sizeStyles.text, variantStyles.text, { flexShrink: 1 }]}>{title}</Text>
         </View>
       )}
     </Pressable>
@@ -86,7 +86,7 @@ const getVariantStyles = (
         button: {
           backgroundColor: "transparent",
           borderWidth: 2,
-          borderColor: colors.primary,
+          borderColor: colors.accentText,
         },
         text: {
           color: colors.accentText,

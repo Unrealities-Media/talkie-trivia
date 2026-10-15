@@ -13,8 +13,7 @@ it("persists only account identity and never grants access to server data", asyn
   expect(AsyncStorage.setItem).toHaveBeenLastCalledWith("account-session-v1", JSON.stringify({ uid: "guest", isAnonymous: true }))
 })
 
-it.each(["", "null", "{}", '{"uid":"guest","isAnonymous":"true"}'])
-("rejects unreadable existing markers (%s) instead of treating them as a fresh install", async raw => {
+it.each(["", "null", "{}", '{"uid":"guest","isAnonymous":"true"}'])("rejects unreadable existing markers (%s) instead of treating them as a fresh install", async raw => {
   // The upstream AsyncStorage mock collapses an empty string to null. Return
   // the actual stored value here so this covers corrupt native storage too.
   ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(raw)

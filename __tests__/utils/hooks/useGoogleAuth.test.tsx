@@ -77,6 +77,41 @@ describe("Google account transitions", () => {
     expect(changed).not.toHaveBeenCalled()
     expect(auth.currentUser).toBe(guest)
   })
+  it("opens an existing account only after explicit confirmation, without merging", async () => {
+    ;(linkWithCredential as jest.Mock).mockRejectedValue({ code: "auth/credential-already-in-use" })
+    const { result } = renderHook(() => useGoogleAuth(changed))
+    await act(() => result.current.handleSignIn())
+    expect(result.current.existingAccountPending).toBe(true)
+    expect(signInWithCredential).not.toHaveBeenCalled()
+    const linked = { uid: "saved", isAnonymous: false }
+    ;(signInWithCredential as jest.Mock).mockImplementation(async () => { auth.currentUser = linked; return { user: linked } })
+    await act(() => result.current.confirmAccountSwitch())
+    expect(changed).toHaveBeenCalledWith(linked)
+    expect(result.current.existingAccountPending).toBe(false)
+  })
+  it("cancels an account switch without changing guest identity", async () => {
+    ;(linkWithCredential as jest.Mock).mockRejectedValue({ code: "auth/credential-already-in-use" })
+    const { result } = renderHook(() => useGoogleAuth(changed))
+    await act(() => result.current.handleSignIn())
+    act(() => result.current.cancelAccountSwitch())
+    await act(() => result.current.confirmAccountSwitch())
+    expect(signInWithCredential).not.toHaveBeenCalled()
+    expect(auth.currentUser).toBe(guest)
+  })
+  it("rejects an account switch if the guest changed or a pending save fails", async () => {
+    ;(linkWithCredential as jest.Mock).mockRejectedValue({ code: "auth/credential-already-in-use" })
+    const { result } = renderHook(() => useGoogleAuth(changed))
+    await act(() => result.current.handleSignIn())
+    auth.currentUser = { uid: "other", isAnonymous: true }
+    await act(() => result.current.confirmAccountSwitch())
+    expect(signInWithCredential).not.toHaveBeenCalled()
+    auth.currentUser = guest
+    await act(() => result.current.handleSignIn())
+    ;(gameService.resumePendingAction as jest.Mock).mockRejectedValue(new Error("offline"))
+    await act(() => result.current.confirmAccountSwitch())
+    expect(signInWithCredential).not.toHaveBeenCalled()
+    expect(auth.currentUser).toBe(guest)
+  })
   it("blocks ordinary sign-in, sign-out and deletion while a durable merge exists", async () => {
     ;(mergeStorage.read as jest.Mock).mockResolvedValue({ operationId: "confirmed-00000001" })
     const operation = jest.fn()

@@ -1,7 +1,7 @@
 import { renderHook, act } from "@testing-library/react-native"
 import { useIdTokenAuthRequest } from "expo-auth-session/providers/google"
 import { useGoogleIdentity } from "../../../src/utils/hooks/useGoogleIdentity.web"
-jest.mock("expo-constants", () => ({ expoConfig: { extra: { googleConfigured: true, webClientId: "web-id" } } }))
+jest.mock("expo-constants", () => ({ expoConfig: { extra: { googleConfigured: true, webClientId: "web-id", publicSiteUrl: "https://beta.example.com" } } }))
 jest.mock("expo-auth-session/providers/google", () => ({ useIdTokenAuthRequest: jest.fn() }))
 jest.mock("expo-web-browser", () => ({ maybeCompleteAuthSession: jest.fn() }))
 const prompt = jest.fn()
@@ -12,6 +12,7 @@ beforeEach(() => {
 it("returns the browser ID token", async () => {
   prompt.mockResolvedValue({ type: "success", params: { id_token: "web-token" } })
   const { result } = renderHook(useGoogleIdentity)
+  expect(useIdTokenAuthRequest).toHaveBeenCalledWith(expect.objectContaining({ redirectUri: "https://beta.example.com/" }))
   await act(async () => { expect(await result.current()).toBe("web-token") })
 })
 it.each(["cancel", "dismiss"])("normalizes browser %s", async type => {

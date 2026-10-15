@@ -22,10 +22,12 @@ import Animated, {
   withTiming,
   useAnimatedStyle,
   withDelay,
+  withRepeat,
   cancelAnimation,
   Easing,
 } from "react-native-reanimated"
 import { hapticsService } from "../utils/hapticsService"
+import Svg, { Circle, Path } from "react-native-svg"
 import { useGameStore } from "../state/gameStore"
 import { useShallow } from "zustand/react/shallow"
 import { DIFFICULTY_MODES } from "../config/difficulty"
@@ -80,7 +82,7 @@ const CountContainer = memo(
 
 const CluesContainer = memo(() => {
   const styles = useStyles(themedStyles)
-  const { width } = useWindowDimensions()
+  const { width, height } = useWindowDimensions()
   const reducedMotion = usePremiereMotion()
 
   const {
@@ -106,14 +108,18 @@ const CluesContainer = memo(() => {
     [itemDescription]
   )
   const [revealedClues, setRevealedClues] = useState<string[]>([])
+  const revealedCount = useRef(0)
   const revealProgress = useSharedValue(1)
   const scrollViewRef = useRef<ScrollView>(null)
   const oldCluesText = revealedClues.slice(0, -1).join(" ")
-  const visibleWordCount = revealedClues.join(" ").split(/\s+/).filter(Boolean).length
-  const shortClue = visibleWordCount <= 12
+  const shortClue = (itemDescription || "").split(/\s+/).length <= 12
+  const projectionHeight = Math.max(48, Math.min(160, height - 620))
+  const previousGuessCount = useRef(guesses.length)
+  const scrollToNewText = useRef(false)
+  const pulse = useSharedValue(1)
   const clueSize = PixelRatio.roundToNearestPixel(shortClue
-    ? Math.max(28, Math.min(42, width * (width < 360 ? 0.088 : 0.091)))
-    : Math.max(30, Math.min(34, width * 0.082)))
+    ? Math.max(24, Math.min(30, width * 0.07))
+    : Math.max(22, Math.min(26, width * 0.06)))
 
   const handleSkipAnimation = useCallback(() => {
     cancelAnimation(revealProgress)
@@ -123,13 +129,14 @@ const CluesContainer = memo(() => {
 
   useEffect(() => {
     if (loading) return
-    let scrollTimer: ReturnType<typeof setTimeout> | undefined
+    scrollToNewText.current = guesses.length > previousGuessCount.current
+    previousGuessCount.current = guesses.length
 
     let numCluesToReveal
     const hintStrategy = DIFFICULTY_MODES[difficulty]?.hintStrategy
     const currentGuessCount = guesses.length
 
-    if (correctAnswer || isInteractionsDisabled) {
+    if (correctAnswer || isInteractionsDisabled || hintStrategy === "EXTREME_CHALLENGE") {
       numCluesToReveal = clues.length
     } else if (
       hintStrategy === "ALL_REVEALED" ||
@@ -140,7 +147,7 @@ const CluesContainer = memo(() => {
       numCluesToReveal = Math.min(currentGuessCount + 1, clues.length)
     }
 
-    if (numCluesToReveal > revealedClues.length) {
+    if (numCluesToReveal > revealedCount.current) {
       hapticsService.light()
       const newRevealedClues = clues.slice(0, numCluesToReveal)
       // Lay out the complete clue before the projector illuminates it.
@@ -149,17 +156,13 @@ const CluesContainer = memo(() => {
       if (!reducedMotion) revealProgress.value = withDelay(120,
         withTiming(1, { duration: 850, easing: Easing.out(Easing.cubic) }))
       setRevealedClues(newRevealedClues)
-      scrollTimer = setTimeout(
-        () => scrollViewRef.current?.scrollToEnd({ animated: !reducedMotion }),
-        100
-      )
-    } else if (numCluesToReveal < revealedClues.length) {
+    } else {
       setRevealedClues(clues.slice(0, numCluesToReveal))
       revealProgress.value = 1
     }
+    revealedCount.current = numCluesToReveal
 
     return () => {
-      clearTimeout(scrollTimer)
       cancelAnimation(revealProgress)
     }
   }, [
@@ -170,6 +173,7 @@ const CluesContainer = memo(() => {
     clues,
     difficulty,
     revealProgress,
+    reducedMotion,
   ])
 
   useEffect(() => {
@@ -184,30 +188,46 @@ const CluesContainer = memo(() => {
   })
 
   const isGameOver = correctAnswer || isInteractionsDisabled
+  const moreClue = !isGameOver && difficulty !== "LEVEL_5" && revealedClues.length < clues.length
+  useEffect(() => {
+    pulse.value = 0
+    if (moreClue && !reducedMotion) pulse.value = withRepeat(withTiming(1, { duration: 9000, easing: Easing.linear }), -1, false)
+    return () => cancelAnimation(pulse)
+  }, [moreClue, reducedMotion, pulse])
+  const pulseStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${pulse.value * 360}deg` }] }))
+  const clueTextStyle = [styles.text, { fontSize: clueSize, lineHeight: PixelRatio.roundToNearestPixel(clueSize * (Platform.OS === "android" ? 1.22 : 1.08)) }]
 
   return (
     <PremiereStage cue={guesses.length}>
-    <View style={styles.container}>
+    <View style={[styles.container, height < 650 && { minHeight: 40, marginVertical: 0 }]}>
       {loading ? (
         <CluesSkeleton />
       ) : (
         <>
           <ScrollView
             ref={scrollViewRef}
-            style={styles.scrollView}
+            testID="clue-viewport"
+            style={[styles.scrollView, { maxHeight: projectionHeight }]}
             contentContainerStyle={styles.scrollViewContent}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
           >
+            <View style={{ minHeight: shortClue ? 48 : projectionHeight }}>
             <Pressable
+              style={{ width: "100%" }}
               onPress={isGameOver ? undefined : handleSkipAnimation}
               accessible={!isGameOver}
               accessibilityRole="button"
               accessibilityLabel={
-                !isGameOver ? "Tap to reveal the full clue immediately" : ""
+                !isGameOver ? "Skip the current clue's text animation" : ""
               }
             >
-              <Animated.View style={[styles.cluesBox, animatedHighlightStyle]}>
-                <Text style={[styles.text, { fontSize: clueSize, lineHeight: PixelRatio.roundToNearestPixel(clueSize * (Platform.OS === "android" ? 1.22 : 1.08)) }, shortClue && { width: "100%", maxWidth: 320, alignSelf: "center" }]}>
+              <Animated.View onLayout={event => {
+                if (!scrollToNewText.current) return
+                scrollToNewText.current = false
+                scrollViewRef.current?.scrollTo({ y: Math.max(0, event.nativeEvent.layout.height - projectionHeight), animated: !reducedMotion })
+              }} style={[styles.cluesBox, animatedHighlightStyle]}>
+                <Text style={clueTextStyle}>
                   {oldCluesText}
                   {oldCluesText ? " " : ""}
                   {isGameOver ? (
@@ -222,7 +242,22 @@ const CluesContainer = memo(() => {
                 </Text>
               </Animated.View>
             </Pressable>
+            </View>
           </ScrollView>
+          <View style={{ height: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            {moreClue && <View testID="next-clue-projector" accessible accessibilityRole="image" accessibilityLabel="More of the clue is available after an incorrect guess" style={{ flexDirection: "row", alignItems: "center", opacity: 0.55 }}>
+              <Animated.View style={pulseStyle} accessible={false} importantForAccessibility="no-hide-descendants">
+                <Svg width={16} height={16} viewBox="0 0 20 20" aria-hidden>
+                  <Circle cx={10} cy={10} r={8} stroke="#675435" strokeWidth={1} fill="none" />
+                  <Circle cx={10} cy={10} r={1.2} fill="#675435" />
+                  {[ [10,5], [15,10], [10,15], [5,10] ].map(([cx,cy], i) => <Circle key={i} cx={cx} cy={cy} r={2} fill="#675435" />)}
+                </Svg>
+              </Animated.View>
+              <Svg width={18} height={16} viewBox="0 0 22 20" aria-hidden>
+                <Path d="M1 7H6V13H1M7 7L20 3V17L7 13Z" stroke="#675435" strokeWidth={1} fill="#B59B6825" />
+              </Svg>
+            </View>}
+          </View>
           <CountContainer
             currentWordLength={
               revealedClues.join(" ").split(" ").filter(Boolean).length
@@ -253,7 +288,7 @@ const themedStyles = (theme: Theme): CluesStyles => ({
   container: {
     justifyContent: "flex-start",
     marginVertical: theme.spacing.extraSmall,
-    minHeight: 100,
+    minHeight: 64,
     paddingHorizontal: theme.spacing.small,
     width: "100%",
     alignSelf: "stretch",
@@ -268,6 +303,7 @@ const themedStyles = (theme: Theme): CluesStyles => ({
   },
   scrollView: {
     flexGrow: 1,
+    maxHeight: 120,
     width: "100%",
     alignSelf: "stretch",
   },

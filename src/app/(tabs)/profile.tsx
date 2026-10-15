@@ -30,9 +30,6 @@ const GameHistory = lazy(() => import("../../components/gameHistory"))
 const GuestArchive = lazy(() => import("../../components/guestArchive"))
 const ThemeSelector = lazy(() => import("../../components/themeSelector"))
 const ReminderSettings = lazy(() => import("../../components/reminderSettings"))
-const DifficultySelector = lazy(
-  () => import("../../components/difficultySelector"),
-)
 const HistoryDetailModal = lazy(
   () => import("../../components/historyDetailModal"),
 )
@@ -52,12 +49,11 @@ const Footer = () => {
         This product uses the TMDB API but is not endorsed or certified by TMDB.
       </Text>
 
-      <Pressable
-        onPress={() => openLink("https://your-privacy-policy-url.com")}
-        style={u.mtSm}
-      >
-        <Text style={[styles.footerText, styles.linkText]}>Privacy Policy</Text>
-      </Pressable>
+      {Constants.expoConfig?.extra?.publicSiteUrl && [
+        ["Privacy Policy", "privacy"], ["Support", "support"], ["Delete account help", "delete-account"],
+      ].map(([label, route]) => <Pressable key={route} accessibilityRole="link"
+        onPress={() => openLink(`${Constants.expoConfig?.extra?.publicSiteUrl.replace(/\/$/, "")}/${route}`)}
+        style={u.mtSm}><Text style={[styles.footerText, styles.linkText]}>{label}</Text></Pressable>)}
     </View>
   )
 }
@@ -73,7 +69,7 @@ const ProfileScreen: React.FC = () => {
 
   const handleHistoryItemPress = useCallback((item: GameHistoryEntry) => {
     if (player) setSelectedHistoryItem({ uid: player.id, item })
-  }, [player?.id])
+  }, [player])
 
   const handleModalClose = useCallback(() => {
     setSelectedHistoryItem(null)
@@ -82,7 +78,7 @@ const ProfileScreen: React.FC = () => {
   const isGoogleSignedIn = player && user && !user.isAnonymous
   const isUserAuthenticated = player && user
 
-  const displayName = player?.name || "Guest"
+  const displayName = player?.name && !["Player", "Guest"].includes(player.name) ? player.name : null
 
   return (
     <>
@@ -98,20 +94,26 @@ const ProfileScreen: React.FC = () => {
             <View style={styles.contentArea}>
               <View style={styles.header}>
                 <Text accessibilityRole="header" style={styles.title}>Your profile</Text>
-                <Text style={styles.welcome}>Welcome, {displayName}!</Text>
+                <Text style={styles.welcome}>{displayName ? `Welcome back, ${displayName}.` : "Your life in movies, one challenge at a time."}</Text>
               </View>
 
               {authLoading && <LoadingIndicator message="Opening your player account…" />}
               {(merge || mergeProposal) && <AccountMerge />}
               {!authLoading && lostSession && !deletion && <SessionRecovery />}
               {!authLoading && !isUserAuthenticated && !deletion && !lostSession && !merge && !mergeProposal && <ErrorMessage message={authError || "Your player account could not be opened."} onRetry={retryAuthentication} />}
+              {isUserAuthenticated && <ProfileSection title="Statistics" icon="bar-chart">
+                <AccountStats key={player.id} player={player} />
+              </ProfileSection>}
+              {isUserAuthenticated && <ProfileSection title="Game History" icon="history">
+                <GameHistory key={player.id} onHistoryItemPress={handleHistoryItemPress} />
+              </ProfileSection>}
               {isUserAuthenticated && !isGoogleSignedIn && (
                 <View style={styles.signInPromptContainer}>
                   <Text style={styles.signInPromptTitle}>
                     Link Your Guest Account
                   </Text>
                   <Text style={styles.signInPromptText}>
-                    Your guest progress is already saved. Link a Google account to keep access across devices or after reinstalling. Signing in is optional.
+                    Your guest progress is already saved. Link a Google account to keep access across devices or after reinstalling. Signing in is optional. If that Google account already has progress, you can open it instead; guest games will stay separate.
                   </Text>
                   <GoogleLogin />
                 </View>
@@ -124,8 +126,6 @@ const ProfileScreen: React.FC = () => {
               )}
 
               <ProfileSection title="Settings" icon="cog">
-                <DifficultySelector />
-                <View style={styles.divider} />
                 <ThemeSelector />
                 <View style={styles.divider} />
                 <ReminderSettings suspended={authLoading || !!deletion} />
@@ -133,14 +133,6 @@ const ProfileScreen: React.FC = () => {
 
               {!merge && !mergeProposal && (user || deletion) && <ProfileSection title="Account deletion" icon="trash"><AccountDeletion /></ProfileSection>}
 
-              {isUserAuthenticated && <ProfileSection title="Statistics" icon="bar-chart">
-                <AccountStats key={player.id} player={player} />
-              </ProfileSection>
-              }
-
-              {isUserAuthenticated && <ProfileSection title="Game History" icon="history">
-                <GameHistory key={player.id} onHistoryItemPress={handleHistoryItemPress} />
-              </ProfileSection>}
               {isGoogleSignedIn && <ProfileSection title="Preserved guest games" icon="archive">
                 <GuestArchive uid={player.id} />
               </ProfileSection>}
@@ -178,17 +170,14 @@ interface ProfileScreenStyles {
 
 const themedStyles = (theme: Theme): ProfileScreenStyles => ({
   scrollContentContainer: {
-    padding: theme.spacing.medium,
-    paddingTop:
-      theme.responsive.platform === "ios"
-        ? theme.responsive.scale(60)
-        : theme.responsive.scale(30),
+    padding: 20,
+    paddingTop: 30,
     alignItems: "center",
-    paddingBottom: theme.responsive.scale(100),
+    paddingBottom: 32,
   },
   contentArea: {
     width: "100%",
-    maxWidth: theme.responsive.scale(500),
+    maxWidth: 420,
     alignSelf: "center",
   },
   header: {
@@ -201,8 +190,8 @@ const themedStyles = (theme: Theme): ProfileScreenStyles => ({
   },
   title: {
     fontFamily: "PremiereDisplay",
-    fontSize: 42,
-    lineHeight: 52,
+    fontSize: 40,
+    lineHeight: 48,
     color: theme.colors.textPrimary,
   },
   welcome: {
@@ -226,7 +215,7 @@ const themedStyles = (theme: Theme): ProfileScreenStyles => ({
     borderWidth: 1,
     borderColor: theme.colors.border,
     width: "100%",
-    maxWidth: theme.responsive.scale(500),
+    maxWidth: 420,
     marginBottom: theme.spacing.large,
   },
   signInPromptTitle: {

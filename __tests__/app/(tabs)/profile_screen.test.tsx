@@ -1,5 +1,4 @@
 import React, { ReactElement } from "react"
-import { View } from "react-native"
 import { render, screen, waitFor } from "@testing-library/react-native"
 import { ThemeProvider } from "../../../src/contexts/themeContext"
 import { useAuth } from "../../../src/contexts/authContext"
@@ -10,7 +9,7 @@ jest.mock("react", () => {
   const actual = jest.requireActual("react")
   return {
     ...actual,
-    lazy: (factory: any) => {
+    lazy: (_factory: any) => {
       const Component = (props: any) => {
         // Use STRING "View" to avoid requiring react-native which causes circular dependency
         return actual.createElement(
@@ -35,6 +34,7 @@ jest.mock("../../../src/components/historyDetailModal", () => () => <></>)
 
 jest.mock("../../../src/contexts/authContext")
 jest.mock("../../../src/state/gameStore")
+jest.mock("expo-constants", () => ({ expoConfig: { version: "1.0.0", extra: { publicSiteUrl: "https://beta.example.com" } } }))
 
 // Import after mocks
 import ProfileScreen from "../../../src/app/(tabs)/profile"
@@ -79,7 +79,7 @@ describe("App: ProfileScreen", () => {
     renderWithTheme(<ProfileScreen />)
 
     await waitFor(() => {
-      expect(screen.getByText("Welcome, Guest!")).toBeTruthy()
+      expect(screen.getByText("Your life in movies, one challenge at a time.")).toBeTruthy()
       expect(screen.getByText("Link Your Guest Account")).toBeTruthy()
       expect(screen.queryByText("Preserved guest games")).toBeNull()
     })
@@ -94,7 +94,7 @@ describe("App: ProfileScreen", () => {
     renderWithTheme(<ProfileScreen />)
 
     await waitFor(() => {
-      expect(screen.getByText("Welcome, Test User!")).toBeTruthy()
+      expect(screen.getByText("Welcome back, Test User.")).toBeTruthy()
       expect(screen.queryByText("Link Your Guest Account")).toBeNull()
       expect(screen.getByText("Preserved guest games")).toBeTruthy()
       expect(screen.getAllByTestId("lazy-component").filter(item => item.props.uid === "saved")).toHaveLength(1)

@@ -12,6 +12,13 @@ export function useGoogleAuth(onAuthStateChange: (user: User | null) => void | P
   const [isLoading, setIsLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const busy = useRef(false)
+  const switchCredential = useRef<{ sourceUid: string; credential: AuthCredential } | null>(null)
+  const [existingAccountPending, setExistingAccountPending] = useState(false)
+  const cancelAccountSwitch = useCallback(() => {
+    if (busy.current) return
+    switchCredential.current = null
+    setExistingAccountPending(false)
+  }, [])
   const requestIdentity = useGoogleIdentity()
 
   const handleSignIn = useCallback(async () => {
@@ -19,6 +26,8 @@ export function useGoogleAuth(onAuthStateChange: (user: User | null) => void | P
     busy.current = true
     setIsLoading(true)
     setAuthError(null)
+    switchCredential.current = null
+    setExistingAccountPending(false)
     const auth = getAuth()
     const source = auth.currentUser
     try {
@@ -40,8 +49,13 @@ export function useGoogleAuth(onAuthStateChange: (user: User | null) => void | P
       try {
         result = source?.isAnonymous ? await linkWithCredential(source, credential) : await signInWithCredential(auth, credential)
       } catch (error) {
+        if (source?.isAnonymous && !onCollision && (error as { code?: string }).code === "auth/credential-already-in-use") {
+          if (auth.currentUser?.uid !== source.uid) throw new Error("account-changed", { cause: error })
+          switchCredential.current = { sourceUid: source.uid, credential }
+          setExistingAccountPending(true)
+        }
         if (source?.isAnonymous && onCollision && (error as { code?: string }).code === "auth/credential-already-in-use") {
-          if (auth.currentUser?.uid !== source.uid) throw new Error("account-changed")
+          if (auth.currentUser?.uid !== source.uid) throw new Error("account-changed", { cause: error })
           await onCollision(source.uid, credential)
           return
         }
@@ -54,11 +68,36 @@ export function useGoogleAuth(onAuthStateChange: (user: User | null) => void | P
       const code = (error as { code?: string }).code
       // Never fall back to signInWithCredential here: that abandons guest progress.
       setAuthError(code === "auth/credential-already-in-use" || code === "auth/email-already-in-use"
-        ? "That Google account already has a saved profile. Your guest progress is safe. Connecting existing profiles isn't available yet."
+        ? "That Google account already has a saved profile. Your guest progress is safe. You can open the existing account separately; combining progress isn't available yet."
         : "We couldn't connect your Google account. Your progress is safe. Check your connection and try again.")
       analyticsService.trackGoogleSignInFailure(code || "unknown")
     } finally { busy.current = false; setIsLoading(false) }
   }, [requestIdentity, onAuthStateChange, onCollision])
+
+  const confirmAccountSwitch = useCallback(async () => {
+    const pending = switchCredential.current
+    if (busy.current || !pending) return
+    busy.current = true
+    setIsLoading(true)
+    setAuthError(null)
+    try {
+      const auth = getAuth()
+      if (auth.currentUser?.uid !== pending.sourceUid || !auth.currentUser.isAnonymous) throw new Error("account-changed")
+      if (await deletionStorage.read() || await mergeStorage.read()) throw new Error("account-operation-pending")
+      await gameService.resumePendingAction(pending.sourceUid)
+      if (auth.currentUser?.uid !== pending.sourceUid) throw new Error("account-changed")
+      const result = await signInWithCredential(auth, pending.credential)
+      if (auth.currentUser?.uid !== result.user.uid) throw new Error("account-changed")
+      await onAuthStateChange(result.user)
+    } catch {
+      setAuthError("We couldn't open your saved account. Check your connection and sign in again.")
+    } finally {
+      switchCredential.current = null
+      setExistingAccountPending(false)
+      busy.current = false
+      setIsLoading(false)
+    }
+  }, [onAuthStateChange])
 
   const handleSignOut = useCallback(async () => {
     if (busy.current) return
@@ -118,5 +157,6 @@ export function useGoogleAuth(onAuthStateChange: (user: User | null) => void | P
     } finally { busy.current = false; setIsLoading(false) }
   }, [requestIdentity])
 
-  return { isLoading, authError, handleSignIn, handleSignOut, withDeletionVerification, verifyGoogleAccount }
+  return { isLoading, authError, handleSignIn, handleSignOut, withDeletionVerification, verifyGoogleAccount,
+    existingAccountPending, confirmAccountSwitch, cancelAccountSwitch }
 }

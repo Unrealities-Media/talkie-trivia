@@ -22,7 +22,6 @@ import PickerSkeleton from "./pickerSkeleton"
 import PickerItem from "./pickerItem"
 import { hapticsService } from "../utils/hapticsService"
 import { useGameStore } from "../state/gameStore"
-import TutorialTooltip from "./tutorialTooltip"
 import { useShallow } from "zustand/react/shallow"
 import { createMovieSearch } from "../utils/movieSearch"
 import { GAME_MODE_CONFIG } from "../config/difficulty"
@@ -34,9 +33,6 @@ const PickerContainer: FC = memo(() => {
     fullItems,
     makeGuess,
     loading,
-    tutorialState,
-    dismissGuessInputTip,
-    dismissResultsTip,
     gameMode,
     playerGame,
   } = useGameStore(
@@ -46,9 +42,6 @@ const PickerContainer: FC = memo(() => {
       fullItems: state.fullItems,
       makeGuess: state.makeGuess,
       loading: state.loading,
-      tutorialState: state.tutorialState,
-      dismissGuessInputTip: state.dismissGuessInputTip,
-      dismissResultsTip: state.dismissResultsTip,
       gameMode: state.gameMode,
       playerGame: state.playerGame,
     }))
@@ -186,7 +179,6 @@ const PickerContainer: FC = memo(() => {
   )
 
   const showResults = query.trim().length > 0 || isSearching
-  const showResultsTip = results.length > 0 && tutorialState.showResultsTip
 
   if (loading) {
     return <PickerSkeleton />
@@ -194,11 +186,6 @@ const PickerContainer: FC = memo(() => {
 
   return (
     <View style={{ width: "100%" }}>
-      <TutorialTooltip
-        isVisible={tutorialState.showGuessInputTip}
-        text="Search by movie title or title and year. Tap a result to submit your guess immediately. Open How to play for the rules and a practice example."
-        onDismiss={dismissGuessInputTip}
-      />
       <PickerUI
         query={query}
         isSearching={isSearching}
@@ -209,11 +196,6 @@ const PickerContainer: FC = memo(() => {
         handleInputChange={handleInputChange}
         renderItem={renderItem}
         placeholder={GAME_MODE_CONFIG[gameMode].searchPlaceholder}
-      />
-      <TutorialTooltip
-        isVisible={showResultsTip}
-        text="Long-press a result to preview its title, year and poster. A normal tap submits the guess."
-        onDismiss={dismissResultsTip}
       />
     </View>
   )

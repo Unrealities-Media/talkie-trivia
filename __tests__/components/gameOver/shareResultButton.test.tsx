@@ -1,5 +1,5 @@
 import React, { ReactElement } from "react"
-import { Alert } from "react-native"
+import { Alert, Platform } from "react-native"
 import {
   render,
   screen,
@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react-native"
 import { ThemeProvider } from "../../../src/contexts/themeContext"
 import ShareResultButton from "../../../src/components/gameOver/shareResultButton"
-import { shareGameResult } from "../../../src/utils/shareUtils"
+import { shareGameResult, generateShareMessage } from "../../../src/utils/shareUtils"
 import { defaultPlayerGame } from "../../../src/models/default"
 
 // Mock dependencies
@@ -36,6 +36,27 @@ describe("GameOver Component: ShareResultButton", () => {
   it("should render the share button", () => {
     renderWithTheme(<ShareResultButton playerGame={mockPlayerGame} />)
     expect(screen.getByText("Share Your Result")).toBeTruthy()
+  })
+
+  it.each([false, true])("offers usable web sharing when clipboard denial is %s", async denied => {
+    const platform = Platform.OS
+    const navigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, "navigator")
+    const writeText = denied ? jest.fn().mockRejectedValue(new Error("Denied")) : jest.fn().mockResolvedValue(undefined)
+    try {
+      Platform.OS = "web"
+      Object.defineProperty(globalThis, "navigator", { configurable: true, value: { clipboard: { writeText } } })
+      jest.mocked(generateShareMessage).mockReturnValue("Talkie Trivia · spoiler-free result")
+      renderWithTheme(<ShareResultButton playerGame={mockPlayerGame} />)
+      fireEvent.press(screen.getByRole("button"))
+      await waitFor(() => expect(screen.getByText(denied ? "Select and copy your result below." : "Result copied. Share it with a fellow movie lover.")).toBeTruthy())
+      expect(writeText).toHaveBeenCalledWith("Talkie Trivia · spoiler-free result")
+      if (denied) expect(screen.getByText("Talkie Trivia · spoiler-free result").props.selectable).toBe(true)
+      expect(shareGameResult).not.toHaveBeenCalled()
+    } finally {
+      Platform.OS = platform
+      if (navigatorDescriptor) Object.defineProperty(globalThis, "navigator", navigatorDescriptor)
+      else Reflect.deleteProperty(globalThis, "navigator")
+    }
   })
 
   it("does not offer sharing for an unacknowledged result", () => {

@@ -6,7 +6,7 @@ import { getFirestore } from "firebase-admin/firestore"
 import { catalog, catalogVersion } from "./catalog"
 import { publishedContent } from "./publishedContent"
 import { DIFFICULTY_MODES } from "./utils/difficulty"
-import { Game, Stats, completeStats, dateId, hints, initialStats, parseAction, parseStart, record, transition } from "./gameEngine"
+import { Game, Stats, completeStats, challengeKey, challengeDay, hints, initialStats, parseAction, parseStart, record, transition } from "./gameEngine"
 import { user, requireActiveAccount } from "./accountAccess"
 import { accountDeletion } from "./accountDeletion"
 import { gameHistory } from "./gameHistory"
@@ -15,7 +15,9 @@ import { gameNow } from "./gameClock"
 
 initializeApp()
 const db = getFirestore()
-const options = { maxInstances: 10, concurrency: 40, timeoutSeconds: 30, memory: "256MiB" as const }
+// Browsers must reach callable endpoints (including CORS preflight); each
+// handler enforces Firebase authentication and account ownership itself.
+const options = { invoker: "public" as const, maxInstances: 10, concurrency: 40, timeoutSeconds: 30, memory: "256MiB" as const }
 // Live rollout requires reconciliation tooling and native-provider acceptance.
 // Recovery stays available for already accepted operations even if rollout stops.
 export const beginAccountMerge = onCall(options, request => {
@@ -34,7 +36,12 @@ const refs = (uid: string, challengeId: string) => ({
   stats: db.doc(`players/${uid}/privateStats/summary`),
   history: db.doc(`players/${uid}/gameHistoryV2/${challengeId}`),
 })
-const response = (game: Game, stats: Stats, now: Date) => ({ game, stats, challengeId: game.challengeId, serverNow: now.toISOString(), resetAt: new Date(Date.parse(`${game.challengeId}T00:00:00Z`) + 86400000).toISOString() })
+const response = (game: Game, stats: Stats, now: Date) => {
+  const lastDay = stats.completedDays?.at(-1) ?? stats.winningDays.at(-1)
+  const currentDay = now.toISOString().slice(0, 10)
+  const yesterday = new Date(now.getTime() - 86400000).toISOString().slice(0, 10)
+  return { game, stats: { ...stats, currentStreak: lastDay === currentDay || lastDay === yesterday ? stats.currentStreak : 0 }, challengeId: game.challengeId, serverNow: now.toISOString(), resetAt: new Date(Date.parse(`${challengeDay(game.challengeId)}T00:00:00Z`) + 86400000).toISOString() }
+}
 
 /** The date, content, paths, and defaults originate on the server. */
 export const startGame = onCall(options, async request => {
@@ -44,7 +51,8 @@ export const startGame = onCall(options, async request => {
     throw new HttpsError("failed-precondition", "Please update the app to load the current movie catalog.")
   }
   const now = await gameNow(db)
-  const challengeId = now.toISOString().slice(0, 10)
+  const day = now.toISOString().slice(0, 10)
+  const challengeId = `${day}_${command.difficulty}`
   const paths = refs(uid, challengeId)
   return db.runTransaction(async tx => {
     const [gameDoc, statsDoc, deletion, mergeLock] = await Promise.all([tx.get(paths.game), tx.get(paths.stats), tx.get(db.doc(`accountDeletions/${uid}`)), tx.get(db.doc(`accountMergeLocks/${uid}`))])
@@ -54,8 +62,9 @@ export const startGame = onCall(options, async request => {
     const schedule = await tx.get(db.doc(`dailyGames/${challengeId}`))
     const answer = catalog.get(schedule.data()?.movieId)
     if (!answer) throw new HttpsError("unavailable", "Today's challenge is not available yet. Please try again soon.")
-    const content = publishedContent(schedule.data(), challengeId, catalogVersion)
-    const description = content.description
+    if (schedule.data()?.difficulty !== command.difficulty) throw new HttpsError("unavailable", "This challenge is being prepared.")
+    const content = publishedContent(schedule.data(), day, catalogVersion)
+    const description = content.clues?.[command.difficulty] ?? content.description
     const game: Game = {
       schemaVersion: 2, id: `movies_${challengeId}`, challengeId, playerID: uid, gameMode: "movies",
       difficulty: command.difficulty, guessesMax: DIFFICULTY_MODES[command.difficulty].guessesMax,
@@ -103,7 +112,7 @@ export const applyGameAction = onCall(options, async request => {
 export const submitGameResult = onCall(options, async request => {
   const uid = user(request)
   const data = record(request.data, ["challengeId"])
-  const challengeId = dateId(data.challengeId)
+  const challengeId = challengeKey(data.challengeId)
   const now = await gameNow(db)
   const paths = refs(uid, challengeId)
   return db.runTransaction(async tx => {

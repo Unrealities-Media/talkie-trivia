@@ -11,7 +11,7 @@ const open = () => {
 
 it("is optional, replayable, and explains launch rules without login or network", () => {
   render(<ThemeProvider><HowToPlay /></ThemeProvider>)
-  expect(screen.queryByText("One movie each day")).toBeNull()
+  expect(screen.queryByText("Five movies each day")).toBeNull()
   expect(screen.getByRole("button", { name: "How to play" }).props.accessibilityState.expanded).toBe(false)
   press("How to play")
   expect(screen.getByText(/Tapping a search result immediately submits a guess/)).toBeTruthy()
@@ -19,12 +19,12 @@ it("is optional, replayable, and explains launch rules without login or network"
   expect(screen.getByText(/Each Easy hint subtracts 50 points/)).toBeTruthy()
   expect(screen.getByText(/three per game/)).toBeTruthy()
   expect(screen.getByText(/A loss or Give Up scores zero/)).toBeTruthy()
-  for (const rule of ["Basic: 5 guesses, up to 400 points", "Easy: 5 guesses, up to 550 points", "Medium: 5 guesses, up to 700 points", "Hard: 5 guesses, up to 850 points", "Extreme: 3 guesses, up to 1000 points"]) {
+  for (const rule of ["Very Easy: 5 guesses, up to 400 points", "Easy: 5 guesses, up to 550 points", "Medium: 5 guesses, up to 700 points", "Hard: 5 guesses, up to 850 points", "Very Hard: 3 guesses, up to 1000 points"]) {
     expect(screen.getByRole("header", { name: rule })).toBeTruthy()
   }
   press("Close instructions")
   press("How to play")
-  expect(screen.getByText("One movie each day")).toBeTruthy()
+  expect(screen.getByText("Five movies each day")).toBeTruthy()
 })
 
 it("teaches incorrect guesses, shared hints and clue progression, then resets on replay", () => {

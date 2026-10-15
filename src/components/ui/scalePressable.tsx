@@ -2,8 +2,6 @@ import React from "react"
 import {
   Pressable,
   PressableProps,
-  StyleProp,
-  ViewStyle,
   PressableStateCallbackType,
 } from "react-native"
 import Animated, {

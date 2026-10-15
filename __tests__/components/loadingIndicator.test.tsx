@@ -59,7 +59,7 @@ describe("LoadingIndicator Component", () => {
       renderWithTheme(<LoadingIndicator />)
       // The component structure is: View -> [CustomIndicator, (Optional Text)]
       // We grab the container and check its children.
-      const container = screen.getByTestId("loading-indicator-container")
+      expect(screen.getByTestId("loading-indicator-container")).toBeTruthy()
 
       // React Native testing library often flattens children or represents them differently.
       // If the text element isn't rendered, querying for any text will fail, which is what we want.

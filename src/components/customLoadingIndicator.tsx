@@ -95,7 +95,7 @@ interface CustomLoadingIndicatorStyles {
   rotateContainer: ViewStyle
 }
 
-const themedStyles = (theme: Theme): CustomLoadingIndicatorStyles => ({
+const themedStyles = (_theme: Theme): CustomLoadingIndicatorStyles => ({
   rotateContainer: {
     alignItems: "center",
     justifyContent: "center",

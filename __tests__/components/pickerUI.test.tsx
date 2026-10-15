@@ -1,5 +1,6 @@
 import React, { ReactElement } from "react"
-import { Text } from "react-native"
+import { Text, Dimensions } from "react-native"
+import { responsive, spacing } from "../../src/styles/global"
 import {
   render,
   screen,
@@ -148,6 +149,43 @@ describe("PickerUI Component", () => {
   })
 
   describe("Results List", () => {
+    it("keeps results visible at zero startup size and updates after resize", () => {
+      const dimensions = jest.spyOn(require("react-native"), "useWindowDimensions")
+      dimensions.mockReturnValue({ width: 0, height: 0, scale: 1, fontScale: 1 })
+      const props = { query: "Mo", isSearching: false, results: mockResults,
+        showResults: true, animatedInputStyle: {}, isInteractionsDisabled: false,
+        handleInputChange: mockHandleInputChange, renderItem: mockRenderItem, placeholder: "Search..." }
+      try {
+        const { rerender } = renderWithTheme(<PickerUI {...props} />)
+        fireEvent(screen.getByTestId("flash-list"), "contentSizeChange", 350, 1000)
+        expect(screen.getByTestId("search-results-viewport").props.style.height).toBeGreaterThan(0)
+        dimensions.mockReturnValue({ width: 1440, height: 900, scale: 1, fontScale: 1 })
+        rerender(<ThemeProvider><PickerUI {...props} query="Movie" /></ThemeProvider>)
+        expect(screen.getByTestId("search-results-viewport")).toHaveStyle({ height: 360 })
+        dimensions.mockReturnValue({ width: 320, height: 568, scale: 1, fontScale: 1 })
+        rerender(<ThemeProvider><PickerUI {...props} query="Movies" /></ThemeProvider>)
+        expect(screen.getByTestId("search-results-viewport").props.style.height).toBeCloseTo(227.2)
+      } finally {
+        dimensions.mockRestore()
+      }
+    })
+
+    it("recovers shared sizing from unavailable dimensions without reloading modules", () => {
+      const dimensions = Dimensions.get as jest.Mock
+      const originalImplementation = dimensions.getMockImplementation()
+      try {
+        dimensions.mockReturnValue({ width: 0, height: 0, scale: 1, fontScale: 1 })
+        expect(responsive.scale(250)).toBeGreaterThan(0)
+        expect(spacing.medium).toBeGreaterThan(0)
+        dimensions.mockReturnValue({ width: 750, height: 1624, scale: 1, fontScale: 1 })
+        expect(responsive.scale(250)).toBe(500)
+        expect(spacing.medium).toBe(32)
+        expect(responsive.screenWidth).toBe(750)
+      } finally {
+        dimensions.mockImplementation(originalImplementation!)
+      }
+    })
+
     it("grows for measured wrapped/expanded content and shrinks when it collapses", () => {
       renderWithTheme(<PickerUI query="Mo" isSearching={false} results={mockResults}
         showResults animatedInputStyle={{}} isInteractionsDisabled={false}
@@ -201,8 +239,8 @@ describe("PickerUI Component", () => {
       expect(screen.getByText("Movie A")).toBeTruthy()
       expect(screen.getByText("Movie B")).toBeTruthy()
 
-      // Should also show the hint text
-      expect(screen.getByText(/Hold any result to preview/)).toBeTruthy()
+      // Search results do not add another instruction footer.
+      expect(screen.queryByText(/Hold any result to preview/)).toBeNull()
     })
 
     it("should render 'No titles found' if results are empty and query is long enough", () => {

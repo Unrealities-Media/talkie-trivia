@@ -99,6 +99,13 @@ describe("durable game commands", () => {
     expect(await gameService.fetchPlayerStats("p1")).toEqual(result.stats)
     expect(mockCall).not.toHaveBeenCalled()
   })
+  it("rejects a history detail response when the account changes during the read", async () => {
+    ;(getDoc as jest.Mock).mockImplementationOnce(async () => {
+      ;(auth as any).currentUser = { uid: "p2" }
+      return { exists: () => true, data: () => game }
+    })
+    await expect(gameService.fetchPlayerGameById("movies_2026-10-13")).rejects.toThrow("account changed")
+  })
   it("rejects a statistics response after the active account changes", async () => {
     let finish!: (value: unknown) => void
     ;(getDoc as jest.Mock).mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))

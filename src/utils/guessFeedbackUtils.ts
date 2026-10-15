@@ -77,7 +77,7 @@ export function generateImplicitHint(
         result.revealedHints[correctHint.type] = true
         newHintRevealed = true
         if (!firstNewMatchMessage) {
-          firstNewMatchMessage = `You're on the right track with the ${correctHint.label}! (Hint Revealed)`
+          firstNewMatchMessage = `You're on the right track with the ${correctHint.label}!`
         }
       }
     }

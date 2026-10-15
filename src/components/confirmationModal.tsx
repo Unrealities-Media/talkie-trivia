@@ -1,5 +1,5 @@
-import React, { memo } from "react"
-import { Modal, View, ViewStyle, TextStyle } from "react-native"
+import React, { memo, useEffect, useRef } from "react"
+import { Modal, View, ViewStyle, TextStyle, Platform } from "react-native"
 import { hapticsService } from "../utils/hapticsService"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Button } from "./ui/button"
@@ -28,6 +28,35 @@ const ConfirmationModal = memo(
   }: ConfirmationModalProps) => {
     const styles = useStyles(themedStyles)
     const reduced = usePremiereMotion()
+    const dialogRef = useRef<View>(null)
+    useEffect(() => {
+      if (!isVisible || Platform.OS !== "web" || typeof document === "undefined") return
+      const previous = document.activeElement as HTMLElement | null
+      const buttons = () => Array.from((dialogRef.current as unknown as HTMLElement | null)?.querySelectorAll<HTMLElement>('[role="button"]:not([aria-disabled="true"]), button:not([disabled])') ?? [])
+      const timer = setTimeout(() => buttons()[0]?.focus(), 0)
+      const containFocus = (event: FocusEvent) => {
+        const dialog = dialogRef.current as unknown as HTMLElement | null
+        if (dialog && !dialog.contains(event.target as Node)) buttons()[0]?.focus()
+      }
+      const onKey = (event: KeyboardEvent) => {
+        if (event.key === "Tab") {
+          const items = buttons()
+          const first = items[0], last = items[items.length - 1]
+          if ((event.shiftKey && document.activeElement === first) || (!event.shiftKey && document.activeElement === last)) {
+            event.preventDefault()
+            ;(event.shiftKey ? last : first)?.focus()
+          }
+        }
+      }
+      document.addEventListener("focusin", containFocus)
+      document.addEventListener("keydown", onKey)
+      return () => {
+        clearTimeout(timer)
+        document.removeEventListener("focusin", containFocus)
+        document.removeEventListener("keydown", onKey)
+        previous?.focus()
+      }
+    }, [isVisible])
 
     const handleConfirm = () => {
       hapticsService.heavy()
@@ -50,7 +79,7 @@ const ConfirmationModal = memo(
             style={styles.centeredView}
             testID="confirmation-modal-container"
           >
-            <View style={styles.modalView}>
+            <View ref={dialogRef} style={styles.modalView} accessibilityViewIsModal aria-modal={true}>
               <Typography accessibilityRole="header" variant="h2" style={styles.title}>
                 {title}
               </Typography>
@@ -102,9 +131,9 @@ const themedStyles = (theme: Theme): ModalStyles => ({
     borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: 3,
-    padding: theme.responsive.scale(20),
-    width: "80%",
-    maxWidth: theme.responsive.scale(400),
+    padding: 20,
+    width: "90%",
+    maxWidth: 440,
     ...theme.shadows.medium,
   },
   title: {
@@ -119,12 +148,12 @@ const themedStyles = (theme: Theme): ModalStyles => ({
     textAlign: "center",
   },
   buttonContainer: {
-    flexDirection: "row",
+    flexDirection: "column",
+    gap: 10,
     justifyContent: "space-around",
   },
   button: {
-    flex: 1,
-    marginHorizontal: theme.spacing.small,
+    width: "100%",
   },
 })
 

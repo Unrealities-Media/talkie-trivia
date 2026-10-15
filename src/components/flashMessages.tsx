@@ -37,7 +37,7 @@ const FlashMessages: React.FC<FlashMessageProps> = ({
   if (!message) return null
 
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
+    <Animated.View pointerEvents="none" accessibilityLiveRegion="polite" style={[styles.container, animatedStyle]}>
       <View style={styles.shadowWrapper}>
         <Text style={styles.messageText}>{message}</Text>
       </View>
@@ -54,7 +54,7 @@ interface FlashMessageStyles {
 const themedStyles = (theme: Theme): FlashMessageStyles => ({
   container: {
     position: "absolute",
-    top: theme.responsive.scale(30),
+    bottom: 8,
     left: 0,
     right: 0,
     zIndex: 1000,

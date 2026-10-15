@@ -52,9 +52,9 @@ export const DIFFICULTY_RANKING: Record<DifficultyLevel, number> = {
  */
 export const DIFFICULTY_MODES: Record<DifficultyLevel, DifficultyMode> = {
   LEVEL_1: {
-    label: "Basic",
+    label: "Very Easy",
     description:
-      "All item hints (like Director and Decade) are revealed at the start. Clues are revealed gradually.",
+      "A movie synopsis that unfolds with each miss. All four hints are yours from the start. Five guesses.",
     guessesMax: 5,
     hintStrategy: "HINTS_ONLY_REVEALED",
     scoreMultiplier: 0.4, // Max score: 400
@@ -63,7 +63,7 @@ export const DIFFICULTY_MODES: Record<DifficultyLevel, DifficultyMode> = {
   LEVEL_2: {
     label: "Easy",
     description:
-      "Reveal clues gradually. Each game includes three hints; each hint reduces your winning score by 50 points.",
+      "A synopsis with the names left out. Five guesses and three optional hints, each costing 50 points from a winning score.",
     guessesMax: 5,
     hintStrategy: "USER_SPEND",
     scoreMultiplier: 0.55, // Max score: 550
@@ -72,7 +72,7 @@ export const DIFFICULTY_MODES: Record<DifficultyLevel, DifficultyMode> = {
   LEVEL_3: {
     label: "Medium",
     description:
-      "Hints are automatically revealed when you make a guess that shares a category (like actor or decade) with the correct item.",
+      "A more mysterious synopsis. Match a genre, decade, director or actor with your guesses to reveal a hint. Five guesses.",
     guessesMax: 5,
     hintStrategy: "IMPLICIT_FEEDBACK",
     scoreMultiplier: 0.7, // Max score: 700
@@ -81,16 +81,16 @@ export const DIFFICULTY_MODES: Record<DifficultyLevel, DifficultyMode> = {
   LEVEL_4: {
     label: "Hard",
     description:
-      "A pure test of knowledge. No hints are available or revealed throughout the game.",
+      "An abstract version of the central conflict, without signature details. Five guesses and no hints.",
     guessesMax: 5,
     hintStrategy: "NONE_DISABLED",
     scoreMultiplier: 0.85, // Max score: 850
     scoreRangePercentage: 0.5,
   },
   LEVEL_5: {
-    label: "Extreme",
+    label: "Very Hard",
     description:
-      "The ultimate challenge. You only get 3 guesses and no hints are available.",
+      "One short, highly vague clue shown in full. Three guesses and no hints.",
     guessesMax: 3,
     hintStrategy: "EXTREME_CHALLENGE",
     scoreMultiplier: 1.0, // Max score: 1000

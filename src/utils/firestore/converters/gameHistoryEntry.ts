@@ -23,6 +23,7 @@ export const gameHistoryEntryConverter = {
     const data = snapshot.data(options)
     return {
       dateId: data.dateId,
+      challengeId: snapshot.id ?? data.dateId,
       itemId: data.itemId || data.movieId,
       itemTitle: data.itemTitle || data.movieTitle,
       posterPath: data.posterPath,

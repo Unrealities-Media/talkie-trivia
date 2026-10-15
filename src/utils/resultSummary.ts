@@ -1,4 +1,5 @@
 import { PlayerGame } from "../models/game"
+import { validChallengeKey } from "./challengeKey"
 
 export function isCompletedGame(game: PlayerGame): boolean {
   return game.correctAnswer || game.gaveUp || game.guesses.length >= game.guessesMax
@@ -13,7 +14,8 @@ export function savedScore(game: PlayerGame): number | null {
 export function challengeDay(game: PlayerGame): string | null {
   // The challenge's UTC day survives delayed saves and changes of timezone.
   if (game.challengeId !== undefined) {
-    const day = game.challengeId
+    if (!validChallengeKey(game.challengeId)) return null
+    const day = game.challengeId.slice(0, 10)
     const time = Date.parse(`${day}T00:00:00Z`)
     return /^\d{4}-\d{2}-\d{2}$/.test(day) && Number.isFinite(time) &&
       new Date(time).toISOString().slice(0, 10) === day ? day : null
