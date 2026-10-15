@@ -93,7 +93,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@babel/plugin-transform-class-static-block": "^7.29.7",
+    "@babel/plugin-transform-class-static-block": "^8.0.5",
     "@babel/preset-typescript": "^7.29.7",
     "@eslint/js": "^10.0.1",
     "@testing-library/jest-native": "^5.4.3",
