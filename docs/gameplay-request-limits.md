@@ -54,3 +54,10 @@ client service/state tests (across the initial run and the added state test),
 126 emulator contracts, the Go emulator check, app type checking, and lint.
 The emulator run explicitly included both new concurrency and rules tests.
 Remote CI and deployed behavior are separate acceptance evidence.
+
+The fresh web export also passed all six desktop/mobile browser contracts.
+The added recovery scenario injects two callable `RESOURCE_EXHAUSTED` responses,
+checks the visible wait/retry state and unchanged guess count, then reloads.
+Recovery reaches the real emulator with the identical saved command and consumes
+exactly one guess. This tests browser error handling; the actual quota and
+concurrency enforcement are covered separately by the backend emulator tests.
