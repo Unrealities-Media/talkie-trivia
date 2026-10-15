@@ -57,6 +57,58 @@ func readWindow(t *testing.T, ctx context.Context, client *firestore.Client, now
 	return result
 }
 
+func TestEmulatorScheduleHealthIsReadOnlyAndFailsClosed(t *testing.T) {
+	ctx, client := emulatorClient(t)
+	now := time.Date(2040, 1, 1, 12, 0, 0, 0, time.UTC)
+	games, err := planSchedule(pool(10), testVersion, map[string]DailyGame{}, now, 1, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog := map[int]AppIndexItem{}
+	for id := 1; id <= 10; id++ {
+		catalog[id] = AppIndexItem{ID: id, Title: "Private answer"}
+	}
+	for key, game := range games {
+		if _, err := client.Collection("dailyGames").Doc(key).Set(ctx, game); err != nil {
+			t.Fatal(err)
+		}
+	}
+	before := readWindow(t, ctx, client, now, 1)
+	report, err := checkSchedule(ctx, client, catalog, testVersion, now, 1)
+	if err != nil || !report.Healthy || report.Ready != 10 {
+		t.Fatal(report, err)
+	}
+	if !reflect.DeepEqual(before, readWindow(t, ctx, client, now, 1)) {
+		t.Fatal("health check changed content")
+	}
+	// Missing strings cannot silently become valid empty strings on Go decoding.
+	if _, err := client.Collection("dailyGames").Doc("2040-01-01_LEVEL_3").Update(ctx, []firestore.Update{{Path: "content.tagline", Value: firestore.Delete}}); err != nil {
+		t.Fatal(err)
+	}
+	report, err = checkSchedule(ctx, client, catalog, testVersion, now, 1)
+	if err != nil || report.Healthy || report.Ready != 9 {
+		t.Fatal(report, err)
+	}
+	if _, err := client.Collection("dailyGames").Doc("2040-01-01_LEVEL_3").Set(ctx, games["2040-01-01_LEVEL_3"]); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Collection("dailyGames").Doc("2040-01-01_LEVEL_1").Delete(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Collection("dailyGames").Doc("2040-01-02_LEVEL_5").Set(ctx, map[string]any{"movieId": "PRIVATE BAD VALUE"}); err != nil {
+		t.Fatal(err)
+	}
+	report, err = checkSchedule(ctx, client, catalog, testVersion, now, 1)
+	if err != nil || report.Healthy || report.Ready != 8 || len(report.Issues) != 2 {
+		t.Fatal(report, err)
+	}
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+	if _, err := checkSchedule(cancelled, client, catalog, testVersion, now, 1); err == nil {
+		t.Fatal("read failure reported as healthy")
+	}
+}
+
 func TestEmulatorConcurrentPublicationIsAtomicAndImmutable(t *testing.T) {
 	ctx, client := emulatorClient(t)
 	now := time.Date(2030, 1, 1, 12, 0, 0, 0, time.UTC)

@@ -17,6 +17,7 @@ import (
 )
 
 type config struct {
+	health                                                              bool
 	fetch, process, upload, schedule, live, apply, includeToday         bool
 	project, confirmProject, raw, catalog, reviewed, output, planOutput string
 	horizon, pages                                                      int
@@ -29,6 +30,7 @@ func parseConfig(args []string) (config, error) {
 	f.BoolVar(&c.process, "process", false, "Generate a candidate catalog for review; never changes the app catalog")
 	f.BoolVar(&c.upload, "upload", false, "Import upstream metadata into movieImports (not published movies)")
 	f.BoolVar(&c.schedule, "schedule", false, "Fill missing future UTC challenges using reviewed content")
+	f.BoolVar(&c.health, "check-schedule", false, "Read-only check of today's and upcoming challenge slots; JSON on stdout")
 	f.BoolVar(&c.live, "live", false, "Use an explicitly named cloud project instead of the local emulator")
 	f.BoolVar(&c.apply, "apply", false, "Apply database writes; otherwise preview only")
 	f.BoolVar(&c.includeToday, "include-today", false, "Explicit bootstrap: create today's challenge only if absent")
@@ -47,13 +49,16 @@ func parseConfig(args []string) (config, error) {
 	if f.NArg() != 0 {
 		return c, errors.New("unexpected positional arguments")
 	}
-	if !c.fetch && !c.process && !c.upload && !c.schedule {
-		return c, errors.New("select -fetch, -process, -upload, or -schedule")
+	if !c.fetch && !c.process && !c.upload && !c.schedule && !c.health {
+		return c, errors.New("select -fetch, -process, -upload, -schedule, or -check-schedule")
+	}
+	if c.health && (c.fetch || c.process || c.upload || c.schedule || c.apply || c.includeToday) {
+		return c, errors.New("-check-schedule must run alone without write or bootstrap options")
 	}
 	if c.horizon < 1 || c.horizon > 90 || c.pages < 1 || c.pages > 500 {
 		return c, errors.New("invalid horizon or page count")
 	}
-	if (c.upload || c.schedule) && c.project == "" {
+	if (c.upload || c.schedule || c.health) && c.project == "" {
 		return c, errors.New("database operations require -project")
 	}
 	if c.live && c.apply && (c.confirmProject != c.project || c.project == "") {
@@ -117,7 +122,7 @@ func run(ctx context.Context, c config) error {
 		}
 		log.Printf("Wrote candidate catalog (%d movies); release catalog unchanged", len(movies))
 	}
-	if !c.upload && !c.schedule {
+	if !c.upload && !c.schedule && !c.health {
 		return nil
 	}
 	if !c.live && os.Getenv("FIRESTORE_EMULATOR_HOST") == "" {
@@ -137,6 +142,25 @@ func run(ctx context.Context, c config) error {
 		return fmt.Errorf("initialize Firestore: %w", err)
 	}
 	defer client.Close()
+	if c.health {
+		catalog, version, err := loadCatalog(c.catalog)
+		if err != nil {
+			return err
+		}
+		ctx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+		report, err := checkSchedule(ctx, client, catalog, version, time.Now(), c.horizon)
+		if err != nil {
+			return err
+		}
+		if err := json.NewEncoder(os.Stdout).Encode(report); err != nil {
+			return err
+		}
+		if !report.Healthy {
+			return errors.New("schedule has missing or invalid challenge slots; see safe JSON report")
+		}
+		return nil
+	}
 	if c.upload {
 		if err := uploadImports(ctx, client, movies, c.apply); err != nil {
 			return err

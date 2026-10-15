@@ -115,13 +115,61 @@ Configure and test IAM independently; this repository does not prove deployed
 permissions or environment isolation. Workflows serialize runs per environment;
 Firestore transactions also protect against local/concurrent publishers.
 
-Manual dispatch defaults to a staging preview. Inspect the private artifact before
-dispatching with `apply=true`. Weekly scheduling is disabled unless the repository
+Manual dispatch defaults to a staging preview. Inspect the public-safe summary
+and an authorized local private preview before dispatching with `apply=true`.
+The workflow does not upload the answer-bearing private plan. Weekly scheduling is disabled unless the repository
 variable `ENABLE_STAGING_SCHEDULE=true`; enabled scheduled writes target staging
 only. Production remains manually dispatched until staging evidence and operator
 approval support automation. The workflow never fetches a new catalog while
 publishing daily content. Assign an operator to workflow failure notifications and
 verify notification delivery; a configured alert owner is still outstanding.
+
+## Read-only schedule readiness
+
+From `utils/pipeline`, check today plus the next seven UTC days:
+
+```sh
+go run . -check-schedule -project demo-talkie-trivia -horizon-days 7
+```
+
+Use the emulator address configured for that project. For an explicitly selected
+cloud project, use existing Application Default Credentials (prefer an identity
+with only the necessary Firestore read permissions), unset
+`FIRESTORE_EMULATOR_HOST`, and add `-live`:
+
+```sh
+go run . -check-schedule -live -project YOUR_STAGING_PROJECT -horizon-days 7
+```
+
+The command checks all five difficulty slots, including today, without fetching
+TMDB, loading the unpublished approval pool, or writing Firestore. It rejects
+write/bootstrap flags and cannot be combined with publication or source imports.
+It compares snapshots with the catalog at `-catalog`; use the exact catalog
+deployed to Functions. A local catalog check does not establish deployed parity.
+
+JSON on stdout contains only `healthy`, `from`, `through`, `expectedSlots`,
+`readySlots`, and `issues` (slot date/difficulty plus `missing` or `invalid`). No
+movie IDs, clues, titles or reviewer identities are included. Diagnostics go to
+stderr. Exit status is nonzero if any slot is missing/invalid, a read fails, or
+the report cannot be written. A read failure means health is unknown; never reuse
+an earlier successful report as current evidence.
+
+Checks cover catalog membership/version, date/difficulty, supported content
+schema, clue lengths/variants, review metadata and the content digest. Legacy
+schema-1 snapshots remain supported when valid; legacy date-only documents do
+not satisfy the five difficulty slots. This does not certify clue quality,
+rights clearance, deployed authorization, or successful end-to-end gameplay.
+
+The horizon accepts 1–90 days ahead (10–455 document reads per invocation).
+No scheduled job or alert is enabled by this change. A future monitor must check
+the exit status, retain only the safe report, and deliver failures to a verified
+operator. Until alert delivery is proven, monitoring remains a release gate.
+
+Local validation on October 15, 2026 passed Go tests/vet and the targeted
+Firestore emulator contract: valid schedules, holes, malformed records,
+read failure, and unchanged published snapshots. Unit tests also cover UTC
+boundaries, catalog mismatch, invalid review/content, bounded horizons,
+write-flag rejection and report disclosure.
 
 ## Migration, rollback, and release gates
 
