@@ -12,6 +12,7 @@ import { accountDeletion } from "./accountDeletion"
 import { gameHistory } from "./gameHistory"
 import { accountMergeLifecycle } from "./accountMergeLifecycle"
 import { gameNow } from "./gameClock"
+import { consumeGameRequest } from "./gameRequestLimit"
 
 initializeApp()
 const db = getFirestore()
@@ -46,6 +47,7 @@ const response = (game: Game, stats: Stats, now: Date) => {
 /** The date, content, paths, and defaults originate on the server. */
 export const startGame = onCall(options, async request => {
   const uid = user(request)
+  await consumeGameRequest(db, uid)
   const command = parseStart(request.data)
   if (command.catalogVersion !== catalogVersion) {
     throw new HttpsError("failed-precondition", "Please update the app to load the current movie catalog.")
@@ -83,6 +85,7 @@ export const startGame = onCall(options, async request => {
 /** One bounded, versioned action; transaction retries cannot award extra credit. */
 export const applyGameAction = onCall(options, async request => {
   const uid = user(request)
+  await consumeGameRequest(db, uid)
   const action = parseAction(request.data)
   const now = await gameNow(db)
   const paths = refs(uid, action.challengeId)
@@ -111,6 +114,7 @@ export const applyGameAction = onCall(options, async request => {
 /** Compatibility name, read-only. Legacy full-game payloads fail closed. */
 export const submitGameResult = onCall(options, async request => {
   const uid = user(request)
+  await consumeGameRequest(db, uid)
   const data = record(request.data, ["challengeId"])
   const challengeId = challengeKey(data.challengeId)
   const now = await gameNow(db)

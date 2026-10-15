@@ -70,6 +70,39 @@ describe("authoritative game callables", () => {
     mockQueue = Promise.resolve()
   })
   afterEach(() => jest.useRealTimers())
+  it("shares the budget across routes, counts invalid requests, and isolates accounts", async () => {
+    for (let i = 0; i < 10; i++) {
+      await expect(start({})).rejects.toMatchObject({ code: "invalid-argument" })
+      await expect(act({ type: "invalid" })).rejects.toMatchObject({ code: "invalid-argument" })
+      await expect((submitGameResult as any)({ auth: { uid: "user-with-hyphens" }, data: {} })).rejects.toMatchObject({ code: "invalid-argument" })
+    }
+    await expect(start()).rejects.toMatchObject({ code: "resource-exhausted" })
+    expect(mockRecords.has(statsPath)).toBe(false)
+    await expect(start(undefined, "another-user")).resolves.toHaveProperty("game")
+    jest.advanceTimersByTime(1999)
+    await expect(start()).rejects.toMatchObject({ code: "resource-exhausted" })
+    jest.advanceTimersByTime(1)
+    await expect(start()).resolves.toHaveProperty("game")
+    await expect(start()).rejects.toMatchObject({ code: "resource-exhausted" })
+  })
+  it("caps refill after inactivity and does not refill when the clock moves backward", async () => {
+    const path = "players/user-with-hyphens/privateRateLimits/gameplay"
+    mockRecords.set(path, { tokens: 0, updatedAt: Date.now() + 1000 })
+    await expect(start()).rejects.toMatchObject({ code: "resource-exhausted" })
+    jest.advanceTimersByTime(301000)
+    await start()
+    expect(mockRecords.get(path).tokens).toBe(29)
+  })
+  it("does not create quota metadata for a deleted account or reset corrupt counters", async () => {
+    const path = "players/user-with-hyphens/privateRateLimits/gameplay"
+    mockRecords.set("accountDeletions/user-with-hyphens", { status: "complete" })
+    await expect(start()).rejects.toMatchObject({ code: "permission-denied" })
+    expect(mockRecords.has(path)).toBe(false)
+    mockRecords.delete("accountDeletions/user-with-hyphens")
+    mockRecords.set(path, { tokens: "30", updatedAt: Date.now() })
+    await expect(start()).rejects.toMatchObject({ code: "internal" })
+    expect(mockRecords.get(path).tokens).toBe("30")
+  })
   it("selects each difficulty's published clue and preserves it when resuming", async () => {
     const snapshot = mockRecords.get("dailyGames/2026-10-13_LEVEL_3")
     const clues = Object.fromEntries(CLUE_LEVELS.map(level => [level, level === "LEVEL_1" ? snapshot.content.description : `A distinct clue for ${level} about a difficult return.`])) as Record<typeof CLUE_LEVELS[number], string>

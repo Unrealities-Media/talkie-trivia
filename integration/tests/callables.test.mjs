@@ -14,6 +14,7 @@ const { getAuth: getAdminAuth } = requireFunctions("firebase-admin/auth")
 const { accountDeletion } = requireFunctions("./lib/accountDeletion")
 const { planAccountMergePage } = requireFunctions("./lib/accountMergePolicy")
 const { initialStats } = requireFunctions("./lib/gameEngine")
+const { consumeGameRequest } = requireFunctions("./lib/gameRequestLimit")
 const admin = initializeAdmin({ projectId })
 const db = getFirestore(admin)
 const catalog = JSON.parse(await readFile(new URL("../../src/data/searchIndex.json", import.meta.url), "utf8"))
@@ -66,6 +67,22 @@ beforeEach(async () => {
 after(async () => { await Promise.all(apps.map(deleteApp)); await db.terminate(); await deleteAdmin(admin) })
 
 describe("merge policy with real server-owned game snapshots", () => {
+  it("atomically spends the last gameplay request under contention and allows recovery", async () => {
+    const user = await guest()
+    const counter = db.doc(`players/${user.uid}/privateRateLimits/gameplay`)
+    // A future anchor prevents elapsed test time from refilling the bucket.
+    await counter.set({ tokens: 1, updatedAt: Date.now() + 60000 })
+    const attempts = await Promise.allSettled(Array.from({ length: 5 }, () => consumeGameRequest(db, user.uid)))
+    assert.equal(attempts.filter(result => result.status === "fulfilled").length, 1)
+    for (const attempt of attempts.filter(result => result.status === "rejected")) assert.equal(attempt.reason.code, "resource-exhausted")
+    assert.equal((await counter.get()).data().tokens, 0)
+    await assert.rejects(start(user), { code: "RESOURCE_EXHAUSTED" })
+    await assert.rejects(move(user, command()), { code: "RESOURCE_EXHAUSTED" })
+    await assert.rejects(call("submitGameResult", { challengeId: `${day}_LEVEL_2` }, user.token), { code: "RESOURCE_EXHAUSTED" })
+    assert.equal(await saved(user, "privateStats/summary"), undefined)
+    await counter.set({ tokens: 0, updatedAt: Date.now() - 2000 })
+    assert.equal((await start(user)).game.revision, 0)
+  })
   it("resumes five independent games and credits a single daily streak and All Five day", async () => {
     const user = await guest()
     for (let level = 1; level <= 5; level++) {

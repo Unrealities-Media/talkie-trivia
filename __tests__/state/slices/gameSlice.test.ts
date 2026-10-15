@@ -58,6 +58,15 @@ describe("authoritative game state", () => {
     finish(response)
     await first
   })
+  it("explains throttling and preserves the pending move until retry succeeds", async () => {
+    await useGameStore.getState().initializeGame({ id: "p1", name: "Player" })
+    ;(gameService.applyAction as jest.Mock).mockRejectedValue(Object.assign(new Error("RESOURCE_EXHAUSTED"), { code: "functions/resource-exhausted" }))
+    await useGameStore.getState().giveUp()
+    expect(useGameStore.getState()).toMatchObject({ syncStatus: "pending", syncError: "Please wait a few seconds before trying again. Your saved progress is safe.", playerGame: { gaveUp: false } })
+    ;(gameService.resumePendingAction as jest.Mock).mockResolvedValue({ ...response, game: { ...game, gaveUp: true, statsProcessed: true, revision: 1 } })
+    await useGameStore.getState().retryPendingAction()
+    expect(useGameStore.getState()).toMatchObject({ syncStatus: "idle", syncError: null, playerGame: { gaveUp: true } })
+  })
   it("does not enqueue a previously acknowledged guess or consume another attempt", async () => {
     ;(gameService.startGame as jest.Mock).mockResolvedValue({ ...response, game: { ...game, guesses: [{ itemId: 2 }] } })
     await useGameStore.getState().initializeGame({ id: "p1", name: "Player" })

@@ -12,6 +12,7 @@ import { DEFAULT_DIFFICULTY, DIFFICULTY_MODES, DifficultyLevel } from "../../con
 const finished = (game: GameResponse["game"]) => game.correctAnswer || game.gaveUp || game.guesses.length >= game.guessesMax
 const message = (error: unknown) => {
   const code = (error as { code?: string })?.code?.replace("functions/", "")
+  if (code === "resource-exhausted") return "Please wait a few seconds before trying again. Your saved progress is safe."
   if (["internal", "unavailable", "deadline-exceeded"].includes(code ?? "")) return "We couldn't reach the game service. Please try again shortly. Your saved progress is safe."
   return error instanceof Error ? error.message : "Please check your connection and try again."
 }
