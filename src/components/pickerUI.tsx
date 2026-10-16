@@ -30,6 +30,38 @@ interface PickerUIProps {
   placeholder: string
 }
 
+const SEARCH_BATCH_SIZE = 12
+
+// Keep broad searches cheap without discarding any matching titles.
+export function WebSearchResults({ results, renderItem, disabled }: {
+  results: readonly BasicTriviaItem[]
+  renderItem: ListRenderItem<BasicTriviaItem>
+  disabled: boolean
+}) {
+  const styles = useStyles(themedStyles)
+  const root = useRef<View>(null)
+  const [page, setPage] = useState({ results, count: SEARCH_BATCH_SIZE })
+  const count = page.results === results ? page.count : SEARCH_BATCH_SIZE
+  const visible = results.slice(0, count)
+  const showMore = () => {
+    setPage({ results, count: count + SEARCH_BATCH_SIZE })
+    // Continue keyboard navigation at the first newly revealed title.
+    requestAnimationFrame(() => {
+      const node = root.current as unknown as HTMLElement | null
+      node?.querySelector?.<HTMLElement>(`[data-testid="search-batch-row-${count}"] [role="button"]:not([aria-disabled="true"])`)?.focus()
+    })
+  }
+  return <View ref={root}>
+    {visible.map((item, index) => <View key={String(item.id)} testID={`search-batch-row-${index}`}>
+      {renderItem({ item, index, target: "Cell", extraData: undefined })}
+    </View>)}
+    {count < results.length && <Pressable accessibilityRole="button" disabled={disabled}
+      onPress={showMore} style={{ minHeight: 44, justifyContent: "center" }}>
+      <Text style={styles.noResultsText}>Show more titles ({visible.length} of {results.length})</Text>
+    </Pressable>}
+  </View>
+}
+
 export const PickerUI: React.FC<PickerUIProps> = memo(
   ({
     query,
@@ -127,9 +159,7 @@ export const PickerUI: React.FC<PickerUIProps> = memo(
             ) : results.length > 0 ? (
               <>
                 <View testID="search-results-viewport" style={{ height: Platform.OS === "web" ? undefined : containerHeight, width: "100%" }}>
-                  {Platform.OS === "web" ? results.map((item, index) =>
-                    <React.Fragment key={String(item.id)}>{renderItem({ item, index, target: "Cell", extraData: undefined })}</React.Fragment>
-                  ) : <FlashList
+                  {Platform.OS === "web" ? <WebSearchResults results={results} renderItem={renderItem} disabled={isInteractionsDisabled} /> : <FlashList
                     data={results}
                     renderItem={renderItem}
                     keyExtractor={(item) => String(item.id)}
