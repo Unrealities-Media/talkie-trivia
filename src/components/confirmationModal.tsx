@@ -33,7 +33,12 @@ const ConfirmationModal = memo(
       if (!isVisible || Platform.OS !== "web" || typeof document === "undefined") return
       const previous = document.activeElement as HTMLElement | null
       const buttons = () => Array.from((dialogRef.current as unknown as HTMLElement | null)?.querySelectorAll<HTMLElement>('[role="button"]:not([aria-disabled="true"]), button:not([disabled])') ?? [])
-      const timer = setTimeout(() => buttons()[0]?.focus(), 0)
+      const timer = setTimeout(() => {
+        const dialog = dialogRef.current as unknown as HTMLElement | null
+        // The web Modal may already have focused a control. Do not undo a
+        // keyboard move made before this deferred initialization runs.
+        if (dialog && !dialog.contains(document.activeElement)) buttons()[0]?.focus()
+      }, 0)
       const containFocus = (event: FocusEvent) => {
         const dialog = dialogRef.current as unknown as HTMLElement | null
         if (dialog && !dialog.contains(event.target as Node)) buttons()[0]?.focus()

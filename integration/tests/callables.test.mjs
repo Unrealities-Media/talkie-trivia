@@ -14,6 +14,7 @@ const { getAuth: getAdminAuth } = requireFunctions("firebase-admin/auth")
 const { accountDeletion } = requireFunctions("./lib/accountDeletion")
 const { planAccountMergePage } = requireFunctions("./lib/accountMergePolicy")
 const { initialStats } = requireFunctions("./lib/gameEngine")
+const { consumeGameRequest } = requireFunctions("./lib/gameRequestLimit")
 const admin = initializeAdmin({ projectId })
 const db = getFirestore(admin)
 const catalog = JSON.parse(await readFile(new URL("../../src/data/searchIndex.json", import.meta.url), "utf8"))
@@ -66,6 +67,22 @@ beforeEach(async () => {
 after(async () => { await Promise.all(apps.map(deleteApp)); await db.terminate(); await deleteAdmin(admin) })
 
 describe("merge policy with real server-owned game snapshots", () => {
+  it("atomically spends the last gameplay request under contention and allows recovery", async () => {
+    const user = await guest()
+    const counter = db.doc(`players/${user.uid}/privateRateLimits/gameplay`)
+    // A future anchor prevents elapsed test time from refilling the bucket.
+    await counter.set({ tokens: 1, updatedAt: Date.now() + 60000 })
+    const attempts = await Promise.allSettled(Array.from({ length: 5 }, () => consumeGameRequest(db, user.uid)))
+    assert.equal(attempts.filter(result => result.status === "fulfilled").length, 1)
+    for (const attempt of attempts.filter(result => result.status === "rejected")) assert.equal(attempt.reason.code, "resource-exhausted")
+    assert.equal((await counter.get()).data().tokens, 0)
+    await assert.rejects(start(user), { code: "RESOURCE_EXHAUSTED" })
+    await assert.rejects(move(user, command()), { code: "RESOURCE_EXHAUSTED" })
+    await assert.rejects(call("submitGameResult", { challengeId: `${day}_LEVEL_2` }, user.token), { code: "RESOURCE_EXHAUSTED" })
+    assert.equal(await saved(user, "privateStats/summary"), undefined)
+    await counter.set({ tokens: 0, updatedAt: Date.now() - 2000 })
+    assert.equal((await start(user)).game.revision, 0)
+  })
   it("resumes five independent games and credits a single daily streak and All Five day", async () => {
     const user = await guest()
     for (let level = 1; level <= 5; level++) {
@@ -256,6 +273,32 @@ describe("account deletion against real Auth and Firestore", () => {
     assert.equal((await ref.get()).data().status, "complete")
     assert.equal((await db.doc(`playerStats/${user.uid}`).get()).exists, false)
     await assert.rejects(auth.getUser(user.uid), { code: "auth/user-not-found" })
+  })
+
+  it("does not report deletion complete after another worker takes its lease", async () => {
+    const user = await guest()
+    await start(user)
+    const auth = getAdminAuth(admin)
+    const data = await deletionData(user)
+    const ref = db.doc(`accountDeletions/${user.uid}`)
+    const service = accountDeletion(db, {
+      getUser: auth.getUser.bind(auth), updateUser: auth.updateUser.bind(auth),
+      deleteUser: async uid => {
+        await auth.deleteUser(uid)
+        // Simulate takeover after this worker's lease expires during cleanup.
+        await ref.update({ lease: "replacement-worker", nextAttemptAt: Timestamp.fromMillis(Date.now() + 60_000) })
+      },
+    })
+    const result = await service.request({ auth: { uid: user.uid, token: { auth_time: Math.floor(Date.now() / 1000) } }, data })
+    assert.deepEqual(result, { accepted: true, complete: false })
+    assert.equal((await ref.get()).data().lease, "replacement-worker")
+    assert.equal((await ref.get()).data().status, "pending")
+    const statusRequest = { data: { uid: user.uid, secret: data.secret } }
+    assert.deepEqual(await service.status(statusRequest), { status: "pending" })
+    await ref.update({ nextAttemptAt: Timestamp.fromMillis(Date.now() - 1) })
+    const recovered = accountDeletion(db, auth)
+    assert.equal(await recovered.process(user.uid), true)
+    assert.deepEqual(await recovered.status(statusRequest), { status: "complete" })
   })
 
   it("recovers a failed Auth cleanup from the durable queue and purges only expired receipts", async () => {

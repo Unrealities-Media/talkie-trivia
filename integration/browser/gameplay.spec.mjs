@@ -31,6 +31,17 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   await expect(result).toBeVisible()
   await page.getByRole('searchbox').press('Enter')
   await expect(result).toBeFocused()
+  // The next keyboard stop previews this movie without submitting the row.
+  await page.keyboard.press('Tab')
+  const preview = page.getByRole('button', { name: /^Preview:/ }).first()
+  await expect(preview).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(preview).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByText('Release Year:', { exact: false })).toBeVisible()
+  await expect(page.getByRole('searchbox')).toHaveValue('star')
+  await page.keyboard.press('Space')
+  await expect(preview).toHaveAttribute('aria-expanded', 'false')
+  await expect(result).toBeEnabled()
   await page.getByRole('searchbox').fill('')
   await page.reload()
   await expect(page.getByRole('button', { name: /^Play Hard\. In progress/ })).toBeVisible()
@@ -81,4 +92,104 @@ test('Easy hint purchase and a wrong guess survive reload', async ({ page }) => 
   await expect(page.getByLabel(directorLabel, { exact: true })).toBeVisible()
   await page.getByRole('searchbox').fill(wrong.t)
   await expect(page.getByRole('button', { name: new RegExp(`^${escape(wrong.t)}.*Already guessed`) }).first()).toBeDisabled()
+})
+
+test('narrow-screen keyboard play keeps confirmation controls reachable', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'One explicit 320px viewport is sufficient.')
+  await page.setViewportSize({ width: 320, height: 640 })
+  await page.goto('/game')
+  await expect(page.getByRole('searchbox')).toBeVisible()
+  const hard = page.getByRole('button', { name: /^Play Hard\./ })
+  const tabTo = async target => {
+    for (let attempt = 0; attempt < 40; attempt++) {
+      if (await target.evaluate(element => element === document.activeElement)) return
+      await page.keyboard.press('Tab')
+    }
+    await expect(target).toBeFocused()
+  }
+  const fitsWidth = async target => {
+    const box = await target.boundingBox()
+    expect(box).not.toBeNull()
+    expect(box.x).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width).toBeLessThanOrEqual(321)
+  }
+  await tabTo(hard)
+  await page.keyboard.press('Enter')
+  const cancel = page.getByRole('button', { name: 'Keep browsing', exact: true })
+  const start = page.getByRole('button', { name: 'Start challenge', exact: true })
+  await expect(cancel).toBeFocused()
+  await fitsWidth(cancel)
+  await fitsWidth(start)
+  await page.keyboard.press('Shift+Tab')
+  await expect(start).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(cancel).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(hard).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(cancel).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(start).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('button', { name: /^Play Hard\. In progress/ })).toBeVisible()
+  await tabTo(page.getByRole('searchbox'))
+  await page.keyboard.type('star')
+  const result = page.getByRole('button', { name: /^Select and guess:/ }).first()
+  await expect(result).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(result).toBeFocused()
+  await fitsWidth(result)
+  await page.keyboard.press('Tab')
+  const preview = page.getByRole('button', { name: /^Preview:/ }).first()
+  await expect(preview).toBeFocused()
+  await fitsWidth(preview)
+  await page.keyboard.press('Space')
+  await expect(preview).toHaveAttribute('aria-expanded', 'true')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+})
+
+test('a throttled guess stays pending through retry and reload without becoming a new move', async ({ page }) => {
+  const commands = []
+  // Exercise the actual callable error contract without generating abusive traffic.
+  // Only the first two attempts are intercepted; reload reaches the real emulator.
+  await page.route('**/applyGameAction', async route => {
+    if (route.request().method() !== 'POST') return route.continue()
+    commands.push(route.request().postDataJSON().data)
+    if (commands.length <= 2) return route.fulfill({
+      status: 429,
+      contentType: 'application/json',
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: { status: 'RESOURCE_EXHAUSTED', message: 'Request limit reached', details: { retryAfterMs: 2000 } } }),
+    })
+    return route.continue()
+  })
+  await page.goto('/game')
+  await expect(page.getByRole('searchbox')).toBeVisible()
+  const day = Math.floor(Date.now() / 86400000)
+  // The initial game is Medium (LEVEL_3).
+  const fixture = fixtures[(day * 5 + 2) % fixtures.length]
+  const wrong = catalog.find(movie => movie.i !== fixture.movieId && movie.t.length < 30 &&
+    catalog.filter(candidate => candidate.t === movie.t).length === 1)
+  expect(wrong).toBeTruthy()
+  await page.getByRole('searchbox').fill(wrong.t)
+  await page.getByRole('button', { name: new RegExp(`^Select and guess: ${escape(wrong.t)}`) }).first().click()
+  await expect(page.getByText('Waiting to save', { exact: true })).toBeVisible()
+  await expect(page.getByText('Please wait a few seconds before trying again. Your saved progress is safe.', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Give Up?', exact: true })).toBeDisabled()
+  await expect(page.getByText('5 GUESSES REMAINING', { exact: true })).toBeVisible()
+  expect(commands).toHaveLength(1)
+  await page.getByRole('button', { name: 'Retry save', exact: true }).click()
+  await expect.poll(() => commands.length).toBe(2)
+  await expect(page.getByRole('button', { name: 'Retry save', exact: true })).toBeVisible()
+  expect(commands).toHaveLength(2)
+  expect(commands[1]).toEqual(commands[0])
+  await page.reload()
+  await expect(page.getByRole('searchbox')).toBeVisible()
+  await expect(page.getByText('Waiting to save', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('4 GUESSES REMAINING', { exact: true })).toBeVisible()
+  expect(commands).toHaveLength(3)
+  expect(commands[2]).toEqual(commands[0])
+  await page.getByRole('searchbox').fill(wrong.t)
+  await expect(page.getByRole('button', { name: new RegExp(`^${escape(wrong.t)}.*Already guessed`) }).first()).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Give Up?', exact: true })).toBeEnabled()
 })

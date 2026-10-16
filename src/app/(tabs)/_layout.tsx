@@ -2,7 +2,7 @@ import React from "react"
 import { Tabs } from "expo-router"
 import { useFonts } from "expo-font"
 import LoadingIndicator from "../../components/loadingIndicator"
-import { FontAwesome } from "@expo/vector-icons"
+import FontAwesome from "@expo/vector-icons/FontAwesome"
 import TextTabBar from "../../components/textTabBar"
 import { View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -15,7 +15,6 @@ const TabLayout = () => {
   const [fontsLoaded, fontError] = useFonts({
     "PremiereDisplay": require("../../../assets/fonts/PremiereDisplay.ttf"),
     "PremiereDisplay-Bold": require("../../../assets/fonts/PremiereDisplay-Bold.ttf"),
-    "PremiereSerif": require("../../../assets/fonts/PremiereSerif.ttf"),
     "PremiereClue": require("../../../assets/fonts/PremiereClue.ttf"),
     "PremiereSans": require("../../../assets/fonts/PremiereSans.ttf"),
     "Arvo-Bold": require("../../../assets/fonts/Arvo-Bold.ttf"),

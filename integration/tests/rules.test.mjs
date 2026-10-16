@@ -31,6 +31,15 @@ beforeEach(async () => {
 })
 const paths = ["players/alice", "players/alice/games/movies_2026-10-13", "players/alice/privateStats/summary", "players/alice/gameHistoryV2/2026-10-13", "players/alice/gameHistory/2026-10-12", "players/alice/mergedGuestGames/retired_movies_2026-10-13"]
 describe("deployed rules source against real Firestore emulator", () => {
+  it("prevents clients from inspecting or resetting the gameplay quota", async () => {
+    await environment.withSecurityRulesDisabled(context => setDoc(doc(context.firestore(), "players/alice/privateRateLimits/gameplay"), { tokens: 0, updatedAt: Date.now() }))
+    for (const context of [environment.authenticatedContext("alice"), environment.authenticatedContext("bob"), environment.unauthenticatedContext()]) {
+      const ref = doc(context.firestore(), "players/alice/privateRateLimits/gameplay")
+      await assertFails(getDoc(ref))
+      await assertFails(setDoc(ref, { tokens: 30, updatedAt: Date.now() }))
+      await assertFails(deleteDoc(ref))
+    }
+  })
   for (const role of ["source", "target", "retired"]) {
     it(`blocks owner access during a merge ${role} reservation and protects administrative records`, async () => {
       await environment.withSecurityRulesDisabled(async context => {

@@ -13,7 +13,7 @@ import {
 import { Image } from "expo-image"
 import { LinearGradient } from "expo-linear-gradient"
 import { useTheme } from "../contexts/themeContext"
-import { FontAwesome } from "@expo/vector-icons"
+import FontAwesome from "@expo/vector-icons/FontAwesome"
 import { TriviaItem } from "../models/trivia"
 import { analyticsService } from "../utils/analyticsService"
 import { useExternalLink } from "../utils/hooks/useExternalLink"

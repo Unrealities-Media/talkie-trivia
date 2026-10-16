@@ -51,10 +51,28 @@ function digestTree(directory) {
   visit(directory)
   return hash.digest("hex")
 }
-function verifyBuild(project, directory = output, manifestPath = receipt) {
+// Include uncommitted/new files, not just HEAD: local beta builds commonly
+// include work awaiting review. Documentation and generated output are excluded.
+const sourceInputs = ["src", "assets", "config", "plugins", "vendor", "data", "public", "patches",
+  "index.tsx", "app.config.js", "babel.config.js", "metro.config.js", "tsconfig.json",
+  "package.json", "package-lock.json", ".nvmrc", ".env.beta", "scripts/web-beta.cjs"]
+function sourceDigest(directory = root) {
+  const hash = crypto.createHash("sha256")
+  for (const relative of sourceInputs) {
+    const file = path.join(directory, relative)
+    hash.update(relative).update("\0")
+    if (!fs.existsSync(file)) { hash.update("absent\0"); continue }
+    const stat = fs.lstatSync(file)
+    if (stat.isSymbolicLink()) throw new Error("Beta build inputs must not contain symlinks.")
+    hash.update(stat.isDirectory() ? digestTree(file) : fs.readFileSync(file)).update("\0")
+  }
+  return hash.digest("hex")
+}
+function verifyBuild(project, directory = output, manifestPath = receipt, sourceDirectory = root) {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"))
   if (!project || project.startsWith("demo-") || manifest.project !== project || manifest.variant !== "preview" || manifest.emulator !== false) throw new Error("Deployment project does not match a live beta build. Rebuild for the intended staging project.")
   if (digestTree(directory) !== manifest.sha256) throw new Error("Build output changed. Run npm run beta:build again.")
+  if (manifest.sourceSha256 !== sourceDigest(sourceDirectory)) throw new Error("Build source changed or receipt predates source verification. Run npm run beta:build again.")
   return manifest
 }
 function run(file, args, env = process.env) {
@@ -69,12 +87,14 @@ function main() {
     const config = betaConfig(process.env)
     fs.mkdirSync(path.dirname(receipt), { recursive: true })
     fs.rmSync(receipt, { force: true })
+    const sourceSha256 = sourceDigest()
     run(require.resolve("expo/bin/cli"), ["export", "--platform", "web", "--output-dir", "web-build", "--clear"], {
       ...process.env, APP_VARIANT: "preview", WEB_BETA: "true", EXPO_NO_DOTENV: "1",
     })
     for (const [route, html] of Object.entries(publicPages(config))) fs.writeFileSync(path.join(output, `${route}.html`), html)
     fs.writeFileSync(path.join(output, "robots.txt"), "User-agent: *\nDisallow: /\n")
-    fs.writeFileSync(receipt, JSON.stringify({ project: config.firebase.projectId, site: config.site, variant: config.variant, emulator: config.emulator, sha256: digestTree(output) }, null, 2))
+    if (sourceDigest() !== sourceSha256) throw new Error("Build source changed during export. Run npm run beta:build again.")
+    fs.writeFileSync(receipt, JSON.stringify({ project: config.firebase.projectId, site: config.site, variant: config.variant, emulator: config.emulator, sha256: digestTree(output), sourceSha256 }, null, 2))
     console.log(`Beta built for ${config.firebase.projectId}: ${config.site}. No deployment performed.`)
   } else if (command === "verify") {
     verifyBuild(process.env.GCLOUD_PROJECT)
@@ -86,4 +106,4 @@ function main() {
   } else throw new Error("Use build, verify, or deploy <staging-project-id>.")
 }
 if (require.main === module) { try { main() } catch (error) { console.error(error.message); process.exitCode = 1 } }
-module.exports = { betaConfig, publicPages, digestTree, verifyBuild }
+module.exports = { betaConfig, publicPages, digestTree, sourceDigest, verifyBuild }

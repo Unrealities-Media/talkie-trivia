@@ -13,7 +13,7 @@ snapshots, named test identities and fake-day controls are documented in
 fixes, actual gameplay evidence and remaining UX improvements. This local stage
 does not close the external/native release gates below.
 
-Confirmed launch defaults: movie-only daily game; worldwide UTC reset; three hints per Easy game; no paid features; guest play with optional account sync. Public support email, policy/deletion website, and a separate staging Firebase project remain to be supplied/configured.
+Confirmed launch defaults: movie-only daily game; worldwide UTC reset; three hints per Easy game; no paid features; guest play with optional account sync. The hosted beta's public support email and privacy/deletion pages are published and passed bounded desktop/mobile checks on October 15; see [hosted public pages](2026-10-15-hosted-public-pages.md). Support delivery, privacy/deletion operational acceptance and separate staging configuration remain unverified.
 
 ## Current implementation
 

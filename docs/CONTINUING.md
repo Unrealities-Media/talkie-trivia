@@ -1,16 +1,34 @@
 # Continuing development
 
-Checkpoint: October 14, 2026 in America/Chicago. **The invited web beta is
+Checkpoint: October 15, 2026 in America/Chicago. **The invited web beta is
 playable, but wider public beta and both app stores remain blocked.** This
 document is the starting point for the next work session.
 
-The live schedule covers October 14–21 UTC and needs more reviewed content
-before October 22 UTC. Production approvals and rights review remain open.
+Current development priority is **web beta**. Android/iOS builds remain disabled;
+do not run native builds as routine verification. Dependency consolidation PR
+#12 is merged, and its app, browser, emulator, Go, CodeQL and full-history secret
+checks passed. See [dependency maintenance](dependency-maintenance.md) for
+monthly batching and intentional toolchain compatibility holds. These CI results
+do not close live-deployment, rights, public-abuse or native-release gates.
+
+The last recorded live schedule covers October 14–21 UTC and needs more reviewed
+content before October 22 UTC; this horizon has not been freshly queried.
+The [read-only readiness command](content-pipeline.md#read-only-schedule-readiness)
+can verify it with the deployed catalog and authorized read credentials.
+Production approvals and rights review remain open.
 The reported zero-height search results blocker is fixed locally, pending web
 export, deployment and live cold-load/restored-tab verification. Public backend
-App Check and rate limits remain unfinished; retain invited-group access policy.
+App Check remains unfinished. A per-account gameplay limit and safe browser retry
+are verified locally in [PR 14](https://github.com/Unrealities-Media/talkie-trivia/pull/14),
+pending merge/deployment; retain invited-group access policy.
 See the [latest beta audit](audits/live-beta-2026-10-14.md) for evidence and the
 remaining UX findings. Local changes have not been deployed in this stage.
+
+The [October 15 hosted-page audit](audits/2026-10-15-hosted-public-pages.md)
+confirms that privacy, support and deletion information is already published and
+renders at desktop/narrow-mobile sizes. Mailbox delivery, real account deletion,
+retention and legal/store acceptance remain unverified. The local combined
+candidate is described in [the candidate checkpoint](audits/2026-10-15-web-beta-candidate.md).
 
 The subsequent cohesion pass improves challenge confirmation, keyboard search,
 sharing, result themes and Profile hierarchy. See the
@@ -64,7 +82,7 @@ the affected item to a release blocker.
 | Choose difficulty before first play | New challenges now require confirmation locally; started/completed challenges open directly. Browser confirmation/cancel and saved-result navigation checked. |
 | Reduce Give Up prominence | Quiet link and confirmation shipped; cancel preserves state. Shared dialog now contains web keyboard focus, verified locally. |
 | Compact clue and results layout | Compact projection/search and score explanation shipped. Local fixes remove inactive Hard seats, hidden future clue text and web nested results scrolling. Live deployment verification pending. |
-| Explicit preview action | Preview works by long press; discoverable keyboard/pointer action and Enter behavior still need acceptance. |
+| Explicit preview action | A separate Preview movie button opens/closes details without guessing and announces its expanded state. Tab/Enter/Space browser acceptance is recorded in [search preview](audits/2026-10-15-search-preview.md). Live deployment and assistive-technology acceptance remain open. |
 | Prioritize progress in Profile | Statistics/history now precede account/settings/deletion locally; local browser checked. |
 | Explain per-game hints | Easy plaques show cost and wait for server confirmation. Profile now explains three hints per Easy challenge rather than displaying a wallet. |
 
@@ -105,8 +123,9 @@ Start a fresh session with live verification of the search fix and the content
 runway, then address the remaining browser UX items as a coherent stage.
 Play the app again at desktop and mobile widths and with keyboard/large text;
 test account recovery, locked difficulty, guess submission and saved results
-where the changes touch them. Then resume the release gates above, beginning
-with native binaries and real identity flows. Infrastructure and editorial work
+where the changes touch them. Then address web public-abuse controls, content
+readiness and real web identity flows. Native gates remain deferred until native
+development resumes explicitly. Infrastructure and editorial work
 can progress independently when the necessary accounts and content are available.
 
 For each completed item, update this checklist and the corresponding tracker

@@ -80,13 +80,13 @@ export function accountDeletion(db: Firestore, auth: Auth) {
       }
       await deleteMergeProvenance(db, uid)
       try { await auth.deleteUser(uid) } catch (error) { if (!notFound(error)) throw error }
-      await db.runTransaction(async tx => {
+      return await db.runTransaction(async tx => {
         const current = (await tx.get(ref)).data()
-        if (current?.lease !== lease) return
+        if (current?.lease !== lease) return current?.status === "complete"
         tx.update(ref, { status: "complete", completedAt: Timestamp.now(), purgeAt: Timestamp.fromMillis(Date.now() + retentionMs), nextAttemptAt: FieldValue.delete(), lease: FieldValue.delete() })
         tx.update(db.doc(`accountDeletionReceipts/${uid}`), { status: "complete", expiresAt: Timestamp.fromMillis(Date.now() + receiptRetentionMs) })
+        return true
       })
-      return true
     } catch {
       // Do not log emails, tokens, UIDs or raw provider/database errors.
       warn("account_deletion_retry_required")

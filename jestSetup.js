@@ -209,6 +209,8 @@ jest.mock("@expo/vector-icons", () => {
   };
 });
 
+jest.mock("@expo/vector-icons/FontAwesome", () => require("@expo/vector-icons").FontAwesome);
+
 // --- ROUTER & STORAGE ---
 jest.mock("expo-router", () => ({
   useRouter: () => ({

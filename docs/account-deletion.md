@@ -4,8 +4,12 @@
 
 The backend and in-app flow are implemented with unit/component and real emulator
 checks. Profile offers deletion for guests and linked Google accounts. This is
-not release approval: native provider/device validation, the public web request
-page, cross-device recovery and deployed scheduler/monitoring remain release gates.
+not release approval: real-provider validation, ownership-verified support recovery,
+cross-device recovery and deployed scheduler/monitoring remain release gates.
+The public deletion instructions are published, as verified by the
+[hosted-page audit](audits/2026-10-15-hosted-public-pages.md); that does not establish
+support mailbox delivery or successful handling of a real deletion request.
+Native provider/device acceptance is deferred during the web-beta stage.
 Nothing in this work has deleted a real account or been deployed.
 
 ## Server contract
@@ -54,6 +58,13 @@ retrying an accepted request does not require fresh authentication again. A
 temporary ten-minute lease bounds competing workers and survives process failure.
 Failures leave the barrier and queued request intact, including failures after
 partial data removal or Auth deletion.
+
+If another worker takes the lease before finalization, the earlier worker returns
+incomplete unless the durable job is already complete. Finishing its local cleanup
+steps alone cannot produce a completion response: the job and status receipt must
+be finalized transactionally. The emulator regression injects a replacement lease
+after Auth removal, verifies pending status, then expires that lease and verifies
+successful idempotent recovery with the real Auth/Firestore emulators.
 
 `retryAccountDeletions` runs every five minutes in UTC. It retries up to twenty
 eligible jobs per invocation, with failures moved behind other eligible work by
