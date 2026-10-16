@@ -4,27 +4,11 @@ import { ThemeProvider } from "../../../src/contexts/themeContext"
 import { useAuth } from "../../../src/contexts/authContext"
 import { useGameStore } from "../../../src/state/gameStore"
 
-// 1. Mock React.lazy to avoid dynamic import error and circular dependency.
-jest.mock("react", () => {
-  const actual = jest.requireActual("react")
-  return {
-    ...actual,
-    lazy: (_factory: any) => {
-      const Component = (props: any) => {
-        // Use STRING "View" to avoid requiring react-native which causes circular dependency
-        return actual.createElement(
-          "View",
-          { ...props, testID: "lazy-component" },
-          props.children
-        )
-      }
-      return Component
-    },
-    Suspense: ({ children }: any) => children,
-  }
+// Isolate child controls without replacing React's loading behavior.
+jest.mock("../../../src/components/guestArchive", () => {
+  const { View } = require("react-native")
+  return ({ uid }: { uid: string }) => <View testID={`preserved-guest-${uid}`} />
 })
-
-// 2. Mock the modules.
 jest.mock("../../../src/components/googleLogin", () => () => <></>)
 jest.mock("../../../src/components/playerStats", () => () => <></>)
 jest.mock("../../../src/components/gameHistory", () => () => <></>)
@@ -97,7 +81,7 @@ describe("App: ProfileSettingsScreen", () => {
       expect(screen.getByText("Welcome back, Test User.")).toBeTruthy()
       expect(screen.queryByText("Link Your Guest Account")).toBeNull()
       expect(screen.getByText("Preserved guest games")).toBeTruthy()
-      expect(screen.getAllByTestId("lazy-component").filter(item => item.props.uid === "saved")).toHaveLength(1)
+      expect(screen.getByTestId("preserved-guest-saved")).toBeTruthy()
     })
   })
 
