@@ -85,9 +85,20 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   })
   await page.getByRole('button', { name: 'Share Your Result', exact: true }).click()
   await expect(page.getByText('Select and copy your result below.', { exact: true })).toBeVisible()
-  const shareText = page.getByText(/^Talkie Trivia /)
+  const shareText = page.getByRole('textbox', { name: 'Your result to copy', exact: true })
   await expect(shareText).toBeVisible()
-  await expect(shareText).not.toContainText(answer.t)
+  const resultToCopy = await shareText.inputValue()
+  expect(resultToCopy).toMatch(/^Talkie Trivia /)
+  expect(resultToCopy).not.toContain(answer.t)
+  expect(await shareText.evaluate(node => node.scrollHeight <= node.clientHeight)).toBe(true)
+  await expect(shareText).toHaveAttribute('readonly', '')
+  await page.getByRole('button', { name: 'Share Your Result', exact: true }).focus()
+  await page.keyboard.press('Tab')
+  await expect(shareText).toBeFocused()
+  // React Native Web defers selection one event-loop turn for Safari.
+  await expect.poll(() => shareText.evaluate(node => node.value.slice(node.selectionStart, node.selectionEnd))).toBe(resultToCopy)
+  await page.keyboard.type('accidental edit')
+  await expect(shareText).toHaveValue(resultToCopy)
   for (const dismissed of [false, true]) {
     await page.evaluate(dismissed => {
       Object.defineProperty(navigator, 'share', { configurable: true, value: async () => {
@@ -97,6 +108,7 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
     await page.getByRole('button', { name: 'Share Your Result', exact: true }).click()
     await expect(page.getByRole('button', { name: 'Share Your Result', exact: true })).toBeEnabled()
     await expect(page.getByText(/Result copied|Select and copy|Could not share/)).toHaveCount(0)
+    await expect(shareText).toHaveCount(0)
   }
   await expect(page.getByText(/^Daily reset in /)).toBeVisible()
   await page.getByRole('button', { name: 'Continue Medium', exact: true }).click()

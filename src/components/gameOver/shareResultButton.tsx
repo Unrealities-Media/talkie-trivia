@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { View, Alert, ViewStyle, Text, Platform } from "react-native"
+import { View, Alert, ViewStyle, Text, TextInput, Platform } from "react-native"
 import { PlayerGame } from "../../models/game"
 import { shareGameResult, generateShareMessage } from "../../utils/shareUtils"
 import { Button } from "../ui/button"
@@ -73,7 +73,11 @@ const ShareResultButton: React.FC<ShareResultButtonProps> = ({
         style={styles.button}
       />
       {!!status && <Text accessibilityLiveRegion="polite" style={{ fontFamily: "PremiereSans", color: colors.textPrimary, fontSize: 13, lineHeight: 20, marginTop: 10, textAlign: "center" }}>{status}</Text>}
-      {!!copyText && <Text selectable style={{ fontFamily: "PremiereSans", color: colors.textPrimary, fontSize: 14, lineHeight: 22, marginTop: 12 }}>{copyText}</Text>}
+      {!!copyText && <TextInput accessibilityLabel="Your result to copy" value={copyText}
+        editable={false} multiline numberOfLines={6} selectTextOnFocus
+        style={{ fontFamily: "PremiereSans", color: colors.textPrimary, backgroundColor: colors.surface,
+          fontSize: 14, lineHeight: 22, marginTop: 12, padding: 12, width: "100%",
+          borderWidth: 1, borderColor: colors.border, borderRadius: 4 }} />}
     </View>
   )
 }
