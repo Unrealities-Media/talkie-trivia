@@ -93,6 +93,15 @@ JavaScript or the game backend. Profile links to these pages.
 The deploy command publishes **Hosting only**. Its predeploy hook compares the
 target project, output files and local build inputs with `.expo/web-beta-build.json`.
 Missing, modified, emulator or stale-source artifacts fail closed. The source
+check is followed by six unauthenticated HTTP requests: browser preflight and
+callable authentication checks for `startGame`, `applyGameAction` and
+`getPlayerStatistics`. Missing endpoints, invocation restrictions or broken CORS
+stop Hosting publication. These checks create no accounts or game data and run
+only at deployment; they do not prove backend-version compatibility or replace
+authenticated gameplay acceptance. Deploy changed backend functions and indexes
+before the frontend that needs them.
+
+The source
 digest includes new/uncommitted files under app source, assets, config, plugins,
 vendor, data, public and patches, plus entry/build configuration files, package
 manifests/lockfile, `.nvmrc`, `.env.beta` and the beta build script. Documentation

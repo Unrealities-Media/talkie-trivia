@@ -3,6 +3,7 @@ const path = require("node:path")
 const crypto = require("node:crypto")
 const { spawnSync } = require("node:child_process")
 const { readEnvironment } = require("../config/appEnvironment.cjs")
+const { verifyBackend } = require("./beta-backend-readiness.cjs")
 const root = path.resolve(__dirname, "..")
 const output = path.join(root, "web-build")
 const receipt = path.join(root, ".expo/web-beta-build.json")
@@ -55,7 +56,7 @@ function digestTree(directory) {
 // include work awaiting review. Documentation and generated output are excluded.
 const sourceInputs = ["src", "assets", "config", "plugins", "vendor", "data", "public", "patches",
   "index.tsx", "app.config.js", "babel.config.js", "metro.config.js", "tsconfig.json",
-  "package.json", "package-lock.json", ".nvmrc", ".env.beta", "scripts/web-beta.cjs"]
+  "package.json", "package-lock.json", ".nvmrc", ".env.beta", "scripts/web-beta.cjs", "scripts/beta-backend-readiness.cjs"]
 function sourceDigest(directory = root) {
   const hash = crypto.createHash("sha256")
   for (const relative of sourceInputs) {
@@ -80,7 +81,7 @@ function run(file, args, env = process.env) {
   if (child.error) throw child.error
   if (child.status !== 0) throw new Error(`Command failed (${child.status}): ${path.basename(file)}`)
 }
-function main() {
+async function main() {
   require("dotenv").config({ path: path.join(root, ".env.beta"), quiet: true })
   const command = process.argv[2]
   if (command === "build") {
@@ -97,13 +98,14 @@ function main() {
     fs.writeFileSync(receipt, JSON.stringify({ project: config.firebase.projectId, site: config.site, variant: config.variant, emulator: config.emulator, sha256: digestTree(output), sourceSha256 }, null, 2))
     console.log(`Beta built for ${config.firebase.projectId}: ${config.site}. No deployment performed.`)
   } else if (command === "verify") {
-    verifyBuild(process.env.GCLOUD_PROJECT)
-    console.log("Verified live beta artifact and deployment project.")
+    const manifest = verifyBuild(process.env.GCLOUD_PROJECT)
+    await verifyBackend(manifest.project, manifest.site)
+    console.log("Verified live beta artifact, deployment project and gameplay/statistics endpoint access.")
   } else if (command === "deploy") {
     const project = process.argv[3]
     verifyBuild(project)
     run(path.join(root, "integration/node_modules/firebase-tools/lib/bin/firebase.js"), ["deploy", "--project", project, "--only", "hosting"])
   } else throw new Error("Use build, verify, or deploy <staging-project-id>.")
 }
-if (require.main === module) { try { main() } catch (error) { console.error(error.message); process.exitCode = 1 } }
+if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1 })
 module.exports = { betaConfig, publicPages, digestTree, sourceDigest, verifyBuild }
