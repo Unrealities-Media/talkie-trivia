@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Talkie Trivia</title>
+    <style id="expo-reset">
+      html, body { height: 100%; margin: 0; }
+      body { overflow: hidden; background: #03131c; }
+      #root { display: flex; height: 100%; flex: 1; }
+      #root:not(:empty) ~ #startup { display: none; }
+      .startup { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; color: #faf3e8; background: #03131c; font: 16px/1.5 system-ui, sans-serif; text-align: center; }
+      .startup h1 { font: 36px/1.2 Georgia, serif; margin: 0 0 16px; }
+      .startup p { margin: 0 0 20px; }
+      .startup button, .startup a { display: inline-block; box-sizing: border-box; min-height: 44px; padding: 10px 18px; font: inherit; border-radius: 6px; }
+      .startup button { border: 0; background: #ff7868; color: #061923; cursor: pointer; }
+      .startup a { color: #ff8979; }
+      .startup :focus-visible { outline: 3px solid #faf3e8; outline-offset: 3px; }
+      .startup [hidden] { display: none; }
+    </style>
+  </head>
+  <body>
+    <noscript>
+      <style>#startup { display: none; }</style>
+      <main class="startup"><h1>Talkie Trivia</h1><p>Enable JavaScript to play.</p><a href="/support">Support</a></main>
+    </noscript>
+    <div id="root"></div>
+    <main id="startup" class="startup">
+      <h1>Talkie Trivia</h1>
+      <p id="startup-status" role="status">Opening your daily movies…</p>
+      <div id="startup-recovery" hidden><button id="startup-reload" type="button">Reload game</button><a href="/support">Support</a></div>
+    </main>
+    <script>
+      (function () {
+        var root = document.getElementById('root');
+        var shell = document.getElementById('startup');
+        var timer;
+        function recover(message) {
+          if (root.childElementCount) return;
+          document.getElementById('startup-status').textContent = message;
+          document.getElementById('startup-recovery').hidden = false;
+        }
+        function failed(event) {
+          if (event.target instanceof HTMLScriptElement || event instanceof ErrorEvent) {
+            clearTimeout(timer);
+            recover("Couldn't load the game.");
+          }
+        }
+        document.getElementById('startup-reload').onclick = function () { location.reload(); };
+        window.addEventListener('error', failed, true);
+        timer = setTimeout(function () { recover('Taking longer than usual.'); }, 20000);
+        var observer = new MutationObserver(function () {
+          if (!root.childElementCount) return;
+          clearTimeout(timer);
+          window.removeEventListener('error', failed, true);
+          observer.disconnect();
+          shell.remove();
+        });
+        observer.observe(root, { childList: true });
+      })();
+    </script>
+  </body>
+</html>
