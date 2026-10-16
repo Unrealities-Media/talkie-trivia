@@ -32,6 +32,7 @@ export const Button: React.FC<ButtonProps> = ({
   isLoading = false,
   leadingIcon,
   disabled,
+  accessibilityState,
   style,
   ...props
 }) => {
@@ -58,8 +59,13 @@ export const Button: React.FC<ButtonProps> = ({
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityLabel={title}
-      accessibilityState={{ disabled: Boolean(isDisabled), busy: isLoading }}
       {...props}
+      accessibilityState={{ ...accessibilityState, disabled: Boolean(isDisabled), busy: isLoading }}
+      aria-disabled={Boolean(isDisabled)}
+      aria-busy={isLoading}
+      aria-expanded={props["aria-expanded"] ?? accessibilityState?.expanded}
+      aria-selected={props["aria-selected"] ?? accessibilityState?.selected}
+      aria-checked={props["aria-checked"] ?? accessibilityState?.checked}
     >
       {isLoading ? (
         <ActivityIndicator

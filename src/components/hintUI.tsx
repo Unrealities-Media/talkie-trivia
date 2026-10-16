@@ -58,6 +58,7 @@ const HintUI: React.FC<HintUIProps> = memo(
           accessible={true}
           accessibilityRole="button"
           accessibilityState={{ disabled: isToggleDisabled, expanded: showHintOptions }}
+          aria-expanded={showHintOptions}
           accessibilityLabel={hintLabelText}
           style={styles.toggle}
         >

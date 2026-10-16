@@ -64,6 +64,12 @@ describe("UI Component: Button", () => {
   })
 
   describe("Interaction and State", () => {
+    it("preserves expanded state without hiding loading or disabled state", () => {
+      renderWithTheme(<Button title="Help" isLoading accessibilityState={{ expanded: true, disabled: false, busy: false }} />)
+      const button = screen.getByRole("button")
+      expect(button.props.accessibilityState).toMatchObject({ expanded: true, disabled: true, busy: true })
+    })
+
     it("should call onPress when clicked", () => {
       renderWithTheme(<Button title="Press Me" onPress={mockOnPress} />)
       fireEvent.press(screen.getByRole("button"))
