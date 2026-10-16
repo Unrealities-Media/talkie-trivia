@@ -11,6 +11,7 @@ import { releaseYear } from "../utils/dateDisplay"
 import { imdbPersonUrl, imdbTitleUrl } from "../utils/imdbLinks"
 import { movieReward } from "../services/movieRewardService"
 import { useExternalLink } from "../utils/hooks/useExternalLink"
+import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
 import CountdownTimer from "./countdownTimer"
 import NextChallenge from "./nextChallenge"
 import GuessesContainer from "./guesses"
@@ -28,6 +29,7 @@ export default function GameOverView(props: GameOverViewProps) {
 }
 
 function MovieRewardScreen({ playerGame: game, lastGuessResult }: GameOverViewProps) {
+  const reduced = usePremiereMotion()
   const s = useStyles(themedStyles)
   const { colors } = useThemeTokens()
   const { width, fontScale } = useWindowDimensions()
@@ -59,7 +61,7 @@ function MovieRewardScreen({ playerGame: game, lastGuessResult }: GameOverViewPr
   const decade = movie.hints.find(h => h.type === "decade")?.value
   const released = [year, typeof decade === "string" ? decade : null].filter(Boolean).join(" · ")
 
-  return <Animated.View testID="cinematic-reward" entering={FadeInDown.duration(450).reduceMotion(ReduceMotion.System)} style={s.page}>
+  return <Animated.View testID="cinematic-reward" entering={FadeInDown.duration(450).reduceMotion(reduced ? ReduceMotion.Always : ReduceMotion.Never)} style={s.page}>
     <View style={s.celebration}>
       <Text accessibilityRole="header" style={[s.resultTitle, narrow && s.resultTitleNarrow]}>{result}</Text>
       <Text style={s.resultMessage}>{message} · {difficulty}</Text>

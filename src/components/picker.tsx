@@ -15,6 +15,7 @@ import {
   withRepeat,
   withSequence,
   withTiming,
+  cancelAnimation,
 } from "react-native-reanimated"
 import { BasicTriviaItem, TriviaItem } from "../models/trivia"
 import { PickerUI } from "./pickerUI"
@@ -25,6 +26,7 @@ import { useGameStore } from "../state/gameStore"
 import { useShallow } from "zustand/react/shallow"
 import { createMovieSearch } from "../utils/movieSearch"
 import { GAME_MODE_CONFIG } from "../config/difficulty"
+import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
 
 const PickerContainer: FC = memo(() => {
   const {
@@ -58,8 +60,19 @@ const PickerContainer: FC = memo(() => {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const guessedIds = useMemo(() => new Set(playerGame?.guesses.map(guess => String(guess.itemId)) || []), [playerGame?.guesses])
   const shakeAnimation = useSharedValue(0)
+  const reduced = usePremiereMotion()
+  const reducedRef = useRef(reduced)
+  reducedRef.current = reduced
+  useEffect(() => {
+    if (reduced) {
+      cancelAnimation(shakeAnimation)
+      shakeAnimation.value = 0
+    }
+    return () => cancelAnimation(shakeAnimation)
+  }, [reduced, shakeAnimation])
 
   const triggerShake = useCallback(() => {
+    if (reducedRef.current) return
     shakeAnimation.value = withSequence(
       withTiming(-10, { duration: 50 }),
       withRepeat(withTiming(10, { duration: 100 }), 3, true),

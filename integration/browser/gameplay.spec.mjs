@@ -219,6 +219,38 @@ test('narrow-screen keyboard play switches modes directly and keeps help optiona
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })
 
+test('enabling reduced motion during play keeps search and the next result still', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/game')
+  const input = page.getByRole('searchbox')
+  await expect(input).toBeVisible()
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  await input.fill('zzzznomovietitlezzzz')
+  const movement = await input.evaluate(async element => {
+    const positions = []
+    const until = performance.now() + 800
+    do {
+      positions.push(element.getBoundingClientRect().x)
+      await new Promise(requestAnimationFrame)
+    } while (performance.now() < until)
+    return Math.max(...positions) - Math.min(...positions)
+  })
+  expect(movement).toBeLessThan(0.1)
+  await expect(page.getByTestId('search-status')).toContainText('No titles found')
+  await page.evaluate(() => {
+    window.rewardAnimations = []
+    document.addEventListener('animationstart', event => {
+      if (event.target.getAttribute('data-testid') === 'cinematic-reward') window.rewardAnimations.push(event.animationName)
+    })
+  })
+  await page.getByRole('button', { name: 'Give Up?', exact: true }).click()
+  await page.getByRole('button', { name: 'Give Up', exact: true }).click()
+  await expect(page.getByTestId('cinematic-reward')).toBeVisible()
+  await expect(page.getByText('Answer revealed', { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => window.rewardAnimations)).toEqual([])
+})
+
 test('a throttled guess stays pending through retry and reload without becoming a new move', async ({ page }) => {
   const commands = []
   // Exercise the actual callable error contract without generating abusive traffic.
