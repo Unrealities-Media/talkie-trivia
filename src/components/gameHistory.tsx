@@ -53,6 +53,9 @@ const GameHistoryItem = memo(({ item, onPress, compact }: GameHistoryItemProps) 
     month: "long",
     day: "numeric",
   })
+  const outcome = item.wasCorrect
+    ? `Solved in ${item.guessCount} ${item.guessCount === 1 ? "guess" : "guesses"}`
+    : item.gaveUp ? "Gave up" : "Not solved"
 
   const handlePress = () => {
     hapticsService.light()
@@ -77,7 +80,7 @@ const GameHistoryItem = memo(({ item, onPress, compact }: GameHistoryItemProps) 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`View ${item.itemTitle} result`}
+      accessibilityLabel={`View ${item.itemTitle} result. ${formattedDate}. ${difficultyLabel}. ${outcome}. ${item.score} ${item.score === 1 ? "point" : "points"}.`}
       testID={`history-item-${item.itemTitle}`}
       onPress={handlePress}
       style={({ pressed }) => [
@@ -93,7 +96,7 @@ const GameHistoryItem = memo(({ item, onPress, compact }: GameHistoryItemProps) 
         </Typography>
         {!compact && <Typography style={styles.dateText}>{formattedDate}</Typography>}
         {compact ? <Typography style={styles.compactResult}>
-          {difficultyLabel} · {item.wasCorrect ? `Solved in ${item.guessCount} ${item.guessCount === 1 ? "guess" : "guesses"}` : item.gaveUp ? "Gave up" : "Not solved"}
+          {difficultyLabel} · {outcome}
         </Typography> : <>
           <Typography style={styles.difficultyText}>Difficulty: {difficultyLabel}</Typography>
           {getResultText()}

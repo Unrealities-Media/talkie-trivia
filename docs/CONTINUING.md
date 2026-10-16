@@ -6,9 +6,13 @@ This is the current handoff; older audits preserve evidence from their dates.
 
 ## Shipped state
 
-- PRs 18–34 are merged. PR34 head `7edf1abdae69302e6281079332894a9ed9050508`
-  passed all nine checks. Hosting version `6b4734a0004dc3ef` shipped at
-  05:00:12.065 UTC; all 47 live files matched the export.
+- PRs 18–42 are merged. PR42 head `a207f39a1865b6ad18c0f082c79e536700668059`
+  passed all nine checks. All 47 live files matched its export at 06:32:27 UTC;
+  a dedicated beta guest's saved wrong guess preserved search focus at 06:32:29 UTC.
+- Recent web improvements include next-challenge navigation, startup recovery,
+  gameplay while fonts load, completed-search announcements, live reduced-motion
+  preferences and keyboard continuity after guessing. Disabled Sentry runtime
+  code was removed from the bundle. Deployment also checks backend endpoint readiness.
 - The missing PR30 backend rollout was completed at 05:03 UTC. All 13 functions
   are ACTIVE. A live guest win, Profile statistics, All Stats and reload passed
   at 05:06:49 UTC with statistics version 3 and no browser errors.
@@ -18,18 +22,22 @@ This is the current handoff; older audits preserve evidence from their dates.
 - Optional help and direct mode switching replace the intrusive explanations
   and mode confirmation. Keyboard/state accessibility and cinematic rewards
   shipped. Full reward synopsis is stored separately from the difficulty clue.
-- Chromium CI passed. The additional local Firefox/WebKit run passed 16 tests
-  with four intentionally skipped duplicate viewport cases. These engine checks
+- Chromium CI passed. The additional local Firefox/WebKit run against PR42 passed
+  36 tests with four intentionally skipped duplicate viewport cases. It covers the
+  recent startup, font, motion and search-focus changes on desktop/mobile layouts.
+  Local evidence is `.expo/post-ux-browser-engines.log` in the shared root.
+  These engine checks
   do not establish real Safari, physical-device or Google provider acceptance.
 - The explicitly approved anonymous test guest was deleted. Server reads
   confirmed its Auth account and owned game/history/statistics data absent;
   completion survives reload without creating another guest.
 - Database delete protection is enabled. A prior Hosting artifact was verified
   on an expiring preview channel. Neither proves database restore or backend rollback.
-- At 05:07:03 UTC, `npm run beta:operations` passed all eight checks with zero
+- At 06:09:52 UTC, `npm run beta:operations` passed all eight checks with zero
   pending deletions and zero completion/receipt records overdue by one hour.
-  The reported scheduler attempt was 05:02:01 UTC, before the latest backend update;
-  this snapshot does not prove a successful post-update scheduled invocation.
+  The reported scheduler attempt was 06:08:02 UTC with successful status, after
+  the backend update. This confirms post-update scheduling, not another end-to-end
+  deletion or future retention expiry. Local evidence is `.expo/post-update-operations.log`.
 
 Evidence: [live rollout](audits/2026-10-16-live-web-beta.md),
 [browser engines](audits/2026-10-16-browser-engines.md), and

@@ -106,7 +106,7 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   await expect(page.getByText("That's a wrap!", { exact: true })).toBeVisible()
   await page.getByRole('tab', { name: 'Archive', exact: true }).click()
   await expect(page.getByText(answer.t, { exact: true }).first()).toBeVisible()
-  const savedResult = page.getByRole('button', { name: `View ${answer.t} result`, exact: true })
+  const savedResult = page.getByRole('button', { name: new RegExp(`^View ${escape(answer.t)} result\\. .*\\. Very Easy\\. Solved in 1 guess\\. \\d+ points\\.$`) })
   await savedResult.focus()
   await page.keyboard.press('Enter')
   await expect(page.getByRole('heading', { name: 'Synopsis', exact: true })).toBeVisible()
