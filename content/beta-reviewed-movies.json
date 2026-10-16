@@ -1378,30 +1378,30 @@
     "contentHash": "b19c68506fd64f4895c7a7aeb0d1d6af8133f3fe36b0c0f490319eff8a0c7547"
   },
   {
-    "movieId": 10191,
-    "description": "As the son of a Viking leader on the cusp of manhood, shy Hiccup Horrendous Haddock III faces a rite of passage: he must kill a dragon to prove his warrior mettle. But after downing a feared dragon, he realizes that he no longer wants to destroy it, and instead befriends the beast – which he names Toothless – much to the chagrin of his warrior father.",
-    "imdbId": "tt0892769",
+    "movieId": 11287,
+    "description": "As America's stock of athletic young men is depleted during World War II, a professional all-female baseball league springs up in the Midwest, funded by publicity-hungry candy maker Walter Harvey. Competitive sisters Dottie Hinson and Kit Keller spar with each other, scout Ernie Capadino and grumpy has-been coach Jimmy Dugan on their way to fame.",
+    "imdbId": "tt0104694",
     "tagline": "",
     "clues": {
-      "LEVEL_1": "As the son of a Viking leader on the cusp of manhood, shy Hiccup Horrendous Haddock III faces a rite of passage: he must kill a dragon to prove his warrior mettle. But after downing a feared dragon, he realizes that he no longer wants to destroy it, and instead befriends the beast – which he names Toothless – much to the chagrin of his warrior father.",
-      "LEVEL_2": "A young Viking is expected to kill a dragon to prove himself. After bringing down a feared creature, he chooses friendship instead, putting him at odds with his warrior father.",
-      "LEVEL_3": "A young person is expected to destroy a feared creature as a test of belonging. An encounter leads to friendship instead, challenging a parent and the community that set the test.",
-      "LEVEL_4": "A young person seeks acceptance by confronting something the community regards as an enemy. Getting close enough to succeed produces a bond that makes the expected proof of loyalty impossible.",
-      "LEVEL_5": "A test of belonging creates a bond that challenges the terms of acceptance."
+      "LEVEL_1": "As America's stock of athletic young men is depleted during World War II, a professional all-female baseball league springs up in the Midwest, funded by publicity-hungry candy maker Walter Harvey. Competitive sisters Dottie Hinson and Kit Keller spar with each other, scout Ernie Capadino and grumpy has-been coach Jimmy Dugan on their way to fame.",
+      "LEVEL_2": "During wartime, a promoter establishes professional women's baseball as male players leave for military service. Two competitive sisters contend with each other and a difficult former star serving as their coach.",
+      "LEVEL_3": "Wartime shortages create an opening for athletes previously excluded from professional baseball. Two competitive siblings pursue the opportunity while dealing with rivalry and a difficult coach.",
+      "LEVEL_4": "A disruption creates a professional opportunity for people previously left out. Two siblings pursue success within the same venture, while their rivalry and a difficult mentor complicate the chance to prove themselves.",
+      "LEVEL_5": "A new opportunity to prove oneself intensifies a rivalry within a family."
     },
     "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
     "source": {
       "provider": "TMDB",
       "file": "data/movies.json",
       "field": "overview",
-      "movieId": 10191
+      "movieId": 11287
     },
     "reviewedBy": "codex-beta-review",
-    "reviewedAt": "2026-10-16T04:15:12.284Z",
+    "reviewedAt": "2026-10-16T04:17:08.225Z",
     "approved": true,
     "ageAppropriate": true,
     "factsChecked": true,
-    "contentHash": "45a71969eff2fa176a1840f56418beb1319663196370b04536a04c9ae1e1614d"
+    "contentHash": "f7601344b130294aed565243ff18510c17028f1fbe6aee91f31132661881a0f5"
   },
   {
     "movieId": 44826,

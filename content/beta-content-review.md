@@ -55,7 +55,7 @@ reviewed-PR workflow. Adding entries here does not itself publish them.
 A read-only inventory on October 16 found 50 scheduled slots, 50 distinct movies,
 and no unused reviewed sets. All 40 slots for October 16–23 were valid. Added ten
 sets (50 variants), bringing the beta pool to 60 movies: Cool Runnings,
-Mrs. Doubtfire, Roman Holiday, How to Train Your Dragon (2010), Hugo,
+Mrs. Doubtfire, Roman Holiday, A League of Their Own, Hugo,
 The Grand Budapest Hotel, Chef, The Intern, Hidden Figures, and Klaus.
 
 Reviewer: `codex-beta-review`, an AI editorial review for the invited beta.
@@ -68,8 +68,9 @@ and a sedative, but no graphic description. Suitability flags apply to clue text
 not film age ratings or rights clearance. Blind difficulty calibration remains
 dependent on player feedback.
 
-Excluded both Karate Kid versions from this refill because the abstract variants
-would not fairly distinguish the remakes. Excluded Singin' in the Rain because
+Excluded both Karate Kid versions and replaced a How to Train Your Dragon draft
+with A League of Their Own because the abstract variants would not fairly
+distinguish the searchable remakes. Excluded Singin' in the Rain because
 its stored original synopsis is shorter than the publication minimum. No source
 synopsis was expanded or rewritten to bypass that requirement.
 

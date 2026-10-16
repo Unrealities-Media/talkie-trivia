@@ -1172,27 +1172,27 @@ After losing a route to a major ambition, a competitor pursues an unfamiliar alt
 
 A blocked ambition leads to an unfamiliar route and an ally seeking renewed standing.
 
-### How to Train Your Dragon (TMDB 10191)
+### A League of Their Own (TMDB 11287)
 
 **Very Easy (LEVEL_1)**
 
-As the son of a Viking leader on the cusp of manhood, shy Hiccup Horrendous Haddock III faces a rite of passage: he must kill a dragon to prove his warrior mettle. But after downing a feared dragon, he realizes that he no longer wants to destroy it, and instead befriends the beast – which he names Toothless – much to the chagrin of his warrior father.
+As America's stock of athletic young men is depleted during World War II, a professional all-female baseball league springs up in the Midwest, funded by publicity-hungry candy maker Walter Harvey. Competitive sisters Dottie Hinson and Kit Keller spar with each other, scout Ernie Capadino and grumpy has-been coach Jimmy Dugan on their way to fame.
 
 **Easy (LEVEL_2)**
 
-A young Viking is expected to kill a dragon to prove himself. After bringing down a feared creature, he chooses friendship instead, putting him at odds with his warrior father.
+During wartime, a promoter establishes professional women's baseball as male players leave for military service. Two competitive sisters contend with each other and a difficult former star serving as their coach.
 
 **Medium (LEVEL_3)**
 
-A young person is expected to destroy a feared creature as a test of belonging. An encounter leads to friendship instead, challenging a parent and the community that set the test.
+Wartime shortages create an opening for athletes previously excluded from professional baseball. Two competitive siblings pursue the opportunity while dealing with rivalry and a difficult coach.
 
 **Hard (LEVEL_4)**
 
-A young person seeks acceptance by confronting something the community regards as an enemy. Getting close enough to succeed produces a bond that makes the expected proof of loyalty impossible.
+A disruption creates a professional opportunity for people previously left out. Two siblings pursue success within the same venture, while their rivalry and a difficult mentor complicate the chance to prove themselves.
 
 **Very Hard (LEVEL_5)**
 
-A test of belonging creates a bond that challenges the terms of acceptance.
+A new opportunity to prove oneself intensifies a rivalry within a family.
 
 ### Hugo (TMDB 44826)
 
