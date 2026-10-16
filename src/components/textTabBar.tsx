@@ -20,7 +20,7 @@ export default function TextTabBar({ state, descriptors, navigation, insets, fon
       const options = descriptors[route.key].options
       const label = options.title ?? (route.name === "game" ? "Game" : "Profile")
       return <Pressable key={route.key}
-        accessibilityRole="tab" accessibilityState={{ selected }}
+        accessibilityRole="tab" accessibilityState={{ selected }} aria-selected={selected}
         accessibilityLabel={options.tabBarAccessibilityLabel ?? label}
         testID={options.tabBarButtonTestID}
         onPress={() => {
