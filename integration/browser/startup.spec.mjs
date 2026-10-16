@@ -83,3 +83,76 @@ test('gameplay and navigation remain usable while custom font downloads are stal
   expect(clueFonts.some(url => /\.ttf(?:\?|$)/.test(url))).toBe(false)
   await expect(page.getByRole('searchbox')).toBeVisible()
 })
+
+test('daily game retry preserves keyboard position through failure and recovery', async ({ page }) => {
+  let fail = true
+  let attempts = 0
+  await page.route('**/startGame', async route => {
+    if (route.request().method() !== 'POST') return route.continue()
+    attempts++
+    if (fail) return route.fulfill({
+      status: 503, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: { status: 'UNAVAILABLE', message: 'Game service temporarily unavailable' } }),
+    })
+    return route.continue()
+  })
+  await page.goto('/game')
+  const retry = page.getByRole('button', { name: 'Retry', exact: true })
+  const region = page.getByRole('group', { name: 'Daily game', exact: true })
+  await expect(retry).toBeVisible()
+  await expect(page.getByRole('alert')).toContainText('game service')
+  const beforeRetry = attempts
+  await retry.focus()
+  await page.keyboard.press('Enter')
+  await expect.poll(() => attempts).toBeGreaterThan(beforeRetry)
+  await expect(retry).toBeVisible()
+  await expect(region).toBeFocused()
+  fail = false
+  await retry.focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('searchbox')).toBeVisible()
+  await expect(region).toBeFocused()
+  await page.keyboard.press('Tab')
+  // Browsers may make the scrollable clue viewport a keyboard stop.
+  if (await page.getByTestId('clue-viewport').evaluate(node => node === document.activeElement)) {
+    await page.keyboard.press('Tab')
+  }
+  await expect(page.getByRole('searchbox')).toBeFocused()
+})
+
+test('daily game retry respects pointer activation and later keyboard navigation', async ({ page }) => {
+  let fail = true
+  let release
+  let gate = Promise.resolve()
+  await page.route('**/startGame', async route => {
+    if (route.request().method() !== 'POST') return route.continue()
+    await gate
+    if (fail) return route.fulfill({
+      status: 503, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: { status: 'UNAVAILABLE', message: 'Game service temporarily unavailable' } }),
+    })
+    return route.continue()
+  })
+  for (const pointer of [true, false]) {
+    fail = true
+    await page.goto('/game')
+    const retry = page.getByRole('button', { name: 'Retry', exact: true })
+    await expect(retry).toBeVisible()
+    gate = new Promise(resolve => { release = resolve })
+    fail = false
+    try {
+      if (pointer) await retry.click()
+      else { await retry.focus(); await page.keyboard.press('Enter') }
+      await expect(page.getByText('Loading the daily movie…', { exact: true })).toHaveAttribute('aria-live', 'polite')
+      const region = page.getByRole('group', { name: 'Daily game', exact: true })
+      if (pointer) await expect(region).not.toBeFocused()
+      else {
+        await expect(region).toBeFocused()
+        await page.getByRole('tab', { name: 'Profile', exact: true }).focus()
+      }
+    } finally { release() }
+    await expect(page.getByRole('searchbox')).toBeVisible()
+    if (pointer) await expect(page.getByRole('group', { name: 'Daily game', exact: true })).not.toBeFocused()
+    else await expect(page.getByRole('tab', { name: 'Profile', exact: true })).toBeFocused()
+  }
+})

@@ -37,7 +37,7 @@ const LoadingIndicator: React.FC<LoadingIndicatorProps> = memo(
       >
         <CustomLoadingIndicator isLowEndDevice={isLowEndDevice} />
         {message && (
-          <Typography style={styles.messageText}>{message}</Typography>
+          <Typography accessibilityLiveRegion="polite" style={styles.messageText}>{message}</Typography>
         )}
       </View>
     )

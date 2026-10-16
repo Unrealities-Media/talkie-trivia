@@ -16,7 +16,7 @@ const ErrorMessage: React.FC<ErrorMessageProps> = memo(
 
     return (
       <View style={styles.errorContainer}>
-        <Typography variant="error" style={styles.errorText}>
+        <Typography accessibilityRole="alert" variant="error" style={styles.errorText}>
           {message}
         </Typography>
         {onRetry && (

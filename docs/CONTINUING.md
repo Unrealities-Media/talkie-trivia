@@ -52,9 +52,19 @@ This is the current handoff; older audits preserve evidence from their dates.
   retry failure, success, original move identity, reload and no extra guesses.
   Evidence: `.expo/save-recovery-before.log` and `.expo/save-recovery-after.log`.
 - CI cost review found the standalone Firebase suite ran for 2m30s on UI-only
-  PR48. The next candidate scopes that suite conservatively while retaining
+  PR48. Merged PR49 scopes that suite conservatively while retaining
   browser/emulator gameplay on every PR. See [CI rollout](ci-rollout.md) for
   the allowlist, full-verification fallbacks and measurement limits.
+- Daily-game recovery review reproduced focus falling to the page body when
+  Retry failed. The current candidate preserves keyboard position in the game
+  across failure and success, announces errors/loading, and respects pointer
+  activation and later focus changes. The clue animation skip control is now
+  available only during an actual animation, including no control under reduced
+  motion. The scrollable clue viewport remains keyboard accessible.
+  Local baseline evidence: `.expo/daily-load-recovery-before.log` in the shared
+  root. All 12 targeted Chromium/Firefox/WebKit checks passed in
+  `.expo/daily-load-recovery-verified.log`; 33 focused component tests and
+  TypeScript checks passed. This candidate has not yet been deployed.
 - The explicitly approved anonymous test guest was deleted. Server reads
   confirmed its Auth account and owned game/history/statistics data absent;
   completion survives reload without creating another guest.

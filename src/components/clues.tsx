@@ -108,6 +108,7 @@ const CluesContainer = memo(() => {
     [itemDescription]
   )
   const [revealedClues, setRevealedClues] = useState<string[]>([])
+  const [isAnimating, setIsAnimating] = useState(false)
   const revealedCount = useRef(0)
   const revealProgress = useSharedValue(1)
   const scrollViewRef = useRef<ScrollView>(null)
@@ -124,11 +125,13 @@ const CluesContainer = memo(() => {
   const handleSkipAnimation = useCallback(() => {
     cancelAnimation(revealProgress)
     revealProgress.value = 1
+    setIsAnimating(false)
     hapticsService.light()
   }, [revealProgress])
 
   useEffect(() => {
     if (loading) return
+    let animationFinished: ReturnType<typeof setTimeout> | undefined
     scrollToNewText.current = guesses.length > previousGuessCount.current
     previousGuessCount.current = guesses.length
 
@@ -153,16 +156,23 @@ const CluesContainer = memo(() => {
       // Lay out the complete clue before the projector illuminates it.
       // Revealing characters individually made the paper jump between line breaks.
       revealProgress.value = reducedMotion ? 1 : 0
-      if (!reducedMotion) revealProgress.value = withDelay(120,
-        withTiming(1, { duration: 850, easing: Easing.out(Easing.cubic) }))
+      setIsAnimating(!reducedMotion)
+      if (!reducedMotion) {
+        const delay = 120, duration = 850
+        revealProgress.value = withDelay(delay,
+          withTiming(1, { duration, easing: Easing.out(Easing.cubic) }))
+        animationFinished = setTimeout(() => setIsAnimating(false), delay + duration)
+      }
       setRevealedClues(newRevealedClues)
     } else {
       setRevealedClues(clues.slice(0, numCluesToReveal))
       revealProgress.value = 1
+      setIsAnimating(false)
     }
     revealedCount.current = numCluesToReveal
 
     return () => {
+      clearTimeout(animationFinished)
       cancelAnimation(revealProgress)
     }
   }, [
@@ -188,6 +198,7 @@ const CluesContainer = memo(() => {
   })
 
   const isGameOver = correctAnswer || isInteractionsDisabled
+  const canSkipAnimation = !isGameOver && !reducedMotion && isAnimating
   const moreClue = !isGameOver && difficulty !== "LEVEL_5" && revealedClues.length < clues.length
   useEffect(() => {
     pulse.value = 0
@@ -215,11 +226,12 @@ const CluesContainer = memo(() => {
             <View style={{ minHeight: shortClue ? 48 : projectionHeight }}>
             <Pressable
               style={{ width: "100%" }}
-              onPress={isGameOver ? undefined : handleSkipAnimation}
-              accessible={!isGameOver}
-              accessibilityRole="button"
+              onPress={canSkipAnimation ? handleSkipAnimation : undefined}
+              disabled={!canSkipAnimation}
+              accessible={canSkipAnimation}
+              accessibilityRole={canSkipAnimation ? "button" : undefined}
               accessibilityLabel={
-                !isGameOver ? "Skip the current clue's text animation" : ""
+                canSkipAnimation ? "Skip the current clue's text animation" : undefined
               }
             >
               <Animated.View onLayout={event => {
