@@ -75,6 +75,24 @@ one-hour Firebase ID-token lifetime after refresh/sign-in has been disabled.
 Pending requests never expire automatically: dropping one would abandon deletion.
 Runtime logs emit a generic retry event without account identifiers or raw errors.
 
+The scheduled worker is limited to one instance with concurrency one. Scheduler
+retries are disabled; the next five-minute invocation resumes durable pending
+jobs. Transactional leases remain necessary for interrupted executions and manual
+requests racing the worker.
+
+After Firebase CLI login and installing the integration dependencies, run
+`npm run beta:operations` for read-only checks against `talkie-trivia-beta`.
+The report checks the current Hosting release, scheduler configuration/recent
+attempt, worker limits, pending-job count, and completion/receipt cleanup overdue
+by at least an hour. A failed check or unavailable API exits nonzero. Pagination
+is followed with a finite limit; incomplete inventories and malformed aggregation
+results cannot silently count as healthy. Output contains counts and service
+metadata, not player identifiers, receipt secrets or account data.
+
+This manual command does not send alerts, install a schedule, prove scheduler
+delivery, or replace end-to-end deletion testing. Pending count alone is
+informational because an accepted deletion may legitimately still be running.
+
 `accountDeletionReceipts/{uid}` separately holds a secret and deletion status.
 Unused preparations expire after 24 hours. Accepting deletion atomically marks the
 receipt pending and removes its expiry; completion marks it complete and eligible

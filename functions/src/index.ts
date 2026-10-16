@@ -130,4 +130,4 @@ export const submitGameResult = onCall(options, async request => {
 export const deleteAccount = onCall({ ...options, timeoutSeconds: 120 }, request => accountDeletion(db, getAuth()).request(request))
 export const prepareAccountDeletion = onCall(options, request => accountDeletion(db, getAuth()).prepare(request))
 export const getAccountDeletionStatus = onCall(options, request => accountDeletion(db, getAuth()).status(request))
-export const retryAccountDeletions = onSchedule({ schedule: "every 5 minutes", timeZone: "UTC", timeoutSeconds: 540, maxInstances: 1, memory: "256MiB" }, () => accountDeletion(db, getAuth()).retry())
+export const retryAccountDeletions = onSchedule({ schedule: "every 5 minutes", timeZone: "UTC", timeoutSeconds: 540, maxInstances: 1, concurrency: 1, retryCount: 0, memory: "256MiB" }, () => accountDeletion(db, getAuth()).retry())
