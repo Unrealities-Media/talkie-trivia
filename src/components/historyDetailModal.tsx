@@ -1,10 +1,12 @@
-import React, { useState, useEffect, Suspense, lazy } from "react"
+import React, { useState, useEffect, useRef, Suspense, lazy } from "react"
 import {
   View,
   ActivityIndicator,
   ScrollView,
   ViewStyle,
   TextStyle,
+  Platform,
+  GestureResponderEvent,
 } from "react-native"
 import { GameHistoryEntry } from "../models/gameHistory"
 import { TriviaItem, BasicTriviaItem } from "../models/trivia"
@@ -46,6 +48,14 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
+  const resultRegion = useRef<HTMLDivElement>(null)
+  const retry = (event: GestureResponderEvent) => {
+    // Keep keyboard position when Retry is replaced by the loading state.
+    if (Platform.OS === "web" && (event.nativeEvent as unknown as MouseEvent)?.detail === 0) {
+      resultRegion.current?.focus()
+    }
+    setAttempt(value => value + 1)
+  }
 
   useEffect(() => {
     if (!historyItem || !player) {
@@ -92,13 +102,14 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Typography accessibilityLiveRegion="polite">Loading saved result…</Typography>
         </View>
       )
     }
     if (error) {
       return (
         <View style={styles.errorContainer}>
-          <ErrorMessage message={error} onRetry={() => setAttempt(value => value + 1)} />
+          <ErrorMessage message={error} onRetry={retry} />
         </View>
       )
     }
@@ -144,7 +155,12 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
   return (
     <Suspense fallback={null}>
       <DetailModal show={!!historyItem} toggleModal={onClose}>
-        {renderModalContent()}
+        {Platform.OS === "web"
+          ? <div ref={resultRegion} role="group" aria-label="Saved result" tabIndex={-1}
+              style={{ width: "100%", minHeight: 0, flexShrink: 1, display: "flex", flexDirection: "column" }}>
+              {renderModalContent()}
+            </div>
+          : renderModalContent()}
       </DetailModal>
     </Suspense>
   )
