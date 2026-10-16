@@ -79,8 +79,6 @@ const GameHistoryItem = memo(({ item, onPress, compact }: GameHistoryItemProps) 
       accessibilityRole="button"
       accessibilityLabel={`View ${item.itemTitle} result`}
       testID={`history-item-${item.itemTitle}`}
-      accessibilityRole="button"
-      accessibilityLabel={`View result: ${item.itemTitle}. ${difficultyLabel}. ${formattedDate}. ${item.wasCorrect ? "Solved" : item.gaveUp ? "Answer revealed" : "Out of guesses"}. ${item.score} points.`}
       onPress={handlePress}
       style={({ pressed }) => [
         styles.itemContainer,

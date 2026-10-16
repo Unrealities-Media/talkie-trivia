@@ -183,7 +183,7 @@ describe("GameHistory Component", () => {
       mockGameService.fetchGameHistory.mockResolvedValue({ entries: mockHistoryData, next: null });
       renderWithTheme(<GameHistory onHistoryItemPress={onHistoryItemPressMock} />);
 
-      const firstItem = await screen.findByRole("button", { name: /^View result: Inception\./ });
+      const firstItem = await screen.findByRole("button", { name: "View Inception result" });
       fireEvent.press(firstItem);
 
       expect(onHistoryItemPressMock).toHaveBeenCalledWith(mockHistoryData[0]);

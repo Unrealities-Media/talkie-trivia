@@ -66,7 +66,7 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   await expect(page.getByText(/Result copied|Select and copy your result below/)).toBeVisible()
   await page.getByRole('tab', { name: 'Archive', exact: true }).click()
   await expect(page.getByText(answer.t, { exact: true }).first()).toBeVisible()
-  const savedResult = page.getByRole('button', { name: new RegExp(`^View result: ${escape(answer.t)}\\.`) })
+  const savedResult = page.getByRole('button', { name: `View ${answer.t} result`, exact: true })
   await savedResult.focus()
   await page.keyboard.press('Enter')
   await expect(page.getByRole('heading', { name: 'Synopsis', exact: true })).toBeVisible()
