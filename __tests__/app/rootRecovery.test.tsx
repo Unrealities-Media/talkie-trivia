@@ -14,7 +14,6 @@ jest.mock("../../src/contexts/themeContext", () => ({ ThemeProvider: ({ children
 jest.mock("../../src/components/errorBoundary", () => ({ children }: any) => children)
 jest.mock("../../src/utils/hooks/useDailyChallenge", () => ({ useDailyChallenge: jest.fn() }))
 jest.mock("../../src/utils/hooks/useNotifications", () => ({ useNotifications: jest.fn() }))
-jest.mock("@sentry/react-native", () => ({ init: jest.fn(), wrap: (component: any) => component }))
 it.each([null, false, true])("keeps navigation available with connectivity %s and a failed account", connected => {
   ;(useNetwork as jest.Mock).mockReturnValue({ isNetworkConnected: connected })
   ;(useAuth as jest.Mock).mockReturnValue({ player: null, error: "Account unavailable", loading: false })
