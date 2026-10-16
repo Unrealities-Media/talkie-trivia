@@ -13,7 +13,7 @@ const FullPlotSection: React.FC<FullPlotSectionProps> = ({ overview }) => {
   return (
     <View style={styles.container}>
       <Typography accessibilityRole="header" variant="body" style={styles.title}>
-        The complete clue
+        Synopsis
       </Typography>
       <Typography variant="body" style={styles.text}>
         {overview}
