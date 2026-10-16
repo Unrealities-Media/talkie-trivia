@@ -5,7 +5,22 @@ candidate audit and the historical preparation sections of `docs/hosted-web-beta
 It does not supersede their outstanding release gates. The application remains an
 invited web beta; Android and iOS builds remain disabled.
 
-## Current release
+## Latest release follow-up
+
+PR23 subsequently shipped Hosting version `f42547a37b8f537e` at
+02:24:54.240 UTC. PR24 passed all nine checks and merged at 02:35:43 UTC;
+its rollout updated only `retryAccountDeletions` to concurrency one with no
+Scheduler retries. Hosting remains on PR23. The manual read-only
+`npm run beta:operations` check at 02:41:56 UTC passed all eight checks and
+reported no pending deletions or overdue completion/receipt records.
+Its latest reported scheduler attempt predates the worker update, so this is
+configuration/queue evidence, not post-update delivery acceptance.
+
+See [the current handoff](../CONTINUING.md) for the remaining release gates and
+[browser-engine acceptance](2026-10-16-browser-engines.md) for PR23's local
+Firefox/WebKit evidence. Native builds remain disabled for routine work.
+
+## PR22 release
 
 PRs 18 through 22 are merged. PR22's exact reviewed head,
 `2092011b02fa65c0728e20a1c1fcb264966ba66a`, passed all nine checks and merged as

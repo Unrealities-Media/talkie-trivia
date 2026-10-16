@@ -3,7 +3,9 @@
 Release objective: resolve **all 40 findings** and demonstrate the release gates in the original audit. This is an active work log, not release approval.
 
 For the next session, start with the [continuation checklist](../CONTINUING.md).
-It separates release gates from the six still-open browser UX improvements.
+It records the current deployed web beta and remaining release gates. The
+implementation narrative and finding rows below include historical/native
+acceptance gaps; dated rollout evidence supersedes old pending-deployment claims.
 
 Latest user-directed stage: make the app fully usable for local development
 without production writes. The supported `npm run dev` workflow, persistent demo
@@ -47,7 +49,7 @@ The publishing workflow points to `utils/pipeline`, uses federated credentials, 
 
 ## Deployment and migration constraints
 
-- **Nothing has been deployed.** The client and Functions contract must be released together into an isolated staging project first.
+- **The isolated web beta is deployed.** See [current versions and acceptance](../CONTINUING.md). Production/store release remains gated; the older preparation notes below are not current deployment status.
 - V2 games live at `players/{uid}/games/movies_{date}`, statistics at `players/{uid}/privateStats/summary`, and results at `players/{uid}/gameHistoryV2/{date}`. Existing legacy documents are retained. Existing legacy statistics/history are not yet migrated or shown by the V2 client. A verified migration/compatibility plan is a release blocker; do not silently reset real users.
 - Rules deny all client writes to authoritative game/statistics/history fields and deny legacy writes. Current challenges are obtained from `startGame`; clients cannot enumerate the schedule.
 - `scripts/prepare-catalog.cjs` packages the app's catalog into Functions and emits its SHA-256 version. Functions builds/tests run it. Mismatched clients receive an explicit update requirement. A backwards-compatible catalog distribution strategy is still needed before catalog-changing releases.

@@ -1,135 +1,81 @@
 # Continuing development
 
-Checkpoint: October 15, 2026 in America/Chicago. **The invited web beta is
-playable, but wider public beta and both app stores remain blocked.** This
-document is the starting point for the next work session.
+Checkpoint: October 16, 2026 UTC. The invited web beta is deployed at
+https://talkie-trivia-beta.web.app. Wider public release is not approved.
+This is the current handoff; older audits preserve evidence from their dates.
 
-Current development priority is **web beta**. Android/iOS builds remain disabled;
-do not run native builds as routine verification. Dependency consolidation PR
-#12 is merged, and its app, browser, emulator, Go, CodeQL and full-history secret
-checks passed. See [dependency maintenance](dependency-maintenance.md) for
-monthly batching and intentional toolchain compatibility holds. These CI results
-do not close live-deployment, rights, public-abuse or native-release gates.
+## Shipped state
 
-The last recorded live schedule covers October 14–21 UTC and needs more reviewed
-content before October 22 UTC; this horizon has not been freshly queried.
-The [read-only readiness command](content-pipeline.md#read-only-schedule-readiness)
-can verify it with the deployed catalog and authorized read credentials.
-Production approvals and rights review remain open.
-The reported zero-height search results blocker is fixed locally, pending web
-export, deployment and live cold-load/restored-tab verification. Public backend
-App Check remains unfinished. A per-account gameplay limit and safe browser retry
-are verified locally in [PR 14](https://github.com/Unrealities-Media/talkie-trivia/pull/14),
-pending merge/deployment; retain invited-group access policy.
-See the [latest beta audit](audits/live-beta-2026-10-14.md) for evidence and the
-remaining UX findings. Local changes have not been deployed in this stage.
+- PRs 18–24 are merged. PR24 head `6b480154a8ac13e8dd3706f5d444a2bc363a221b`
+  passed all nine checks and merged at 02:35:43 UTC.
+- Hosting version `f42547a37b8f537e` was released at 02:24:54.240 UTC from
+  PR23. PR24 updated only the deletion recovery worker, not Hosting.
+- Optional help and direct mode switching replace the intrusive explanations
+  and mode confirmation. Keyboard/state accessibility and cinematic rewards
+  shipped. Full reward synopsis is stored separately from the difficulty clue.
+- Chromium CI passed. The additional local Firefox/WebKit run passed 16 tests
+  with four intentionally skipped duplicate viewport cases. These engine checks
+  do not establish real Safari, physical-device or Google provider acceptance.
+- The explicitly approved anonymous test guest was deleted. Server reads
+  confirmed its Auth account and owned game/history/statistics data absent;
+  completion survives reload without creating another guest.
+- Database delete protection is enabled. A prior Hosting artifact was verified
+  on an expiring preview channel. Neither proves database restore or backend rollback.
+- At 02:41:56 UTC, `npm run beta:operations` passed all eight checks with zero
+  pending deletions and zero completion/receipt records overdue by one hour.
+  The reported scheduler attempt was 02:33:05 UTC, before the worker update;
+  this snapshot does not prove a successful post-update scheduled invocation.
 
-The [October 15 hosted-page audit](audits/2026-10-15-hosted-public-pages.md)
-confirms that privacy, support and deletion information is already published and
-renders at desktop/narrow-mobile sizes. Mailbox delivery, real account deletion,
-retention and legal/store acceptance remain unverified. The local combined
-candidate is described in [the candidate checkpoint](audits/2026-10-15-web-beta-candidate.md).
+Evidence: [live rollout](audits/2026-10-16-live-web-beta.md),
+[browser engines](audits/2026-10-16-browser-engines.md), and
+[deletion/recovery](audits/2026-10-16-beta-recovery.md).
+The [40-finding tracker](audits/remediation-status.md) retains historical and
+native findings; use dated evidence when an older row describes pending work.
 
-The subsequent cohesion pass improves challenge confirmation, keyboard search,
-sharing, result themes and Profile hierarchy. See the
-[cohesion checkpoint](audits/2026-10-14-cohesion.md) for local browser evidence,
-Android bundle validation and remaining device/release limits.
+## Next release gates
 
-Launch decisions: movies only, one daily challenge with a worldwide UTC reset,
-three hints per Easy game, no paid features, and guest play with optional account
-sync. Keep these decisions unless the product scope explicitly changes.
-
-## What is implemented and verified
-
-The server now owns game actions, scoring and saved results. Account recovery,
-deletion and merge safeguards, persistent retry, history pagination, onboarding,
-search and result presentation have substantial implementation and focused test
-coverage. Implementation does not establish production or platform acceptance.
-The [40-finding remediation tracker](audits/remediation-status.md) records the
-individual status and evidence; the [original audit](audits/2026-10-13-release-readiness.md)
-is a historical snapshot, not a description of all current behavior.
-
-The latest local stage fixed the reported account-loading failure caused by a
-stopped Auth emulator, recovery after emulator imports, missing playable demo
-content, Windows snapshot export, Medium hint copy and the web search role.
-Actual Chromium play covered wrong guesses, wins, all Easy hints, give-up
-confirmation, UTC rollover, profile/history and saved-account restoration.
-App and Functions compilation and 64 focused tests passed in that stage. This
-checkpoint only adds documentation and repository hygiene; those earlier checks
-are not a claim of a newly rerun full suite.
-
-## Release gates still open
-
-Treat these as required evidence before submission, not optional visual polish.
-
-| Priority / work | Current gap | Evidence needed to close |
-| --- | --- | --- |
-| P1 Native binaries | Latest Android source build retains 17 RELRO alignment failures: 9 ARM64 and 8 x86_64. Signed store artifacts and iOS acceptance are unproven. | Resolve remaining binary failures; verify packaged libraries and signed Android AAB/iOS archive; install and exercise release builds on the supported device matrix. See [native libraries](audits/android-native-libraries.md) and [native builds](native-builds.md). |
-| P1 Identity and account lifecycle | Fake local identities do not validate Google/Apple. Apple work, real-provider recovery/deletion/merge and cross-device evidence remain incomplete; live merge creation remains gated. | Test real providers, guest linking, cancellation, revoked credentials, deletion and recovery on both platforms; complete operational merge gates before enabling. See [Google sign-in](native-google-sign-in.md), [sessions](account-sessions.md), [deletion](account-deletion.md), [merge operations](account-merge-operations.md). |
-| P1 Published content and rights | `content/reviewed-movies.json` is empty. Local demo clues are not approved production content. | Complete editorial and rights review, populate an adequate release schedule, exercise publication and missing-content alerts. See [content pipeline](content-pipeline.md) and [editorial guide](../content/README.md). |
-| P1 Staging and data safety | Local emulator evidence does not prove deployed rules, indexes, migrations, abuse controls, IAM, scheduled jobs or recovery. | Configure separate staging, rehearse migration/rollback, verify deployed authorization and abuse controls, monitoring, backups and operational ownership. Use the tracker and account/content runbooks. |
-| P1 Privacy and store requirements | Public support contact, policy/deletion website, retention inventory, store declarations and submission materials remain incomplete. | Publish working public routes, verify deletion and retention behavior, reconcile actual data use with both store disclosures and complete submission checklists. See the tracker and deletion runbook. |
-| P1 Release validation | Remaining dependency findings, remote CI and iOS/physical-device evidence are incomplete. Accessibility, performance, real sharing and reminder matrices are only partially tested. | Triage dependency risks with evidence; pass required CI and actual release-device checks, including assistive technology, large text, failure recovery and lower-end devices. Any defect that prevents core play for affected users blocks release. See [dependency security](dependency-security.md) and the tracker. |
-
-## Open browser playtest improvements
-
-Several improvements have shipped to the invited beta; remaining acceptance
-gaps are listed below. Demonstrated inability to play or access a control raises
-the affected item to a release blocker.
-
-| Work | Current status / remaining acceptance |
+| Work | Current evidence and remaining action |
 | --- | --- |
-| Choose difficulty before first play | New challenges now require confirmation locally; started/completed challenges open directly. Browser confirmation/cancel and saved-result navigation checked. |
-| Reduce Give Up prominence | Quiet link and confirmation shipped; cancel preserves state. Shared dialog now contains web keyboard focus, verified locally. |
-| Compact clue and results layout | Compact projection/search and score explanation shipped. Local fixes remove inactive Hard seats, hidden future clue text and web nested results scrolling. Live deployment verification pending. |
-| Explicit preview action | A separate Preview movie button opens/closes details without guessing and announces its expanded state. Tab/Enter/Space browser acceptance is recorded in [search preview](audits/2026-10-15-search-preview.md). Live deployment and assistive-technology acceptance remain open. |
-| Prioritize progress in Profile | Statistics/history now precede account/settings/deletion locally; local browser checked. |
-| Explain per-game hints | Easy plaques show cost and wait for server confirmation. Profile now explains three hints per Easy challenge rather than displaying a wallet. |
+| Google identity | Real Google linking, collision/cancel, cross-device recovery and reauthenticated deletion still need disposable provider-account acceptance. Guest deletion does not close this gate. |
+| Content | Last verified schedule contains 40 slots for October 16–23 UTC. Replenish before October 24; automatic publication is not established. Beta editorial review is separate from human rights clearance; production approvals remain empty. |
+| Abuse protection | Per-account gameplay throttling is deployed. App Check and broader anonymous/API abuse protection remain unfinished. A hidden URL and `noindex` do not enforce invitations. |
+| Recovery | Delete protection and Hosting preview recovery pass. No backup schedule/PITR or actual database restore has been verified; backend rollback remains open. Choose retention/cost policy before enabling paid backup storage. |
+| Operations | Manual health checks exist, but alert/budget notification delivery and monitored support-mailbox handling remain unverified. Do not infer delivery from configuration or a successful API response. |
+| Retention | Approved guest completion record is due for purge October 17 at 02:03:26 UTC; receipt expires November 15 at that time. Future expiry has not been exercised live. |
+| Browser/device | Real Safari/mobile-device, assistive-technology and actual share-sheet acceptance remain open. Emulator browser checks cover a narrower contract. |
 
-Full observations and local capture references are in the
-[browser playtest](audits/2026-10-14-browser-playtest.md). Real share-sheet
-completion was **not established** in headless Chromium.
+Start the next coherent stage with one of these gaps and its acceptance evidence,
+not another broad audit or repeated unchanged test run. Real provider credentials,
+mailbox access, physical devices and human rights decisions cannot be substituted
+with automated test results. Keep beta distribution limited while these gates remain open.
 
-## Run and test the app locally
+## Scope and cost constraints
 
-Follow [local development](local-development.md) for prerequisites, recovery and
-native limitations. With Node 24.21.0, Java 21 and dependencies installed:
+Web beta is the current priority. Android/iOS builds remain disabled for routine
+work; do not dispatch native workflows. Store signing, binary alignment, Apple
+sign-in and native device acceptance remain deferred until native work resumes.
+The native workflow is manual-only, not a PR/push trigger.
 
-```sh
-npm run dev
-npm run dev:day -- next
-npm run dev:day -- midnight
-```
+Batch related code and CI changes. Follow [dependency maintenance](dependency-maintenance.md)
+for monthly batching and toolchain compatibility holds. Do not launch another CI
+run or deployment just to update this handoff. Run focused checks for changed
+behavior and required CI before merging code; all-checks-passing merges are
+authorized in this session.
 
-The launcher serves http://localhost:8081 and local Firebase emulators for
-`demo-talkie-trivia`. Wait for its ready message. Run day commands in another
-terminal, then reload the browser. Type `q` and Enter in the launcher to export
-state and stop. Use a named local demo account for continuity across imports;
-the explicit local guest recovery control can restore an existing saved guest.
-Do not substitute a production project or run the destructive integration suite
-against the interactive development state.
+Launch scope remains movies, worldwide UTC daily reset, three hints per Easy
+game, no paid features, and guest play with optional account sync. Five difficulty
+challenges are available daily. Live account merging remains disabled.
 
-Local-only snapshots, browser profiles, screenshots and built artifacts remain
-under ignored `.expo/`; they are not portable through a Git clone. The latest
-snapshot pointer is `.expo/local-dev/latest.json`. Keep older snapshots until a
-new export/import is verified. The last verified local state preserved twelve
-accounts. Root `android/` and `ios/` are intentionally generated by Expo CNG;
-regenerate through the documented native workflow. Generated coverage reports
-are ignored and removed from version control, while local copies are retained.
+## Local development
 
-## Suggested next session
+Follow [local development](local-development.md) for pinned prerequisites and
+emulator recovery. Use `npm run dev`; day controls are `npm run dev:day -- next`
+and `npm run dev:day -- midnight`. The launcher serves localhost:8081 with the
+`demo-talkie-trivia` emulators. Wait for readiness; type `q` to export and stop.
+Never run destructive integration fixtures against live or interactive demo data.
 
-Start a fresh session with live verification of the search fix and the content
-runway, then address the remaining browser UX items as a coherent stage.
-Play the app again at desktop and mobile widths and with keyboard/large text;
-test account recovery, locked difficulty, guess submission and saved results
-where the changes touch them. Then address web public-abuse controls, content
-readiness and real web identity flows. Native gates remain deferred until native
-development resumes explicitly. Infrastructure and editorial work
-can progress independently when the necessary accounts and content are available.
-
-For each completed item, update this checklist and the corresponding tracker
-row with the change, tests, actual platform evidence and remaining limits. Record
-new findings rather than assuming a passing unit test means the feature works.
-Use focused checks for the changed behavior; rerun broad checks when warranted
-by changes or failures. No production deployment has been performed in this work.
+Browser profiles, snapshots and release receipts under `.expo/` are ignored and
+not portable through Git. Preserve shared worktree changes and existing demo
+accounts. The isolated release checkout `.expo/web-release-pr20` is reusable;
+confirm its current status before editing. Start a fresh session after a coherent
+major stage; this handoff records the evidence needed to continue.
