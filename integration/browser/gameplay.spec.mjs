@@ -17,6 +17,65 @@ test.beforeEach(async ({ context }) => {
   await context.routeWebSocket('**/*', socket => socket.close())
 })
 
+test('result navigation keeps keyboard position from reveal into the next challenge', async ({ page }) => {
+  await page.goto('/game')
+  await expect(page.getByRole('searchbox')).toBeVisible()
+  await page.getByRole('button', { name: /^Play Very Easy\./ }).click()
+  const day = Math.floor(Date.now() / 86400000)
+  const answer = catalog.find(movie => movie.i === fixtures[(day * 5) % fixtures.length].movieId)
+  await page.getByRole('searchbox').fill(answer.t)
+  const guess = page.getByRole('button', { name: new RegExp(`^Select and guess: ${escape(answer.t)}`) }).first()
+  await guess.focus()
+  await page.keyboard.press('Enter')
+  const skip = page.getByRole('button', { name: 'Skip reveal and view results', exact: true })
+  await expect(skip).toBeVisible()
+  await skip.focus()
+  await page.keyboard.press('Enter')
+  await expect(skip).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: "That's a wrap!", exact: true })).toBeFocused()
+  const next = page.getByRole('button', { name: 'Continue Medium', exact: true })
+  await next.focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('searchbox')).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Daily game', exact: true })).toBeFocused()
+  await page.keyboard.press('Tab')
+  if (await page.getByTestId('clue-viewport').evaluate(node => node === document.activeElement)) {
+    await page.keyboard.press('Tab')
+  }
+  await expect(page.getByRole('searchbox')).toBeFocused()
+  for (const pointer of [true, false]) {
+    const completed = page.getByRole('button', { name: /^Play Very Easy\./ })
+    await completed.focus()
+    await page.keyboard.press('Enter')
+    await expect(next).toBeVisible()
+    // Opening a saved result keeps the navigation handoff, without moving
+    // focus to its heading as though a fresh reveal had just finished.
+    await expect(page.getByRole('group', { name: 'Daily game', exact: true })).toBeFocused()
+    let release
+    const gate = new Promise(resolve => { release = resolve })
+    const waitForLoad = async route => {
+      if (route.request().method() === 'POST') await gate
+      await route.continue()
+    }
+    await page.route('**/startGame', waitForLoad)
+    try {
+      if (pointer) await next.click()
+      else { await next.focus(); await page.keyboard.press('Enter') }
+      await expect(page.getByText('Loading the daily movie…', { exact: true })).toBeVisible()
+      const region = page.getByRole('group', { name: 'Daily game', exact: true })
+      if (pointer) await expect(region).not.toBeFocused()
+      else {
+        await expect(region).toBeFocused()
+        await page.getByRole('tab', { name: 'Profile', exact: true }).focus()
+      }
+    } finally { release() }
+    await expect(page.getByRole('searchbox')).toBeVisible()
+    if (pointer) await expect(page.getByRole('group', { name: 'Daily game', exact: true })).not.toBeFocused()
+    else await expect(page.getByRole('tab', { name: 'Profile', exact: true })).toBeFocused()
+    await page.unroute('**/startGame', waitForLoad)
+  }
+})
+
 test('guest can start, guess, reload, reveal, win and share with saved history', async ({ page, browserName }, testInfo) => {
   const observed = trackPageErrors(page, browserName)
   await page.goto('/game')
@@ -73,6 +132,7 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   await page.getByRole('searchbox').fill(answer.t)
   await page.getByRole('button', { name: new RegExp(`^Select and guess: ${escape(answer.t)}`) }).first().click()
   await expect(page.getByText("That's a wrap!", { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: "That's a wrap!", exact: true })).toBeFocused()
   await observed.reload()
   await expect(page.getByText("That's a wrap!", { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Share Your Result', exact: true }).click()

@@ -23,7 +23,9 @@ const ConfettiCelebration = lazy(
   () => import("../../components/confettiCelebration")
 )
 const FlashMessages = lazy(() => import("../../components/flashMessages"))
-const GameLayout = ({ children, showDifficulty }: { children: React.ReactNode; showDifficulty: boolean }) => {
+const GameLayout = ({ children, showDifficulty, onKeyboardNavigate }: {
+  children: React.ReactNode; showDifficulty: boolean; onKeyboardNavigate: () => void
+}) => {
   const styles = useStyles(themedStyles)
   const insets = useSafeAreaInsets()
   const scroll = useRef<ScrollView>(null)
@@ -86,7 +88,7 @@ const GameLayout = ({ children, showDifficulty }: { children: React.ReactNode; s
       <View style={styles.headerContainer}>
         <PremiereMasthead reward={gameStatus === "gameOver" || gameStatus === "revealing"} />
       </View>
-      {showDifficulty && <View style={[styles.headerContainer, { paddingHorizontal: 20, paddingBottom: 12 }]}><DifficultySelector /></View>}
+      {showDifficulty && <View style={[styles.headerContainer, { paddingHorizontal: 20, paddingBottom: 12 }]}><DifficultySelector onKeyboardNavigate={onKeyboardNavigate} /></View>}
       {children}
     </ScrollView>
     </KeyboardAvoidingView>
@@ -131,9 +133,10 @@ const GameScreen = () => {
       colors={[colors.background, colors.backgroundLight]}
       style={u.flex}
     >
-      <GameLayout showDifficulty={Boolean(player && !deletion && !merge && !mergeProposal && !lostSession && !authLoading && !authError && isNetworkConnected !== false)}>
+      <GameLayout onKeyboardNavigate={() => gameRegion.current?.focus()}
+        showDifficulty={Boolean(player && !deletion && !merge && !mergeProposal && !lostSession && !authLoading && !authError && isNetworkConnected !== false)}>
         {Platform.OS === "web"
-          ? <div ref={gameRegion} role="group" aria-label="Daily game" tabIndex={-1}
+          ? <div ref={gameRegion} role="group" aria-label="Daily game" data-daily-game tabIndex={-1}
               style={{ width: "100%", flexGrow: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
               {content}
             </div>

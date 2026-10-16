@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from "react-native"
+import { View, Text, Pressable, StyleSheet, useWindowDimensions, Platform } from "react-native"
 import { Image } from "expo-image"
 import { LinearGradient } from "expo-linear-gradient"
 import Animated, { FadeInDown, ReduceMotion } from "react-native-reanimated"
@@ -63,7 +63,9 @@ function MovieRewardScreen({ playerGame: game, lastGuessResult }: GameOverViewPr
 
   return <Animated.View testID="cinematic-reward" entering={FadeInDown.duration(450).reduceMotion(reduced ? ReduceMotion.Always : ReduceMotion.Never)} style={s.page}>
     <View style={s.celebration}>
-      <Text accessibilityRole="header" style={[s.resultTitle, narrow && s.resultTitleNarrow]}>{result}</Text>
+      <View accessibilityRole="header" accessible tabIndex={Platform.OS === "web" ? -1 : undefined} testID="result-heading">
+        <Text style={[s.resultTitle, narrow && s.resultTitleNarrow]}>{result}</Text>
+      </View>
       <Text style={s.resultMessage}>{message} · {difficulty}</Text>
     </View>
     <View style={s.hero}>
