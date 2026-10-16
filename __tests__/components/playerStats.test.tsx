@@ -83,7 +83,7 @@ describe("PlayerStatsContainer Component", () => {
       expect(screen.getByText("All-Time Score: 1,250")).toBeTruthy()
 
       // Games Played
-      expect(screen.getByText("Games Played: 10")).toBeTruthy()
+      expect(screen.getByText("Challenges completed: 10")).toBeTruthy()
 
       // Current Streak
       expect(screen.getByText("Current Streak: 3")).toBeTruthy()

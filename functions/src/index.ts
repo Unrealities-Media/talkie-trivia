@@ -6,13 +6,14 @@ import { getFirestore } from "firebase-admin/firestore"
 import { catalog, catalogVersion } from "./catalog"
 import { publishedContent } from "./publishedContent"
 import { DIFFICULTY_MODES } from "./utils/difficulty"
-import { Game, Stats, completeStats, challengeKey, challengeDay, hints, initialStats, parseAction, parseStart, record, transition } from "./gameEngine"
+import { Game, Stats, completeStats, challengeKey, challengeDay, hints, parseAction, parseStart, record, transition } from "./gameEngine"
 import { user, requireActiveAccount } from "./accountAccess"
 import { accountDeletion } from "./accountDeletion"
 import { gameHistory } from "./gameHistory"
 import { accountMergeLifecycle } from "./accountMergeLifecycle"
 import { gameNow } from "./gameClock"
 import { consumeGameRequest } from "./gameRequestLimit"
+import { effectiveStats, loadStatistics, summary } from "./statisticsStorage"
 
 initializeApp()
 const db = getFirestore()
@@ -38,11 +39,24 @@ const refs = (uid: string, challengeId: string) => ({
   history: db.doc(`players/${uid}/gameHistoryV2/${challengeId}`),
 })
 const response = (game: Game, stats: Stats, now: Date) => {
-  const lastDay = stats.completedDays?.at(-1) ?? stats.winningDays.at(-1)
-  const currentDay = now.toISOString().slice(0, 10)
-  const yesterday = new Date(now.getTime() - 86400000).toISOString().slice(0, 10)
-  return { game, stats: { ...stats, currentStreak: lastDay === currentDay || lastDay === yesterday ? stats.currentStreak : 0 }, challengeId: game.challengeId, serverNow: now.toISOString(), resetAt: new Date(Date.parse(`${challengeDay(game.challengeId)}T00:00:00Z`) + 86400000).toISOString() }
+  return { game, stats: effectiveStats(stats, now), challengeId: game.challengeId, serverNow: now.toISOString(), resetAt: new Date(Date.parse(`${challengeDay(game.challengeId)}T00:00:00Z`) + 86400000).toISOString() }
 }
+
+/** Profile statistics use the same server clock and projection as gameplay. */
+export const getPlayerStatistics = onCall({ ...options, timeoutSeconds: 120 }, async request => {
+  const uid = user(request)
+  record(request.data, [])
+  await consumeGameRequest(db, uid)
+  const now = await gameNow(db)
+  return db.runTransaction(async tx => {
+    const [snapshot, deletion, mergeLock] = await Promise.all([tx.get(db.doc(`players/${uid}/privateStats/summary`)), tx.get(db.doc(`accountDeletions/${uid}`)), tx.get(db.doc(`accountMergeLocks/${uid}`))])
+    requireActiveAccount(deletion, mergeLock)
+    if (!snapshot.exists) return { stats: null, serverNow: now.toISOString() }
+    const loaded = await loadStatistics(tx, db, uid, snapshot, false)
+    if (snapshot.data()?.statisticsVersion !== 3 || snapshot.data()?.completedDays) loaded.save(loaded.stats)
+    return { stats: effectiveStats(loaded.stats, now), serverNow: now.toISOString() }
+  })
+})
 
 /** The date, content, paths, and defaults originate on the server. */
 export const startGame = onCall(options, async request => {
@@ -59,8 +73,13 @@ export const startGame = onCall(options, async request => {
   return db.runTransaction(async tx => {
     const [gameDoc, statsDoc, deletion, mergeLock] = await Promise.all([tx.get(paths.game), tx.get(paths.stats), tx.get(db.doc(`accountDeletions/${uid}`)), tx.get(db.doc(`accountMergeLocks/${uid}`))])
     requireActiveAccount(deletion, mergeLock)
-    const stats = statsDoc.exists ? statsDoc.data() as Stats : initialStats(uid)
-    if (gameDoc.exists) return response(gameDoc.data() as Game, stats, now)
+    const loaded = await loadStatistics(tx, db, uid, statsDoc, false)
+    const stats = loaded.stats
+    if (gameDoc.exists && !statsDoc.exists) throw new HttpsError("failed-precondition", "Saved statistics need review.")
+    if (gameDoc.exists) {
+      if (statsDoc.data()?.statisticsVersion !== 3 || statsDoc.data()?.completedDays) loaded.save(stats)
+      return response(gameDoc.data() as Game, stats, now)
+    }
     const schedule = await tx.get(db.doc(`dailyGames/${challengeId}`))
     const answer = catalog.get(schedule.data()?.movieId)
     if (!answer) throw new HttpsError("unavailable", "Today's challenge is not available yet. Please try again soon.")
@@ -77,7 +96,8 @@ export const startGame = onCall(options, async request => {
         releaseDate: answer.y, metadata: { imdb_id: content.imdbId || null, tagline: content.tagline || null, fullSummary: content.description }, hints: hints(answer) },
     }
     tx.create(paths.game, game)
-    if (!statsDoc.exists) tx.create(paths.stats, stats)
+    if (!statsDoc.exists) tx.create(paths.stats, summary(stats))
+    else if (statsDoc.data()?.statisticsVersion !== 3 || statsDoc.data()?.completedDays) loaded.save(stats)
     return response(game, stats, now)
   })
 })
@@ -98,20 +118,25 @@ export const applyGameAction = onCall(options, async request => {
       throw new HttpsError("failed-precondition", "This saved game needs support assistance.")
     }
     const next = transition(game, action, catalog, now)
-    let stats = statsDoc.exists ? statsDoc.data() as Stats : initialStats(uid)
-    if (next === game) return response(game, stats, now)
+    const loaded = await loadStatistics(tx, db, uid, statsDoc, next.statsProcessed && !game.statsProcessed)
+    let stats = loaded.stats
+    if (!statsDoc.exists) throw new HttpsError("failed-precondition", "Saved statistics need review.")
+    if (next === game) {
+      if (statsDoc.data()?.statisticsVersion !== 3 || statsDoc.data()?.completedDays) loaded.save(stats)
+      return response(game, stats, now)
+    }
     if (action.type === "hint") stats = { ...stats, hintsUsedCount: stats.hintsUsedCount + 1 }
     if (next.statsProcessed && !game.statsProcessed) {
       stats = completeStats(stats, next)
       tx.create(paths.history, gameHistory(next))
     }
     tx.set(paths.game, next)
-    tx.set(paths.stats, stats)
+    loaded.save(stats)
     return response(next, stats, now)
   })
 })
 
-/** Compatibility name, read-only. Legacy full-game payloads fail closed. */
+/** Compatibility result read; may upgrade legacy statistics. Full-game payloads fail closed. */
 export const submitGameResult = onCall(options, async request => {
   const uid = user(request)
   const data = record(request.data, ["challengeId"])
@@ -123,7 +148,10 @@ export const submitGameResult = onCall(options, async request => {
     const [gameDoc, statsDoc, deletion, mergeLock] = await Promise.all([tx.get(paths.game), tx.get(paths.stats), tx.get(db.doc(`accountDeletions/${uid}`)), tx.get(db.doc(`accountMergeLocks/${uid}`))])
     requireActiveAccount(deletion, mergeLock)
     if (!gameDoc.exists || !gameDoc.data()?.statsProcessed) throw new HttpsError("failed-precondition", "Finish the challenge before requesting its result.")
-    return response(gameDoc.data() as Game, statsDoc.exists ? statsDoc.data() as Stats : initialStats(uid), now)
+    if (!statsDoc.exists) throw new HttpsError("failed-precondition", "Saved statistics need review.")
+    const loaded = await loadStatistics(tx, db, uid, statsDoc, false)
+    if (statsDoc.data()?.statisticsVersion !== 3 || statsDoc.data()?.completedDays) loaded.save(loaded.stats)
+    return response(gameDoc.data() as Game, loaded.stats, now)
   })
 })
 

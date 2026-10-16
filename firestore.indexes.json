@@ -1,4 +1,35 @@
 {
   "indexes": [],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "privateStats",
+      "fieldPath": "*",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "statisticsCalendar",
+      "fieldPath": "*",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "games",
+      "fieldPath": "triviaItem",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "games",
+      "fieldPath": "actions",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "games",
+      "fieldPath": "guesses",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "games",
+      "fieldPath": "hintsUsed",
+      "indexes": []
+    }
+  ]
 }

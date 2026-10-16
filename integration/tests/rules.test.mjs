@@ -31,6 +31,15 @@ beforeEach(async () => {
 })
 const paths = ["players/alice", "players/alice/games/movies_2026-10-13", "players/alice/privateStats/summary", "players/alice/gameHistoryV2/2026-10-13", "players/alice/gameHistory/2026-10-12", "players/alice/mergedGuestGames/retired_movies_2026-10-13"]
 describe("deployed rules source against real Firestore emulator", () => {
+  it("keeps statistics calendar partitions server-only", async () => {
+    const path = "players/alice/statisticsCalendar/2026"
+    await environment.withSecurityRulesDisabled(context => setDoc(doc(context.firestore(), path), { completedDays: ["2026-10-13"] }))
+    for (const context of [environment.authenticatedContext("alice"), environment.authenticatedContext("bob"), environment.unauthenticatedContext()]) {
+      await assertFails(getDoc(doc(context.firestore(), path)))
+      await assertFails(setDoc(doc(context.firestore(), path), {}))
+      await assertFails(deleteDoc(doc(context.firestore(), path)))
+    }
+  })
   it("prevents clients from inspecting or resetting the gameplay quota", async () => {
     await environment.withSecurityRulesDisabled(context => setDoc(doc(context.firestore(), "players/alice/privateRateLimits/gameplay"), { tokens: 0, updatedAt: Date.now() }))
     for (const context of [environment.authenticatedContext("alice"), environment.authenticatedContext("bob"), environment.unauthenticatedContext()]) {

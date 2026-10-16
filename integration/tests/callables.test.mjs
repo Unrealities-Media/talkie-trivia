@@ -14,6 +14,7 @@ const { getAuth: getAdminAuth } = requireFunctions("firebase-admin/auth")
 const { accountDeletion } = requireFunctions("./lib/accountDeletion")
 const { planAccountMergePage } = requireFunctions("./lib/accountMergePolicy")
 const { initialStats } = requireFunctions("./lib/gameEngine")
+const { hydrate, summary } = requireFunctions("./lib/statisticsStorage")
 const { consumeGameRequest } = requireFunctions("./lib/gameRequestLimit")
 const admin = initializeAdmin({ projectId })
 const db = getFirestore(admin)
@@ -100,6 +101,26 @@ describe("merge policy with real server-owned game snapshots", () => {
     await counter.set({ tokens: 0, updatedAt: Date.now() - 2000 })
     assert.equal((await start(user)).game.revision, 0)
   })
+  it("migrates statistics atomically on concurrent Profile reads without daily content", async () => {
+    const user = await guest()
+    await start(user)
+    await move(user, command())
+    const ref = db.doc(`players/${user.uid}/privateStats/summary`)
+    const expected = (await ref.get()).data()
+    const legacy = { ...expected }
+    delete legacy.statisticsVersion
+    delete legacy.byDifficulty
+    await ref.set(legacy)
+    await db.doc(`players/${user.uid}/statisticsCalendar/${day.slice(0, 4)}`).delete()
+    await db.doc(`dailyGames/${day}_LEVEL_2`).delete()
+    const reads = await Promise.all([call("getPlayerStatistics", {}, user.token), call("getPlayerStatistics", {}, user.token)])
+    for (const response of reads) assert.deepEqual(response.stats, expected)
+    assert.deepEqual((await ref.get()).data(), expected)
+    const calendar = await db.collection(`players/${user.uid}/statisticsCalendar`).get()
+    assert.equal(calendar.size, 1)
+    assert.deepEqual(calendar.docs[0].data().completedDays, [day])
+    await assert.rejects(call("getPlayerStatistics", {}), { code: "UNAUTHENTICATED" })
+  })
   it("resumes five independent games and credits a single daily streak and All Five day", async () => {
     const user = await guest()
     for (let level = 1; level <= 5; level++) {
@@ -118,7 +139,10 @@ describe("merge policy with real server-owned game snapshots", () => {
       assert.equal(resumed.game.gaveUp, true)
       assert.equal(resumed.game.revision, 1)
       assert.equal(resumed.stats.games, 5)
-      assert.deepEqual(resumed.stats.allFiveDays, [day])
+      assert.equal(resumed.stats.allFiveCompleted, 1)
+      assert.equal(resumed.stats.allFiveSolved, 0)
+      assert.equal(resumed.stats.daysCompleted, 1)
+      assert.equal(resumed.stats.completedDays, undefined)
     }
     assert.equal((await db.collection(`players/${user.uid}/gameHistoryV2`).get()).size, 5)
   })
@@ -178,11 +202,11 @@ describe("merge policy with real server-owned game snapshots", () => {
     const again = planAccountMergePage({
       sourceUid: source.uid, targetUid: destination.uid, sourceGames: [original],
       destinationGames: new Map([[original.id, await saved(destination, `games/${original.id}`)]]),
-      targetStats: await saved(destination, "privateStats/summary"),
+      targetStats: hydrate(await saved(destination, "privateStats/summary"), (await db.collection(`players/${destination.uid}/statisticsCalendar`).get()).docs.map(doc => doc.data())),
     })
     assert.equal(again.alreadyImported, 1)
     assert.deepEqual(again.writes, [])
-    assert.deepEqual(again.stats, completed.stats)
+    assert.deepEqual(summary(again.stats), completed.stats)
   })
 })
 

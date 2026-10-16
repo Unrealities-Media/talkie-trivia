@@ -8,7 +8,8 @@ import { warn } from "firebase-functions/logger"
 import { authorizeMergeRecovery } from "./accountMergeAuthorization"
 import { reserveAccountMerge } from "./accountMergeReservation"
 import { processAccountMergePage } from "./accountMergeWorker"
-import { initialStats, record } from "./gameEngine"
+import { initialStats, record, Stats } from "./gameEngine"
+import { summary as statisticsSummary } from "./statisticsStorage"
 
 const leaseMs = 10 * 60_000 // Longer than either callable or scheduled invocation.
 const retryBudgetMs = 8 * 60_000 // Leave a minute before the scheduled function's hard timeout.
@@ -199,7 +200,7 @@ export function accountMergeLifecycle(db: Firestore, auth: Auth, monotonicNow: (
         if (current.lease !== lease || current.status !== "pending" || current.phase !== "copied" ||
           current.freeze !== "frozen" || !Number.isSafeInteger(current.sourceGameCount) ||
           current.imported + current.conflicts !== current.sourceGameCount ||
-          !isDeepStrictEqual(stats.data() ?? initialStats(current.targetUid), current.copyStats)) review()
+          !isDeepStrictEqual(statisticsSummary((stats.data() ?? initialStats(current.targetUid)) as Stats), statisticsSummary(current.copyStats))) review()
         tx.update(ref(sourceUid), { retirement: "requested", updatedAt: Timestamp.now() })
       })
       try { await auth.deleteUser(sourceUid) } catch (error) { if (!notFound(error)) throw error }

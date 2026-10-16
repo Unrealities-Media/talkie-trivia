@@ -78,7 +78,7 @@ export function validateMergeGame(game: MergeGame, uid: string): void {
     game.mergeOrigin.revision > game.revision || game.mergeOrigin.policyVersion !== MERGE_POLICY_VERSION)) inconsistent()
 }
 
-export function validateMergeStats(stats: Stats, uid: string): void {
+export function validateMergeStats(stats: Stats, uid: string, calendarComplete = true): void {
   if (!stats || stats.id !== uid ||
     ![stats.currentStreak, stats.maxStreak, stats.games, stats.allTimeScore, stats.hintsAvailable, stats.hintsUsedCount].every(count) ||
     !Array.isArray(stats.wins) || stats.wins.length !== 5 || !stats.wins.every(count) ||
@@ -88,10 +88,38 @@ export function validateMergeStats(stats: Stats, uid: string): void {
     (stats.games === 0) !== (stats.lastCompletedDate === null) ||
     !Array.isArray(stats.winningDays) || !stats.winningDays.every(validDate) ||
     new Set(stats.winningDays).size !== stats.winningDays.length ||
-    (stats.completedDays ? stats.winningDays.length > stats.wins.reduce((sum, value) => sum + value, 0) : stats.winningDays.length !== stats.wins.reduce((sum, value) => sum + value, 0)) ||
-    stats.maxStreak > (stats.completedDays ?? stats.winningDays).length ||
+    stats.winningDays.length > stats.wins.reduce((sum, value) => sum + value, 0) ||
+    (calendarComplete && stats.maxStreak > (stats.completedDays ?? stats.winningDays).length) ||
     stats.winningDays.some((day, index) => index > 0 && day <= stats.winningDays[index - 1]) ||
     stats.winningDays.some(day => !stats.lastCompletedDate || day > stats.lastCompletedDate)) inconsistent()
+  if (stats.statisticsVersion === 3 && (!stats.completedDays || !stats.byDifficulty ||
+    ![stats.daysCompleted, stats.allFiveCompleted, stats.allFiveSolved].every(count) ||
+    stats.allFiveSolved! > stats.allFiveCompleted! || stats.allFiveCompleted! > stats.daysCompleted! || stats.maxStreak > stats.daysCompleted! ||
+    (calendarComplete && (stats.daysCompleted !== stats.completedDays.length || stats.allFiveCompleted !== stats.allFiveDays?.length || (stats.wins.some(value => value > 0) && stats.winningDays.length === 0))) ||
+    Object.values(stats.byDifficulty).reduce((sum, level) => sum + level.games, 0) !== stats.games ||
+    Object.values(stats.byDifficulty).reduce((sum, level) => sum + level.score, 0) !== stats.allTimeScore ||
+    Object.entries(stats.byDifficulty).some(([key, level]) => !Object.hasOwn(DIFFICULTY_MODES, key) || level.guesses?.length !== DIFFICULTY_MODES[key as keyof typeof DIFFICULTY_MODES].guessesMax) ||
+    stats.wins.some((value, index) => value !== Object.values(stats.byDifficulty!).reduce((sum, level) => sum + (level.guesses?.[index] ?? 0), 0)) ||
+    Object.values(stats.byDifficulty).some(level => ![level.games, level.wins, level.score, level.gaveUp].every(count) ||
+      !Array.isArray(level.guesses) || !level.guesses.every(count) || level.guesses.reduce((a, b) => a + b, 0) !== level.wins || level.wins + level.gaveUp > level.games))) inconsistent()
+  if (stats.statisticsVersion === 3 && calendarComplete) {
+    const days = stats.completedDays!
+    const daySet = new Set(days)
+    const winningDays = new Set(stats.winningDays)
+    if (!days.every(validDate) || days.some((day, i) => i > 0 && day <= days[i - 1]) ||
+      days.at(-1) !== (stats.lastCompletedDate ?? undefined) ||
+      stats.winningDays.some(day => !daySet.has(day)) ||
+      !stats.completedDifficulties || !stats.solvedDifficulties ||
+      Object.keys(stats.completedDifficulties).length !== days.length ||
+      stats.allFiveSolved !== Object.values(stats.solvedDifficulties).filter(levels => levels.length === 5).length) inconsistent()
+    for (const [day, levels] of Object.entries(stats.completedDifficulties!)) {
+      const solved = stats.solvedDifficulties![day] ?? []
+      if (!daySet.has(day) || !Array.isArray(levels) || levels.length > 5 ||
+        new Set(levels).size !== levels.length || levels.some(level => !Object.hasOwn(DIFFICULTY_MODES, level)) ||
+        !Array.isArray(solved) || new Set(solved).size !== solved.length || solved.some(level => !levels.includes(level))) inconsistent()
+    }
+    if (Object.keys(stats.solvedDifficulties!).some(day => !winningDays.has(day))) inconsistent()
+  }
 }
 
 /**

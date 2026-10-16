@@ -4,6 +4,7 @@ import PlayerStats from "../../../../src/models/playerStats"
 describe("Firestore Converter: PlayerStats", () => {
   const mockStats: PlayerStats = {
     id: "player-1",
+    statisticsVersion: 3, daysCompleted: 5, allFiveCompleted: 1, allFiveSolved: 0, byDifficulty: {}, lastCompletedDate: "2023-01-01",
     currentStreak: 5,
     games: 10,
     maxStreak: 5,

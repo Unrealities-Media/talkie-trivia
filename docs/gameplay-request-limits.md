@@ -1,7 +1,7 @@
 # Gameplay request limits
 
 The web beta backend shares one request budget per authenticated Firebase UID
-across `startGame`, `applyGameAction`, and `submitGameResult`. It allows a burst
+across `startGame`, `applyGameAction`, `submitGameResult`, and `getPlayerStatistics`. It allows a burst
 of 30 requests and refills one request every two seconds (30 per minute
 sustained). Authentication is checked first, then the payload schema and (for
 starting a game) catalog compatibility. Malformed payloads and stale catalogs

@@ -76,6 +76,7 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   await page.getByRole('button', { name: 'All stats ↗', exact: true }).click()
   await expect(page.getByText('Your statistics', { exact: true })).toBeVisible()
   await expect(page.getByText('Win distribution', { exact: true })).toBeVisible()
+  await expect(page.getByText('Very Easy win distribution', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Back to profile', exact: true }).click()
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await expect(page.getByText('Account settings', { exact: true })).toBeVisible()

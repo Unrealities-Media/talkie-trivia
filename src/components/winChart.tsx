@@ -3,10 +3,10 @@ import { View, ViewStyle, TextStyle } from "react-native"
 import { Typography } from "./ui/typography"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 
-export interface WinChartProps { wins: readonly number[] }
+export interface WinChartProps { wins: readonly number[]; difficultyLabel?: string }
 
 /** Native layout and text keep the distribution usable without a chart SDK. */
-const WinChart = memo(({ wins }: WinChartProps) => {
+const WinChart = memo(({ wins, difficultyLabel }: WinChartProps) => {
   const styles = useStyles(themedStyles)
   const valid = Array.isArray(wins) && wins.length <= 20
     && wins.every(count => Number.isSafeInteger(count) && count >= 0)
@@ -21,13 +21,13 @@ const WinChart = memo(({ wins }: WinChartProps) => {
   }
 
   // Older snapshots may omit trailing zero buckets. Preserve any historic ones.
-  const counts = Array.from({ length: Math.max(5, wins.length) }, (_, index) => wins[index] ?? 0)
+  const counts = Array.from({ length: difficultyLabel ? wins.length : Math.max(5, wins.length) }, (_, index) => wins[index] ?? 0)
   const largest = Math.max(...counts)
   return (
     <View style={styles.container} testID="win-distribution">
-      <Typography variant="h2" accessibilityRole="header">Win distribution</Typography>
+      <Typography variant="h2" accessibilityRole="header">{difficultyLabel ? `${difficultyLabel} win distribution` : "Win distribution"}</Typography>
       <Typography style={styles.summary}>
-        {total} {total === 1 ? "win" : "wins"} across all difficulties. Wins by number of guesses:
+        {total} {total === 1 ? "win" : "wins"} {difficultyLabel ? `on ${difficultyLabel}` : "across all difficulties"}. Wins by number of guesses:
       </Typography>
       {counts.map((count, index) => {
         const guesses = `${index + 1} ${index === 0 ? "guess" : "guesses"}`
