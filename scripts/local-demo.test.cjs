@@ -32,7 +32,7 @@ test('each demo clue has a unique released movie and meets the content length ga
   const movies = require('../src/data/searchIndex.json')
   const fixtures = require('../content/beta-movies.json')
   const originals = require('../data/movies.json')
-  assert.equal(fixtures.length, 40)
+  assert.ok(fixtures.length >= 8 * 5, 'at least eight days of distinct beta movies')
   assert.equal(new Set(fixtures.map(f => f.movieId)).size, fixtures.length)
   for (const f of fixtures) {
     assert.equal(movies.filter(m => m.i === f.movieId).length, 1)

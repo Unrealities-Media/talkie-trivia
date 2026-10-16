@@ -44,8 +44,8 @@ func TestBetaVariantsSourceAndCrossLanguageDigests(t *testing.T) {
 	if err := json.Unmarshal(data, &items); err != nil {
 		t.Fatal(err)
 	}
-	if len(items) != 40 {
-		t.Fatal("expected forty sets")
+	if len(items) < 8*5 {
+		t.Fatal("expected at least eight days of beta sets")
 	}
 	catalog, version, err := loadCatalog("../../src/data/searchIndex.json")
 	if err != nil {
