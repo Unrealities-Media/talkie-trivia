@@ -74,7 +74,7 @@ export default function SeatHints() {
         })}
       </View>)}
     </View>
-    <Text style={[styles.note, { color: colors.textSecondary }]}>{reserved ? "Reserved · no hints on this difficulty" : spend ? `${remaining} hints left · tap a plaque to reveal` : strategy === "IMPLICIT_FEEDBACK" ? "Match a category to reveal its plaque" : "Your hints · front-row seats"}</Text>
+    {spend && <Text style={[styles.note, { color: colors.textSecondary }]}>{remaining} hints left · −50 pts each</Text>}
   </View>
 }
 
