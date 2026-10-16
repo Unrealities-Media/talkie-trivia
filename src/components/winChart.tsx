@@ -25,7 +25,7 @@ const WinChart = memo(({ wins, difficultyLabel }: WinChartProps) => {
   const largest = Math.max(...counts)
   return (
     <View style={styles.container} testID="win-distribution">
-      <Typography variant="h2" accessibilityRole="header">Win distribution</Typography>
+      <Typography variant="h2" accessibilityRole="header">{difficultyLabel ? `${difficultyLabel} win distribution` : "Win distribution"}</Typography>
       <Typography style={styles.summary}>
         {total} {total === 1 ? "win" : "wins"} {difficultyLabel ? `on ${difficultyLabel}` : "across all difficulties"}. Wins by number of guesses:
       </Typography>
