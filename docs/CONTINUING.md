@@ -6,14 +6,24 @@ This is the current handoff; older audits preserve evidence from their dates.
 
 ## Shipped state
 
-- Archive resilience candidate: archived results now use the shared web sharing
+- Archive detail recovery candidate: keyboard retry keeps focus in a stable saved
+  result panel when its button is replaced; pointer retry does not request focus.
+  Loading now includes a readable status. A 320-by-480 error layout retains Retry
+  and Close. Six history/retry checks pass across Chromium, Firefox and WebKit,
+  plus nine focused tests and typecheck. Evidence: shared-root
+  `.expo/archive-detail-before.log` and `.expo/archive-detail-after.log`.
+
+- PR53 is merged and deployed: archived results now use the shared web sharing
   control, including manual copy when sharing and clipboard access fail. The copy
   field scrolls into view on focus above the fixed Close button. Failed archive
   posters fall back to the bundled poster; failed cast portraits retain names and
   links. Thirty-six focused unit tests, typecheck and six guest flows across
   Chromium, Firefox and WebKit pass. The browser flows block poster requests and
   check saved-result copying at 320 by 480. Evidence: shared-root
-  `.expo/archive-resilience-final.log`. Native builds remain disabled.
+  `.expo/archive-resilience-final.log`. All nine checks passed for head
+  `59ad85575b7fcbf69d5f15f447374989c5880f52`. All 47 deployed files matched at
+  09:18:12 UTC; live poster fallback and short-screen archive copying passed at
+  09:18:13 UTC without moves, external shares or page errors. Native builds remain disabled.
 
 - PRs 18–52 are merged. PR52 head `f3f369b3c0a9498c03570fa9f232b1895064045d`
   passed all nine checks. All 47 live files matched its export at 09:02:12 UTC;
