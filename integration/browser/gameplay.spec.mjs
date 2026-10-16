@@ -125,6 +125,37 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   expect(observed.errors).toEqual([])
 })
 
+test('short-screen challenge chooser keeps every choice clear of Close', async ({ page, browserName }, testInfo) => {
+  test.skip(testInfo.project.use.viewport?.width !== 1440, 'Explicit short viewports need one run per engine.')
+  const observed = trackPageErrors(page, browserName)
+  await page.goto('/game')
+  await expect(page.getByRole('searchbox')).toBeVisible()
+  for (const viewport of [{ width: 844, height: 390 }, { width: 320, height: 480 }]) {
+    await page.setViewportSize(viewport)
+    await page.getByRole('tab', { name: 'Profile', exact: true }).click()
+    await page.getByRole('button', { name: /^Choose your next challenge/ }).click()
+    const close = page.getByRole('button', { name: 'Close', exact: true })
+    await expect(close).toBeInViewport({ ratio: 1 })
+    for (const difficulty of ['Very Easy', 'Easy', 'Medium', 'Hard', 'Very Hard']) {
+      const choice = page.getByRole('button', { name: new RegExp(`^${difficulty} ·`) })
+      await choice.focus()
+      await expect(choice).toBeFocused()
+      await expect(choice).toBeInViewport({ ratio: 1 })
+      const bounds = await choice.boundingBox()
+      const closeBounds = await close.boundingBox()
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(closeBounds.y)
+      expect(await choice.evaluate(element => {
+        const rect = element.getBoundingClientRect()
+        return element.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2))
+      })).toBe(true)
+    }
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('button', { name: /^Play Very Hard\./ })).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('searchbox')).toBeVisible()
+  }
+  expect(observed.errors).toEqual([])
+})
+
 test('saved hints and guesses survive offline navigation, reconnection and reload', async ({ page }) => {
   // WebChannel probes this image after a connection failure. Keep the test
   // isolated: simulate its network failure without allowing a Google request.

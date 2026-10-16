@@ -89,12 +89,14 @@ export default function ProfileScreen() {
       </View>
     </ScrollView>
     <DetailModal show={choosing && signedIn && !deletion && !merge && !mergeProposal} toggleModal={setChoosing}>
-      <Text accessibilityRole="header" style={heading}>Your next challenge</Text>
-      <View style={{ gap: 10, marginTop: 16 }}>
-        {(Object.keys(DIFFICULTY_MODES) as DifficultyLevel[]).map(level => <Button key={level}
-          title={`${DIFFICULTY_MODES[level].label} · ${ready ? statuses[level] ?? "Not started" : "Reload progress"}`}
-          disabled={blocked} onPress={() => openGame(level)} />)}
-      </View>
+      <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ paddingBottom: 2 }}>
+        <Text accessibilityRole="header" style={heading}>Your next challenge</Text>
+        <View style={{ gap: 10, marginTop: 16 }}>
+          {(Object.keys(DIFFICULTY_MODES) as DifficultyLevel[]).map(level => <Button key={level}
+            title={`${DIFFICULTY_MODES[level].label} · ${ready ? statuses[level] ?? "Not started" : "Reload progress"}`}
+            disabled={blocked} onPress={() => openGame(level)} />)}
+        </View>
+      </ScrollView>
     </DetailModal>
   </>
 }
