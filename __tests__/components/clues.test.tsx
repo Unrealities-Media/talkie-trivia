@@ -14,9 +14,11 @@ import { ScrollView } from "react-native";
 import { defaultPlayerGame, defaultTriviaItem } from "../../src/models/default";
 import { PlayerGame } from "../../src/models/game";
 import { DEFAULT_DIFFICULTY } from "../../src/config/difficulty";
+import { usePremiereMotion } from "../../src/utils/hooks/usePremiereMotion";
 
 jest.mock("../../src/state/gameStore");
 jest.mock("../../src/utils/hapticsService");
+jest.mock("../../src/utils/hooks/usePremiereMotion");
 
 const renderWithTheme = (ui: ReactElement, options?: RenderOptions) => {
   return render(<ThemeProvider>{ui}</ThemeProvider>, options);
@@ -55,6 +57,7 @@ describe("CluesContainer Component", () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
+    (usePremiereMotion as jest.Mock).mockReturnValue(false);
     (useGameStore as unknown as jest.Mock).mockClear();
     (hapticsService.light as jest.Mock).mockClear();
 
@@ -171,11 +174,9 @@ describe("CluesContainer Component", () => {
   });
 
   describe("Interaction", () => {
-    it("should call haptics on press", () => {
+    it("allows skipping only while the clue animation is active", () => {
       setMockStoreState();
       renderWithTheme(<CluesContainer />);
-
-      act(() => jest.advanceTimersByTime(2000));
 
       expect(screen.getByText(summaryChunks[0])).toBeTruthy();
       (hapticsService.light as jest.Mock).mockClear();
@@ -186,6 +187,24 @@ describe("CluesContainer Component", () => {
       fireEvent.press(pressableArea);
 
       expect(hapticsService.light).toHaveBeenCalledTimes(1);
+      expect(screen.queryByLabelText("Skip the current clue's text animation")).toBeNull();
+    });
+
+    it("removes the skip control when the animation finishes", () => {
+      setMockStoreState();
+      renderWithTheme(<CluesContainer />);
+      expect(screen.getByLabelText("Skip the current clue's text animation")).toBeTruthy();
+      act(() => jest.advanceTimersByTime(1000));
+      expect(screen.queryByLabelText("Skip the current clue's text animation")).toBeNull();
+      expect(screen.getByText(summaryChunks[0])).toBeTruthy();
+    });
+
+    it("does not offer an animation control with reduced motion", () => {
+      (usePremiereMotion as jest.Mock).mockReturnValue(true);
+      setMockStoreState();
+      renderWithTheme(<CluesContainer />);
+      expect(screen.queryByLabelText("Skip the current clue's text animation")).toBeNull();
+      expect(screen.getByText(summaryChunks[0])).toBeTruthy();
     });
 
     it("should be non-interactive when the game is over", () => {

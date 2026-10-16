@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef } from "react"
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, TextInput, View, ViewStyle } from "react-native"
+import { GestureResponderEvent, Keyboard, KeyboardAvoidingView, Platform, ScrollView, TextInput, View, ViewStyle } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { LinearGradient } from "expo-linear-gradient"
 import LoadingIndicator from "../../components/loadingIndicator"
@@ -104,7 +104,13 @@ const GameScreen = () => {
   const error = useGameStore(state => state.error)
   const initializeGame = useGameStore(state => state.initializeGame)
   const hasGame = useGameStore(state => Boolean(state.playerGame.id))
-  const retry = async () => {
+  const gameRegion = useRef<HTMLDivElement>(null)
+  const retry = async (event: GestureResponderEvent) => {
+    // Retry unmounts while loading. Keep keyboard navigation at the game,
+    // across both another error and a successful load, without an async jump.
+    if (Platform.OS === "web" && (event.nativeEvent as unknown as MouseEvent)?.detail === 0) {
+      gameRegion.current?.focus()
+    }
     if (await refreshNetwork() === false) return
     if (authError || !player) await retryAuthentication()
     else await initializeGame(player)
@@ -126,7 +132,12 @@ const GameScreen = () => {
       style={u.flex}
     >
       <GameLayout showDifficulty={Boolean(player && !deletion && !merge && !mergeProposal && !lostSession && !authLoading && !authError && isNetworkConnected !== false)}>
-        {content}
+        {Platform.OS === "web"
+          ? <div ref={gameRegion} role="group" aria-label="Daily game" tabIndex={-1}
+              style={{ width: "100%", flexGrow: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+              {content}
+            </div>
+          : content}
       </GameLayout>
       <Suspense fallback={null}>
         <FlashMessages message={flashMessage} />
