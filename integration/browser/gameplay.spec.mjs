@@ -319,11 +319,14 @@ test('a throttled guess stays pending through retry and reload without becoming 
   await expect(page.getByRole('button', { name: 'Give Up?', exact: true })).toBeDisabled()
   await expect(page.getByText('5 GUESSES REMAINING', { exact: true })).toBeVisible()
   expect(commands).toHaveLength(1)
-  await page.getByRole('button', { name: 'Retry save', exact: true }).click()
+  await page.getByRole('button', { name: 'Retry save', exact: true }).focus()
+  await page.keyboard.press('Enter')
   await expect.poll(() => commands.length).toBe(2)
   await expect(page.getByRole('button', { name: 'Retry save', exact: true })).toBeVisible()
   expect(commands).toHaveLength(2)
   expect(commands[1]).toEqual(commands[0])
+  // A failed retry must not send keyboard navigation back to the page start.
+  await expect(page.getByRole('status').filter({ hasText: 'Waiting to save' })).toBeFocused()
   await page.reload()
   await expect(page.getByRole('searchbox')).toBeVisible()
   await expect(page.getByText('Waiting to save', { exact: true })).toHaveCount(0)
@@ -333,4 +336,56 @@ test('a throttled guess stays pending through retry and reload without becoming 
   await page.getByRole('searchbox').fill(wrong.t)
   await expect(page.getByRole('button', { name: new RegExp(`^${escape(wrong.t)}.*Already guessed`) }).first()).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Give Up?', exact: true })).toBeEnabled()
+})
+
+test('save recovery returns keyboard players to guessing without stealing a later focus change', async ({ page }) => {
+  const commands = []
+  let reject = true
+  let release
+  let gate = Promise.resolve()
+  await page.route('**/applyGameAction', async route => {
+    if (route.request().method() !== 'POST') return route.continue()
+    commands.push(route.request().postDataJSON().data)
+    await gate
+    if (reject) return route.fulfill({
+      status: 503, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: { status: 'UNAVAILABLE', message: 'Service unavailable' } }),
+    })
+    return route.continue()
+  })
+  await page.goto('/game')
+  const search = page.getByRole('searchbox')
+  await expect(search).toBeVisible()
+  const day = Math.floor(Date.now() / 86400000)
+  const fixture = fixtures[(day * 5 + 2) % fixtures.length]
+  const wrong = catalog.filter(movie => movie.i !== fixture.movieId && movie.t.length < 30 &&
+    catalog.filter(candidate => candidate.t === movie.t).length === 1).slice(0, 3)
+  const guess = async title => {
+    await search.fill(title)
+    await page.getByRole('button', { name: new RegExp(`^Select and guess: ${escape(title)}`) }).first().click()
+    await expect(page.getByText('Waiting to save', { exact: true })).toBeVisible()
+  }
+  const retry = page.getByRole('button', { name: 'Retry save', exact: true })
+  for (const [index, behavior] of ['keyboard', 'moved-focus', 'pointer'].entries()) {
+    reject = true
+    await guess(wrong[index].t)
+    gate = new Promise(resolve => { release = resolve })
+    reject = false
+    try {
+      if (behavior === 'pointer') await retry.click()
+      else { await retry.focus(); await page.keyboard.press('Enter') }
+      const status = page.getByRole('status').filter({ hasText: 'Saving your move' })
+      await expect(status).toBeVisible()
+      if (behavior === 'pointer') await expect(status).not.toBeFocused()
+      else await expect(status).toBeFocused()
+      if (behavior === 'moved-focus') await page.getByRole('tab', { name: 'Profile', exact: true }).focus()
+    } finally { release() }
+    await expect(search).toBeEditable()
+    if (behavior === 'keyboard') await expect(search).toBeFocused()
+    if (behavior === 'moved-focus') await expect(page.getByRole('tab', { name: 'Profile', exact: true })).toBeFocused()
+    if (behavior === 'pointer') await expect(search).not.toBeFocused()
+    expect(commands[index * 2 + 1]).toEqual(commands[index * 2])
+    await expect(page.getByText(`${4 - index} GUESSES REMAINING`, { exact: true })).toBeVisible()
+  }
+  expect(commands).toHaveLength(6)
 })
