@@ -151,6 +151,21 @@ and uses an isolated `demo-talkie-web-test` project on `127.0.0.2`. Browser
 requests to live Firebase are blocked. Run `npm --prefix integration run
 test:browser-safety` to check those safeguards independently.
 
+For an occasional cross-browser acceptance run, install additional engines with
+`node integration/node_modules/@playwright/test/cli.js install firefox webkit`,
+then set `TALKIE_BROWSER_ENGINES=firefox,webkit` before running the same browser
+command. In PowerShell use `$env:TALKIE_BROWSER_ENGINES = 'firefox,webkit'` and
+remove it afterwards with `Remove-Item Env:TALKIE_BROWSER_ENGINES`. Each selected
+engine runs desktop and narrow-viewport contracts; the reward test covers its own
+viewport variants once per engine. The default remains Chromium only, including
+ordinary PR CI. WebKit engine checks do not replace testing Safari on real Apple
+devices, and a narrow viewport does not emulate a mobile device's touch behavior.
+WebKit currently mislabels some Firestore requests cancelled by page reload as
+access-control errors ([upstream issue](https://github.com/microsoft/playwright/issues/43120)).
+The tests retain those exact emulator-channel errors in a `reload-cancellations`
+attachment only during explicit reloads. Errors outside that interval, other
+origins and other error messages still fail the test.
+
 When updating native dependencies, follow the [Expo SDK upgrade guide](https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/)
 and run `npx expo install --check`. Use the SDK-compatible versions together rather
 than independently upgrading every package to its latest release.

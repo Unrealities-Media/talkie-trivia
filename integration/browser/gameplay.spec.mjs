@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { createRequire } from 'node:module'
 import { allowedRequest } from './network-policy.mjs'
+import { trackPageErrors } from './page-errors.mjs'
 const require = createRequire(import.meta.url)
 const fixtures = require('../../content/beta-movies.json')
 const catalog = require('../../src/data/searchIndex.json')
@@ -16,9 +17,8 @@ test.beforeEach(async ({ context }) => {
   await context.routeWebSocket('**/*', socket => socket.close())
 })
 
-test('guest can start, guess, reload, reveal, win and share with saved history', async ({ page }) => {
-  const errors = []
-  page.on('pageerror', error => errors.push(error.message))
+test('guest can start, guess, reload, reveal, win and share with saved history', async ({ page, browserName }, testInfo) => {
+  const observed = trackPageErrors(page, browserName)
   await page.goto('/game')
   await expect(page.getByRole('searchbox')).toBeVisible()
   await page.getByRole('button', { name: /^Play Hard\./ }).click()
@@ -40,7 +40,7 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   await expect(preview).toHaveAttribute('aria-expanded', 'false')
   await expect(result).toBeEnabled()
   await page.getByRole('searchbox').fill('')
-  await page.reload()
+  await observed.reload()
   await expect(page.getByRole('button', { name: /^Play Hard\. In progress/ })).toBeVisible()
   await page.getByRole('button', { name: 'Give Up?', exact: true }).click()
   await page.getByRole('button', { name: 'Give Up', exact: true }).click()
@@ -53,7 +53,7 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   await page.getByRole('searchbox').fill(answer.t)
   await page.getByRole('button', { name: new RegExp(`^Select and guess: ${escape(answer.t)}`) }).first().click()
   await expect(page.getByText("That's a wrap!", { exact: true })).toBeVisible()
-  await page.reload()
+  await observed.reload()
   await expect(page.getByText("That's a wrap!", { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Share Your Result', exact: true }).click()
   await expect(page.getByText(/Result copied|Select and copy your result below/)).toBeVisible()
@@ -68,7 +68,8 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await expect(page.getByText('Account settings', { exact: true })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-  expect(errors).toEqual([])
+  await testInfo.attach('reload-cancellations', { body: JSON.stringify(observed.reloadCancellations), contentType: 'application/json' })
+  expect(observed.errors).toEqual([])
 })
 
 test('Easy hint purchase and a wrong guess survive reload', async ({ page }) => {
@@ -97,16 +98,16 @@ test('Easy hint purchase and a wrong guess survive reload', async ({ page }) => 
 })
 
 test('narrow-screen keyboard play switches modes directly and keeps help optional', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'desktop', 'One explicit 320px viewport is sufficient.')
+  test.skip(testInfo.project.use.viewport?.width !== 1440, 'One explicit 320px viewport per engine is sufficient.')
   await page.setViewportSize({ width: 320, height: 640 })
   await page.goto('/game')
   await expect(page.getByRole('searchbox')).toBeVisible()
   const hard = page.getByRole('button', { name: /^Play Hard\./ })
   await page.screenshot({ path: testInfo.outputPath('play-320.png'), fullPage: true })
-  const tabTo = async target => {
+  const tabTo = async (target, key = 'Tab') => {
     for (let attempt = 0; attempt < 40; attempt++) {
       if (await target.evaluate(element => element === document.activeElement)) return
-      await page.keyboard.press('Tab')
+      await page.keyboard.press(key)
     }
     await expect(target).toBeFocused()
   }
@@ -122,7 +123,9 @@ test('narrow-screen keyboard play switches modes directly and keeps help optiona
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByText('Guess the movie', { exact: true })).toHaveCount(0)
   const help = page.getByRole('button', { name: 'How to play', exact: true })
-  await tabTo(help)
+  // Help precedes the modes. Reverse traversal avoids leaving the document
+  // through browser chrome when a browser does not wrap forward tab order.
+  await tabTo(help, 'Shift+Tab')
   await fitsWidth(help)
   await page.keyboard.press('Enter')
   await expect(page.getByText('Guess the movie', { exact: true })).toBeVisible()

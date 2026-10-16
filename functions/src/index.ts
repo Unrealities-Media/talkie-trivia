@@ -47,11 +47,11 @@ const response = (game: Game, stats: Stats, now: Date) => {
 /** The date, content, paths, and defaults originate on the server. */
 export const startGame = onCall(options, async request => {
   const uid = user(request)
-  await consumeGameRequest(db, uid)
   const command = parseStart(request.data)
   if (command.catalogVersion !== catalogVersion) {
     throw new HttpsError("failed-precondition", "Please update the app to load the current movie catalog.")
   }
+  await consumeGameRequest(db, uid)
   const now = await gameNow(db)
   const day = now.toISOString().slice(0, 10)
   const challengeId = `${day}_${command.difficulty}`
@@ -85,8 +85,8 @@ export const startGame = onCall(options, async request => {
 /** One bounded, versioned action; transaction retries cannot award extra credit. */
 export const applyGameAction = onCall(options, async request => {
   const uid = user(request)
-  await consumeGameRequest(db, uid)
   const action = parseAction(request.data)
+  await consumeGameRequest(db, uid)
   const now = await gameNow(db)
   const paths = refs(uid, action.challengeId)
   return db.runTransaction(async tx => {
@@ -114,9 +114,9 @@ export const applyGameAction = onCall(options, async request => {
 /** Compatibility name, read-only. Legacy full-game payloads fail closed. */
 export const submitGameResult = onCall(options, async request => {
   const uid = user(request)
-  await consumeGameRequest(db, uid)
   const data = record(request.data, ["challengeId"])
   const challengeId = challengeKey(data.challengeId)
+  await consumeGameRequest(db, uid)
   const now = await gameNow(db)
   const paths = refs(uid, challengeId)
   return db.runTransaction(async tx => {
@@ -130,4 +130,4 @@ export const submitGameResult = onCall(options, async request => {
 export const deleteAccount = onCall({ ...options, timeoutSeconds: 120 }, request => accountDeletion(db, getAuth()).request(request))
 export const prepareAccountDeletion = onCall(options, request => accountDeletion(db, getAuth()).prepare(request))
 export const getAccountDeletionStatus = onCall(options, request => accountDeletion(db, getAuth()).status(request))
-export const retryAccountDeletions = onSchedule({ schedule: "every 5 minutes", timeZone: "UTC", timeoutSeconds: 540, maxInstances: 1, memory: "256MiB" }, () => accountDeletion(db, getAuth()).retry())
+export const retryAccountDeletions = onSchedule({ schedule: "every 5 minutes", timeZone: "UTC", timeoutSeconds: 540, maxInstances: 1, concurrency: 1, retryCount: 0, memory: "256MiB" }, () => accountDeletion(db, getAuth()).retry())

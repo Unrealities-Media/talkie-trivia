@@ -22,6 +22,7 @@
   "scripts": {
     "beta:build": "node scripts/web-beta.cjs build",
     "beta:deploy": "node scripts/web-beta.cjs deploy",
+    "beta:operations": "node scripts/beta-operations.cjs",
     "test:beta": "node --test scripts/web-beta.test.cjs",
     "dev": "node scripts/local-dev.cjs",
     "dev:backend": "node scripts/local-dev.cjs --backend-only",

@@ -3,8 +3,10 @@
 The web beta backend shares one request budget per authenticated Firebase UID
 across `startGame`, `applyGameAction`, and `submitGameResult`. It allows a burst
 of 30 requests and refills one request every two seconds (30 per minute
-sustained). Authentication is checked first; malformed authenticated requests
-also consume the budget. The server clock controls refill, not the device clock
+sustained). Authentication is checked first, then the payload schema and (for
+starting a game) catalog compatibility. Malformed payloads and stale catalogs
+are rejected before the Firestore rate-limit transaction, without creating or
+spending a bucket. The server clock controls refill, not the device clock
 or the emulator's adjustable challenge date.
 
 Exhaustion returns `resource-exhausted` with `details.retryAfterMs`. No game or
@@ -28,6 +30,8 @@ Each admitted request adds a transaction with three document reads and one
 write before the existing game transaction. A throttled request still incurs
 function invocation and transaction reads; conflicts can add retry reads.
 This bounds accepted work per UID, **not total infrastructure spending**.
+Early validation avoids these database reads/writes for malformed requests;
+Firebase authentication verification and function invocation still incur work.
 
 Anonymous account rotation, direct Firestore reads, and account lifecycle
 endpoints are not covered by this limiter. Keep the invited beta access policy.

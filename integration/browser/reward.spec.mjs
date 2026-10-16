@@ -1,16 +1,16 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { allowedRequest } from './network-policy.mjs'
+import { trackPageErrors } from './page-errors.mjs'
 
 // Display fixture only: the gameplay contracts separately exercise real scores.
 const summary = 'Dom Cobb steals secrets by entering other people’s dreams. When a powerful businessman offers him a way home to his children, the price is an almost impossible assignment: plant an idea in an heir’s mind and make him believe it is his own. Cobb assembles a team to build a dream inside a dream, turning a carefully planned heist into a descent through shifting realities. But memories of his late wife keep breaking into the mission, threatening everyone who follows him. To finish the job, Cobb must confront the guilt he has carried into this world—and decide what he is willing to leave behind.'
 const names = ['Leonardo DiCaprio', 'Joseph Gordon-Levitt', 'Elliot Page', 'Tom Hardy']
 const files = ['leonardo', 'joseph', 'elliot', 'tom']
 
-test('cinematic reward matches the selected composition and handles result variations', async ({ page, context }, testInfo) => {
-  test.skip(testInfo.project.name !== 'desktop', 'Explicit reference, phone and desktop widths are covered here.')
-  const errors = []
-  page.on('pageerror', error => errors.push(error.message))
+test('cinematic reward matches the selected composition and handles result variations', async ({ page, context, browserName }, testInfo) => {
+  test.skip(testInfo.project.use.viewport?.width !== 1440, 'Explicit reference, phone and desktop widths are covered here.')
+  const observed = trackPageErrors(page, browserName)
   let variant = 'reference'
   await context.route('**/*', async route => {
     const request = route.request()
@@ -79,7 +79,7 @@ test('cinematic reward matches the selected composition and handles result varia
   for (const next of ['long', 'missing', 'loss', 'pending']) {
     variant = next
     await page.setViewportSize({ width: 320, height: 900 })
-    await page.reload()
+    await observed.reload()
     await expect(reward).toBeVisible()
     await expect(page.getByText(summary, { exact: true })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
@@ -89,9 +89,10 @@ test('cinematic reward matches the selected composition and handles result varia
   }
   variant = 'reference'
   await page.evaluate(() => localStorage.setItem('theme_preference', 'light'))
-  await page.reload()
+  await observed.reload()
   await expect(reward).toBeVisible()
   await expect(reward).toHaveCSS('background-color', 'rgb(250, 243, 232)')
   await capture('cinematic-reward-light-320.png')
-  expect(errors).toEqual([])
+  await testInfo.attach('reload-cancellations', { body: JSON.stringify(observed.reloadCancellations), contentType: 'application/json' })
+  expect(observed.errors).toEqual([])
 })

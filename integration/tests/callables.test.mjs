@@ -67,6 +67,23 @@ beforeEach(async () => {
 after(async () => { await Promise.all(apps.map(deleteApp)); await db.terminate(); await deleteAdmin(admin) })
 
 describe("merge policy with real server-owned game snapshots", () => {
+  it("rejects malformed gameplay and stale catalogs without creating or spending a rate bucket", async () => {
+    const user = await guest()
+    const invalid = async () => {
+      await assert.rejects(start(user, { difficulty: "INVALID" }), { code: "INVALID_ARGUMENT" })
+      await assert.rejects(start(user, { catalogVersion: "0".repeat(64) }), { code: "FAILED_PRECONDITION" })
+      await assert.rejects(move(user, command({ expectedRevision: -1 })), { code: "INVALID_ARGUMENT" })
+      await assert.rejects(call("submitGameResult", { challengeId: "invalid" }, user.token), { code: "INVALID_ARGUMENT" })
+    }
+    await invalid()
+    assert.equal(await saved(user, "privateRateLimits/gameplay"), undefined)
+    await start(user)
+    const counter = await saved(user, "privateRateLimits/gameplay")
+    assert.equal(counter.tokens, 29)
+    await invalid()
+    assert.deepEqual(await saved(user, "privateRateLimits/gameplay"), counter)
+  })
+
   it("atomically spends the last gameplay request under contention and allows recovery", async () => {
     const user = await guest()
     const counter = db.doc(`players/${user.uid}/privateRateLimits/gameplay`)
