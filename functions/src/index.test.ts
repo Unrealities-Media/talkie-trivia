@@ -2,6 +2,7 @@
 // not a substitute for the Firestore emulator's retry and authorization tests.
 const mockRecords = new Map<string, any>()
 let mockQueue = Promise.resolve()
+const mockQuery = (path: string, after = "", count = Infinity): any => ({ path, query: true, after, count, orderBy: () => mockQuery(path, after, count), limit: (n: number) => mockQuery(path, after, n), startAfter: (id: string) => mockQuery(path, id, count) })
 const mockRef = (path: string) => ({ path, get: async () => snapshot(path) })
 function snapshot(path: string) {
   return { exists: mockRecords.has(path), data: () => structuredClone(mockRecords.get(path)) }
@@ -9,7 +10,9 @@ function snapshot(path: string) {
 jest.mock("firebase-admin/app", () => ({ initializeApp: jest.fn() }))
 jest.mock("firebase-admin/auth", () => ({ getAuth: jest.fn() }))
 jest.mock("firebase-admin/firestore", () => ({
+  FieldPath: { documentId: () => "__name__" },
   getFirestore: () => ({
+    collection: mockQuery,
     doc: mockRef,
     runTransaction: (fn: any) => {
       const run = mockQueue.then(async () => {
@@ -17,6 +20,10 @@ jest.mock("firebase-admin/firestore", () => ({
         const result = await fn({
           get: async (ref: any) => {
             if (writes.length) throw new Error("Transaction reads must precede writes")
+            if (ref.query) {
+              const docs = [...mockRecords.keys()].filter(path => path.startsWith(ref.path + "/") && !path.slice(ref.path.length + 1).includes("/") && path.slice(ref.path.length + 1) > ref.after).sort().slice(0, ref.count).map(path => ({ ...snapshot(path), id: path.slice(ref.path.length + 1) }))
+              return { docs, size: docs.length, empty: docs.length === 0 }
+            }
             return snapshot(ref.path)
           },
           create: (ref: any, data: any) => {
@@ -44,7 +51,7 @@ jest.mock("./catalog", () => ({
     [2, { i: 2, t: "Other", y: "2001", p: "/b.jpg", d: "Director B", c: ["Actor B"], g: ["Comedy"] }],
   ]),
 }))
-import { startGame, applyGameAction, submitGameResult, beginAccountMerge } from "./index"
+import { startGame, applyGameAction, submitGameResult, beginAccountMerge, getPlayerStatistics } from "./index"
 it("keeps merge creation disabled outside the isolated emulator rollout", async () => {
   const previous = process.env.FUNCTIONS_EMULATOR
   delete process.env.FUNCTIONS_EMULATOR
@@ -90,6 +97,41 @@ describe("authoritative game callables", () => {
     jest.advanceTimersByTime(1)
     await expect(start()).resolves.toHaveProperty("game")
     await expect(start()).rejects.toMatchObject({ code: "resource-exhausted" })
+  })
+  it("expires Profile and gameplay streaks consistently without changing stored totals", async () => {
+    await start()
+    await act()
+    jest.setSystemTime(new Date("2026-10-15T00:00:00Z"))
+    const profile = await (getPlayerStatistics as any)({ auth: { uid: "user-with-hyphens" }, data: {} })
+    expect(profile.stats).toMatchObject({ currentStreak: 0, maxStreak: 1, games: 1 })
+    expect(profile.stats).not.toHaveProperty("completedDays")
+    expect(mockRecords.get(statsPath).currentStreak).toBe(1)
+  })
+  it("migrates legacy totals from games and persists bounded calendar partitions", async () => {
+    await start()
+    await act()
+    const uid = "user-with-hyphens"
+    const won = mockRecords.get("players/" + uid + "/games/movies_2026-10-13_LEVEL_3")
+    const lost = { ...won, id: "movies_2026-10-12", challengeId: "2026-10-12", correctAnswer: false, gaveUp: true, guesses: [], score: 0 }
+    mockRecords.set("players/" + uid + "/games/" + lost.id, lost)
+    const stored = mockRecords.get(statsPath)
+    delete stored.statisticsVersion
+    delete stored.byDifficulty
+    stored.games = 2
+    const result = await (getPlayerStatistics as any)({ auth: { uid }, data: {} })
+    expect(result.stats).toMatchObject({ statisticsVersion: 3, games: 2, currentStreak: 2, daysCompleted: 2, byDifficulty: { LEVEL_3: { games: 2, wins: 1 } } })
+    expect(mockRecords.get(statsPath)).not.toHaveProperty("winningDays")
+    expect(mockRecords.get("players/" + uid + "/statisticsCalendar/2026").completedDays).toEqual(["2026-10-12", "2026-10-13"])
+    expect((await (getPlayerStatistics as any)({ auth: { uid }, data: {} })).stats).toEqual(result.stats)
+  })
+  it("refuses migration when retained games cannot account for earned totals", async () => {
+    await start()
+    await act()
+    const stored = mockRecords.get(statsPath)
+    delete stored.statisticsVersion
+    stored.allTimeScore++
+    await expect((getPlayerStatistics as any)({ auth: { uid: "user-with-hyphens" }, data: {} })).rejects.toMatchObject({ code: "failed-precondition" })
+    expect(mockRecords.get(statsPath).statisticsVersion).toBeUndefined()
   })
   it("caps refill after inactivity and does not refill when the clock moves backward", async () => {
     const path = "players/user-with-hyphens/privateRateLimits/gameplay"

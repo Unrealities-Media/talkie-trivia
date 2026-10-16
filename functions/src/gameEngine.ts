@@ -43,6 +43,11 @@ export interface Game {
   }
 }
 export interface Stats {
+  statisticsVersion?: 3
+  daysCompleted?: number
+  allFiveCompleted?: number
+  allFiveSolved?: number
+  solvedDifficulties?: Record<string, string[]>
   id: string; currentStreak: number; maxStreak: number; games: number
   wins: number[]; allTimeScore: number; hintsAvailable: number; hintsUsedCount: number
   lastCompletedDate: string | null
@@ -50,7 +55,7 @@ export interface Stats {
   completedDays?: string[]
   completedDifficulties?: Record<string, string[]>
   allFiveDays?: string[]
-  byDifficulty?: Partial<Record<DifficultyLevel, { games: number; wins: number; score: number }>>
+  byDifficulty?: Partial<Record<DifficultyLevel, { games: number; wins: number; score: number; guesses: number[]; gaveUp: number }>>
 }
 
 function invalid(message = "Invalid game command."): never {
@@ -95,7 +100,7 @@ export function parseAction(value: unknown): GameAction {
   return data as unknown as GameAction
 }
 export function initialStats(uid: string): Stats {
-  return { id: uid, currentStreak: 0, maxStreak: 0, games: 0, wins: [0, 0, 0, 0, 0], allTimeScore: 0, hintsAvailable: 3, hintsUsedCount: 0, lastCompletedDate: null, winningDays: [] }
+  return { statisticsVersion: 3, id: uid, currentStreak: 0, maxStreak: 0, games: 0, wins: [0, 0, 0, 0, 0], allTimeScore: 0, hintsAvailable: 3, hintsUsedCount: 0, lastCompletedDate: null, winningDays: [], completedDays: [], completedDifficulties: {}, solvedDifficulties: {}, allFiveDays: [], daysCompleted: 0, allFiveCompleted: 0, allFiveSolved: 0, byDifficulty: {} }
 }
 export function terminal(game: Game): boolean {
   return game.correctAnswer || game.gaveUp || game.guesses.length >= game.guessesMax
@@ -167,18 +172,25 @@ export function completeStats(stats: Stats, game: Game): Stats {
   next.games++
   next.allTimeScore += game.score
   if (game.correctAnswer) next.wins[game.guesses.length - 1]++
-  // Dates, rather than request arrival order, determine daily win streaks.
+  // Participation is based on the challenge's UTC day, including legacy games.
   const day = challengeDay(game.challengeId)
   next.lastCompletedDate = [next.lastCompletedDate || "", day].sort().at(-1)!
   if (game.correctAnswer) next.winningDays = [...new Set([...next.winningDays, day])].sort()
-  if (game.challengeId.includes("_LEVEL_") || next.completedDays) {
-    next.completedDays = [...new Set([...(next.completedDays ?? next.winningDays), day])].sort()
+  {
+    next.completedDays = [...new Set([...(next.completedDays ?? []), day])].sort()
     next.completedDifficulties ??= {}
-    next.completedDifficulties[day] = [...new Set([...(next.completedDifficulties[day] ?? []), game.difficulty])].sort()
+    const scheduledSlot = game.challengeId.includes("_LEVEL_")
+    next.completedDifficulties[day] = [...new Set([...(next.completedDifficulties[day] ?? []), ...(scheduledSlot ? [game.difficulty] : [])])].sort()
     next.allFiveDays = Object.keys(next.completedDifficulties).filter(date => next.completedDifficulties![date].length === 5).sort()
+    next.solvedDifficulties ??= {}
+    if (game.correctAnswer && scheduledSlot) next.solvedDifficulties[day] = [...new Set([...(next.solvedDifficulties[day] ?? []), game.difficulty])].sort()
+    next.daysCompleted = next.completedDays.length
+    next.allFiveCompleted = next.allFiveDays.length
+    next.allFiveSolved = Object.values(next.solvedDifficulties).filter(levels => levels.length === 5).length
     next.byDifficulty ??= {}
-    const level = next.byDifficulty[game.difficulty] ?? { games: 0, wins: 0, score: 0 }
-    next.byDifficulty[game.difficulty] = { games: level.games + 1, wins: level.wins + Number(game.correctAnswer), score: level.score + game.score }
+    const level = next.byDifficulty[game.difficulty] ?? { games: 0, wins: 0, score: 0, guesses: Array(DIFFICULTY_MODES[game.difficulty].guessesMax).fill(0), gaveUp: 0 }
+    if (game.correctAnswer) level.guesses[game.guesses.length - 1]++
+    next.byDifficulty[game.difficulty] = { ...level, games: level.games + 1, wins: level.wins + Number(game.correctAnswer), score: level.score + game.score, gaveUp: level.gaveUp + Number(game.gaveUp === true) }
   }
   let run = 0
   let previousTime = 0

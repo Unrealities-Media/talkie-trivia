@@ -7,7 +7,7 @@ import PlayerStatsContainer from "./playerStats"
 import LoadingIndicator from "./loadingIndicator"
 import ErrorMessage from "./errorMessage"
 import { Typography } from "./ui/typography"
-import { View, Text } from "react-native"
+import { View, Text, AppState } from "react-native"
 import { useTheme } from "../contexts/themeContext"
 
 /** Account reads must not depend on availability of today's editorial content. */
@@ -24,7 +24,15 @@ export default function AccountStats({ player, compact = false }: { player: Play
       () => { if (active) setResult({ uid: player.id, stats: null, error: true }) },
     )
     return () => { active = false }
-  }, [player.id, attempt, confirmed])
+  }, [player.id, attempt, confirmed?.games, confirmed?.allTimeScore])
+  useEffect(() => {
+    const serverNow = result?.stats?.serverNow
+    if (!serverNow) return
+    const time = Date.parse(serverNow)
+    const timer = setTimeout(() => setAttempt(value => value + 1), 86400000 - (time % 86400000) + 100)
+    const listener = AppState.addEventListener("change", state => { if (state === "active") setAttempt(value => value + 1) })
+    return () => { clearTimeout(timer); listener.remove() }
+  }, [result])
   if (!result || result.uid !== player.id) return <LoadingIndicator message="Loading statistics…" />
   if (result.error) return <ErrorMessage message="Could not load your statistics." onRetry={() => setAttempt(value => value + 1)} />
   if (!result.stats) return <Typography>No saved statistics yet.</Typography>

@@ -39,8 +39,11 @@ const PlayerStatsContainer = memo(
             value={playerStats.allTimeScore.toLocaleString()}
             valueStyle={styles.scoreText}
           />
-          <StatItem label="Games Played" value={playerStats.games} />
-          <StatItem label="All Five Days" value={playerStats.allFiveDays?.length ?? 0} />
+          <StatItem label="Challenges completed" value={playerStats.games} />
+          <StatItem label="Movies solved" value={playerStats.wins.reduce((sum, value) => sum + value, 0)} />
+          <StatItem label="Days completed" value={playerStats.daysCompleted ?? 0} />
+          <StatItem label="All five completed" value={playerStats.allFiveCompleted ?? playerStats.allFiveDays?.length ?? 0} />
+          <StatItem label="All five solved" value={playerStats.allFiveSolved ?? 0} />
           <StatItem
             label="Current Streak"
             value={playerStats.currentStreak}
@@ -55,8 +58,13 @@ const PlayerStatsContainer = memo(
         <Typography variant="h2">By difficulty</Typography>
         {(Object.keys(DIFFICULTY_MODES) as DifficultyLevel[]).map(level => {
           const stats = playerStats.byDifficulty?.[level]
-          return <Typography key={level}>{DIFFICULTY_MODES[level].label}: {stats?.wins ?? 0} wins / {stats?.games ?? 0} played · {stats?.score ?? 0} points</Typography>
+          return <View key={level}>
+            <Typography variant="h2">{DIFFICULTY_MODES[level].label}</Typography>
+            <Typography>{stats?.wins ?? 0} solved / {stats?.games ?? 0} completed · {stats?.games ? Math.round(stats.wins / stats.games * 100) + "% win rate" : "No completed challenges"} · {stats?.score ?? 0} points</Typography>
+            {!!stats?.guesses && <WinChart wins={stats.guesses} difficultyLabel={DIFFICULTY_MODES[level].label} />}
+          </View>
         })}
+        <Typography>Points accumulate from solved challenges and depend on difficulty; they are not a skill rating. All five completed includes losses and reveals.</Typography>
         <Typography>Complete any challenge to keep your daily streak. Wins and losses both count.</Typography>
         <Typography variant="caption">Each Easy challenge includes three optional hints. Each hint costs 50 points from a winning score.</Typography>
       </View>

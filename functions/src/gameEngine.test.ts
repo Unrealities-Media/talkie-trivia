@@ -12,8 +12,8 @@ describe("strict command validation", () => {
   })
 })
 describe("daily statistics", () => {
-  const result = (day: string, win = true) => ({ challengeId: day, correctAnswer: win, guesses: [{ itemId: 1 }], score: win ? 700 : 0 }) as Game
-  it("breaks streaks on missed days and losses", () => {
+  const result = (day: string, win = true) => ({ challengeId: day, difficulty: "LEVEL_3", correctAnswer: win, guesses: [{ itemId: 1 }], score: win ? 700 : 0 }) as Game
+  it("breaks streaks on missed days and counts completed losses", () => {
     let stats = completeStats(initialStats("user"), result("2026-10-10"))
     stats = completeStats(stats, result("2026-10-11"))
     expect(stats.currentStreak).toBe(2)
@@ -21,7 +21,7 @@ describe("daily statistics", () => {
     expect(stats.currentStreak).toBe(1)
     expect(stats.maxStreak).toBe(2)
     stats = completeStats(stats, result("2026-10-14", false))
-    expect(stats.currentStreak).toBe(0)
+    expect(stats.currentStreak).toBe(2)
   })
   it("handles completion requests arriving out of calendar order", () => {
     let stats = completeStats(initialStats("user"), result("2026-10-13"))

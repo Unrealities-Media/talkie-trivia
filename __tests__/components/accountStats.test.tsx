@@ -20,6 +20,17 @@ describe("statistics independent of daily content", () => {
     expect(screen.getByText("1 day")).toBeTruthy()
     expect(screen.queryByText("Saved games: 4")).toBeNull()
   })
+  it("refreshes at the server's UTC midnight without requiring a game action", async () => {
+    jest.useFakeTimers()
+    try {
+      ;(gameService.fetchPlayerStats as jest.Mock).mockResolvedValueOnce({ games: 1, serverNow: "2026-10-14T23:59:59Z" }).mockResolvedValueOnce({ games: 1, serverNow: "2026-10-15T00:00:00Z" })
+      const mounted = render(view())
+      await act(async () => {})
+      await act(async () => { jest.advanceTimersByTime(1100) })
+      expect(gameService.fetchPlayerStats).toHaveBeenCalledTimes(2)
+      mounted.unmount()
+    } finally { jest.useRealTimers() }
+  })
   it("reads account stats even when today's challenge is loading or unavailable", async () => {
     ;(gameService.fetchPlayerStats as jest.Mock).mockResolvedValue({ games: 18 })
     render(view())

@@ -42,6 +42,8 @@ export const analyticsService = {
   trackOnboardingCompleted: () => logEvent("onboarding_completed"),
 
   // --- Game Lifecycle ---
+  trackChallengeStarted: (challengeId: string, difficulty: string) => logEvent("challenge_started", { challenge_id: challengeId, difficulty }),
+  trackChallengeCompleted: (challengeId: string, difficulty: string, outcome: string, guesses: number, score: number) => logEvent("challenge_completed", { challenge_id: challengeId, difficulty, outcome, guesses_taken: guesses, score }),
   trackGameStart: (movieId: number, movieTitle: string) =>
     logEvent("game_start", { movie_id: movieId, movie_title: movieTitle }),
   trackGameWin: (guesses: number, hintsUsed: number) =>

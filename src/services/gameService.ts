@@ -15,6 +15,7 @@ import { validChallengeKey } from "../utils/challengeKey"
 import { version as catalogVersion } from "../data/catalogVersion.json"
 import { deletionStorage } from "./deletionStorage"
 import { mergeStorage } from "./mergeStorage"
+import { analyticsService } from "../utils/analyticsService"
 
 export interface GameResponse { game: PlayerGame; stats: PlayerStats; challengeId: string; resetAt: string; serverNow: string; receivedAtMonotonic: number }
 export type ChallengeStatus = "Not started" | "In progress" | "Won" | "Lost"
@@ -55,7 +56,29 @@ async function call(name: string, data: unknown, uid: string): Promise<GameRespo
   if (await mergeStorage.read()) throw new Error("Finish account recovery before playing.")
   const result = await httpsCallable(getFunctions(app), name)(data)
   requireUser(uid)
-  return decode(result.data, uid)
+  const decoded = decode(result.data, uid)
+  await trackConfirmedChallenge(name, decoded, uid)
+  return decoded
+}
+// Best-effort telemetry never awards credit. Persist deduplication before logging
+// so replaying a lost response or reopening a result does not inflate events.
+async function trackConfirmedChallenge(name: string, result: GameResponse, uid: string) {
+  const game = result.game
+  const completed = game.correctAnswer || game.gaveUp || game.guesses.length >= game.guessesMax
+  const event = completed && name === "applyGameAction" ? "completed" : name === "startGame" && game.revision === 0 ? "started" : null
+  if (!event) return
+  try {
+    const key = `challenge-analytics-v1:${uid}`
+    const stored = JSON.parse(await AsyncStorage.getItem(key) || "{}") as Record<string, string>
+    const cutoff = new Date(Date.parse(result.serverNow) - 3 * 86400000).toISOString().slice(0, 10)
+    const events = Object.fromEntries(Object.entries(stored).filter(([, day]) => day >= cutoff))
+    const eventId = `${result.challengeId}:${event}`
+    if (events[eventId]) return
+    events[eventId] = result.challengeId.slice(0, 10)
+    await AsyncStorage.setItem(key, JSON.stringify(events))
+    if (event === "started") await analyticsService.trackChallengeStarted(result.challengeId, game.difficulty)
+    else await analyticsService.trackChallengeCompleted(result.challengeId, game.difficulty, game.correctAnswer ? "won" : game.gaveUp ? "revealed" : "lost", game.guesses.length, game.score ?? 0)
+  } catch { /* Telemetry failures must never block a saved result. */ }
 }
 async function replay(uid: string): Promise<GameResponse | null> {
   requireUser(uid)
@@ -117,9 +140,11 @@ export const gameService = {
   clearLocalProgress: (uid: string) => serialize(uid, () => AsyncStorage.removeItem(pendingKey(uid))),
   fetchPlayerStats: async (uid: string): Promise<PlayerStats | null> => {
     requireUser(uid)
-    const snapshot = await getDoc(doc(db, "players", uid, "privateStats", "summary"))
+    const result = await httpsCallable(getFunctions(app), "getPlayerStatistics")({})
     requireUser(uid)
-    return snapshot.exists() ? snapshot.data() as PlayerStats : null
+    const data = result.data as { stats: PlayerStats | null; serverNow: string }
+    if (!Number.isFinite(Date.parse(data.serverNow)) || (data.stats && data.stats.id !== uid)) throw new Error("The saved statistics could not be read.")
+    return data.stats ? { ...data.stats, serverNow: data.serverNow } : null
   },
   fetchPlayerGameById: async (gameId: string): Promise<PlayerGame | null> => {
     const uid = auth.currentUser?.uid

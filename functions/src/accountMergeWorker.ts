@@ -2,8 +2,9 @@ import { isDeepStrictEqual } from "node:util"
 import { DocumentData, FieldPath, FieldValue, Firestore, Query, Timestamp, Transaction } from "firebase-admin/firestore"
 import { HttpsError } from "firebase-functions/v2/https"
 import { MERGE_PAGE_SIZE, MERGE_POLICY_VERSION, MergeGame, planAccountMergePage, validateMergeGame, validateMergeStats } from "./accountMergePolicy"
-import { Stats, completeStats, challengeKey, initialStats } from "./gameEngine"
+import { Stats, challengeKey, initialStats } from "./gameEngine"
 import { gameHistory } from "./gameHistory"
+import { chronologicalStats, loadStatistics, summary } from "./statisticsStorage"
 
 const phases = ["source-games", "source-history", "target-games", "target-history", "copy", "copied"] as const
 export type MergePhase = typeof phases[number]
@@ -98,7 +99,7 @@ export async function processAccountMergePage(db: Firestore, sourceUid: string):
       ])
       let checkedStats: Stats = job.checkedStats ?? initialStats(uid)
       const priorCount = job.checkedGames ?? 0
-      validateMergeStats(checkedStats, uid)
+      validateMergeStats(checkedStats, uid, false)
       if (!count(priorCount) || (job.cursor !== null && (!job.checkedStats || priorCount === 0)) ||
         (job.cursor === null && (priorCount !== 0 || !isDeepStrictEqual(checkedStats, initialStats(uid))))) review()
       const checkedGamesPage = games.docs.map(doc => checkedGame(doc.data(), doc.id, uid, isSource))
@@ -107,18 +108,19 @@ export async function processAccountMergePage(db: Firestore, sourceUid: string):
         historyMatches(game, histories[index].data())
         if (game.difficulty === "LEVEL_2") checkedStats = { ...checkedStats,
           hintsUsedCount: checkedStats.hintsUsedCount + Object.values(game.hintsUsed).filter(Boolean).length }
-        if (game.statsProcessed) checkedStats = completeStats(checkedStats, game)
+        if (game.statsProcessed) checkedStats = chronologicalStats(checkedStats, game)
       }
-      validateMergeStats(checkedStats, uid)
+      validateMergeStats(checkedStats, uid, false)
       const checkedGames = priorCount + games.size
       if (!count(checkedGames)) review()
       const exhausted = games.size < MERGE_PAGE_SIZE
       if (exhausted) {
+        const loaded = await loadStatistics(tx, db, uid, statsDoc, false)
         if ((!statsDoc.exists && checkedGames > 0) ||
-          !isDeepStrictEqual(statsDoc.data() ?? initialStats(uid), checkedStats)) review()
+          !isDeepStrictEqual(summary(loaded.stats), summary(checkedStats))) review()
         const nextPhase = isSource ? "source-history" : "target-history"
         checkpoint({ phase: nextPhase, cursor: null, checkedStats: FieldValue.delete(), checkedGames: FieldValue.delete(),
-          ...(isSource ? { sourceGameCount: checkedGames } : { copyStats: checkedStats }) })
+          ...(isSource ? { sourceGameCount: checkedGames } : { copyStats: summary(checkedStats) }) })
         return result(nextPhase)
       }
       checkpoint({ phase, cursor: games.docs.at(-1)!.id, checkedStats, checkedGames })
@@ -143,8 +145,9 @@ export async function processAccountMergePage(db: Firestore, sourceUid: string):
     const [sources, targetStatsDoc] = await Promise.all([
       tx.get(page(db.collection(`players/${sourceUid}/games`), job.cursor)), tx.get(statsRef),
     ])
-    validateMergeStats(job.copyStats, targetUid)
-    if (!isDeepStrictEqual(targetStatsDoc.data() ?? initialStats(targetUid), job.copyStats)) review()
+    const loaded = await loadStatistics(tx, db, targetUid, targetStatsDoc)
+    validateMergeStats(loaded.stats, targetUid)
+    if (!isDeepStrictEqual(summary(loaded.stats), job.copyStats)) review()
     const sourceGames = sources.docs.map(doc => checkedGame(doc.data(), doc.id, sourceUid, true))
     const rows = await Promise.all(sourceGames.map(async game => {
       const gameRef = db.doc(`players/${targetUid}/games/${game.id}`)
@@ -163,7 +166,7 @@ export async function processAccountMergePage(db: Firestore, sourceUid: string):
     }))
     const plan = planAccountMergePage({ sourceUid, targetUid, sourceGames,
       destinationGames: new Map(sourceGames.map((game, index) => [game.id, rows[index].targetGame])),
-      targetStats: targetStatsDoc.exists ? targetStatsDoc.data() as Stats : initialStats(targetUid),
+      targetStats: loaded.stats,
     })
     const imported = job.imported + plan.imported
     const conflicts = job.conflicts + plan.conflicts
@@ -176,9 +179,9 @@ export async function processAccountMergePage(db: Firestore, sourceUid: string):
       if (write.history) tx.create(row.historyRef, write.history)
       if (write.archive) tx.create(row.archiveRef, write.archive.record)
     }
-    if (plan.imported) tx.set(statsRef, plan.stats)
+    if (plan.imported || (targetStatsDoc.exists && (targetStatsDoc.data()?.statisticsVersion !== 3 || targetStatsDoc.data()?.completedDays))) loaded.save(plan.stats)
     const nextPhase = exhausted ? "copied" : "copy"
-    checkpoint({ phase: nextPhase, cursor: sources.docs.at(-1)?.id ?? job.cursor, imported, conflicts, copyStats: plan.stats })
+    checkpoint({ phase: nextPhase, cursor: sources.docs.at(-1)?.id ?? job.cursor, imported, conflicts, copyStats: summary(plan.stats) })
     return result(nextPhase, imported, conflicts)
   })
 }

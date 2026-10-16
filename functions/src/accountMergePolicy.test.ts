@@ -103,7 +103,7 @@ it("imports one immutable completion and credits it once despite replay after su
 
 it("retains a loss and gives it no win or score credit", () => {
   const plan = merge([act(fresh(), { type: "giveUp" })])
-  expect(plan.stats).toMatchObject({ games: 1, wins: [0, 0, 0, 0, 0], allTimeScore: 0, currentStreak: 0 })
+  expect(plan.stats).toMatchObject({ games: 1, wins: [0, 0, 0, 0, 0], allTimeScore: 0, currentStreak: 1 })
   expect(plan.writes[0].history).toMatchObject({ gaveUp: true, wasCorrect: false, score: 0 })
 })
 
@@ -129,7 +129,7 @@ it("does not replace an established loss with a guest win to extend a streak", (
   const existing = act(fresh("2026-10-12", targetUid), { type: "giveUp" })
   const guest = [act(fresh("2026-10-11")), act(fresh("2026-10-12")), act(fresh("2026-10-13"))]
   const plan = merge(guest, [existing], statsFor(existing))
-  expect(plan.stats).toMatchObject({ games: 3, currentStreak: 1, maxStreak: 1, allTimeScore: 1100 })
+  expect(plan.stats).toMatchObject({ games: 3, currentStreak: 3, maxStreak: 3, allTimeScore: 1100 })
   expect(plan.conflicts).toBe(1)
 })
 

@@ -3,6 +3,8 @@ import { gameService } from "../../src/services/gameService"
 import { auth } from "../../src/services/firebaseClient"
 import { getDoc, getDocs, startAfter, limit, orderBy } from "firebase/firestore"
 import { defaultPlayerGame, defaultPlayerStats } from "../../src/models/default"
+import { analyticsService } from "../../src/utils/analyticsService"
+jest.mock("../../src/utils/analyticsService", () => ({ analyticsService: { trackChallengeStarted: jest.fn(), trackChallengeCompleted: jest.fn() } }))
 import { deletionStorage } from "../../src/services/deletionStorage"
 const mockCall = jest.fn()
 jest.mock("firebase/functions", () => ({ getFunctions: () => ({}), httpsCallable: (_: unknown, name: string) => (data: unknown) => mockCall(name, data) }))
@@ -18,6 +20,16 @@ describe("durable game commands", () => {
     await AsyncStorage.clear()
     ;(auth as any).currentUser = { uid: "p1" }
     mockCall.mockResolvedValue({ data: result })
+  })
+  it("tracks confirmed completions once across retries and does not log history views", async () => {
+    const completed = { ...result, game: { ...game, correctAnswer: true, guesses: [{ itemId: 1 }], score: 700, revision: 1 } }
+    mockCall.mockRejectedValueOnce(new Error("Response lost")).mockResolvedValue({ data: completed })
+    await expect(gameService.applyAction(game, { type: "guess", itemId: 1 })).rejects.toThrow("Response lost")
+    expect(analyticsService.trackChallengeCompleted).not.toHaveBeenCalled()
+    await gameService.resumePendingAction("p1")
+    await gameService.startGame("p1", "LEVEL_3")
+    expect(analyticsService.trackChallengeCompleted).toHaveBeenCalledTimes(1)
+    expect(analyticsService.trackChallengeCompleted).toHaveBeenCalledWith(game.challengeId, game.difficulty, "won", 1, 700)
   })
   it("stores the command before sending and removes it only after acknowledgment", async () => {
     mockCall.mockImplementation(async (_name, command) => {
@@ -95,9 +107,9 @@ describe("durable game commands", () => {
     await expect(gameService.startGame("p1", "LEVEL_3")).rejects.toThrow("could not be read")
   })
   it("reads saved account statistics without starting today's game", async () => {
-    ;(getDoc as jest.Mock).mockResolvedValueOnce({ exists: () => true, data: () => result.stats })
-    expect(await gameService.fetchPlayerStats("p1")).toEqual(result.stats)
-    expect(mockCall).not.toHaveBeenCalled()
+    mockCall.mockResolvedValueOnce({ data: { stats: result.stats, serverNow: result.serverNow } })
+    expect(await gameService.fetchPlayerStats("p1")).toEqual({ ...result.stats, serverNow: result.serverNow })
+    expect(mockCall).toHaveBeenCalledWith("getPlayerStatistics", {})
   })
   it("rejects a history detail response when the account changes during the read", async () => {
     ;(getDoc as jest.Mock).mockImplementationOnce(async () => {
@@ -108,10 +120,10 @@ describe("durable game commands", () => {
   })
   it("rejects a statistics response after the active account changes", async () => {
     let finish!: (value: unknown) => void
-    ;(getDoc as jest.Mock).mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+    mockCall.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
     const read = gameService.fetchPlayerStats("p1")
     ;(auth as any).currentUser = { uid: "p2" }
-    finish({ exists: () => true, data: () => result.stats })
+    finish({ data: { stats: result.stats, serverNow: result.serverNow } })
     await expect(read).rejects.toThrow("account changed")
   })
   it("pages history with a stable cursor, bounded lookahead and no empty trailing page", async () => {

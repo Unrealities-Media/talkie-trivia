@@ -2,7 +2,8 @@ import { createHash } from "node:crypto"
 import { isDeepStrictEqual } from "node:util"
 import { Auth, UserRecord } from "firebase-admin/auth"
 import { DocumentSnapshot, FieldValue, Firestore, getFirestore, Timestamp, Transaction } from "firebase-admin/firestore"
-import { initialStats } from "./gameEngine"
+import { initialStats, Stats } from "./gameEngine"
+import { summary } from "./statisticsStorage"
 
 type Action = "retry" | "cancel-before-copy"
 interface Selection { projectId: string; sourceUid: string; operationId: string; action: Action }
@@ -87,7 +88,7 @@ export function accountMergeReconciliation(db: Firestore, auth: Auth, projectId:
         blockers.push("Frozen guest recovery cannot be cancelled by this tool.")
       }
       if (job.phase === "copy" && (job.cursor !== null || !count(job.sourceGameCount) ||
-        !isDeepStrictEqual(stats.data() ?? initialStats(job.targetUid), job.copyStats))) blockers.push("The untouched copy checkpoint and destination statistics must match.")
+        !isDeepStrictEqual(summary((stats.data() ?? initialStats(job.targetUid)) as Stats), summary(job.copyStats)))) blockers.push("The untouched copy checkpoint and destination statistics must match.")
     }
     const digest = hash({ ...selection, expiresAt, versions: state.versions, hasCopies,
       // Keep provider identifiers, email and claims inside a hash; never output them.
