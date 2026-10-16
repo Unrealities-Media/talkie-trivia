@@ -45,6 +45,7 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   await page.getByRole('button', { name: 'Give Up?', exact: true }).click()
   await page.getByRole('button', { name: 'Give Up', exact: true }).click()
   await expect(page.getByText('Answer revealed', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Choose another difficulty →', exact: true }).click()
   await page.getByRole('button', { name: /^Play Very Easy\./ }).click()
   const day = Math.floor(Date.now() / 86400000)
   const fixture = fixtures[(day * 5) % fixtures.length]

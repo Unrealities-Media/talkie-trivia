@@ -113,10 +113,12 @@ describe("authoritative game callables", () => {
       const uid = 'player-' + difficulty
       const result = await start({ difficulty, catalogVersion: "a".repeat(64) }, uid)
       expect(result.game.triviaItem.description).toBe(clues[difficulty])
+      expect(result.game.triviaItem.metadata.fullSummary).toBe(content.description)
       expect(result.game.triviaItem.clues).toBeUndefined()
       const resumed = await start({ difficulty, catalogVersion: "a".repeat(64) }, uid)
       expect(resumed.game.difficulty).toBe(difficulty)
       expect(resumed.game.triviaItem.description).toBe(clues[difficulty])
+      expect(resumed.game.triviaItem.metadata.fullSummary).toBe(content.description)
     }
   })
   it("requires authentication and rejects client identities, dates and result payloads", async () => {

@@ -5,7 +5,7 @@ import { Typography } from "./ui/typography"
 import { useGameStore } from "../state/gameStore"
 import { countdownText } from "../utils/dateDisplay"
 
-const CountdownTimer: React.FC = () => {
+const CountdownTimer: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const styles = useStyles(themedStyles)
 
   const deadline = useGameStore(state => state.resetDeadline)
@@ -16,8 +16,8 @@ const CountdownTimer: React.FC = () => {
   }, [])
 
   return (
-    <View style={styles.container}>
-      <Typography style={styles.text}>
+    <View style={compact ? styles.compactContainer : styles.container}>
+      <Typography style={compact ? styles.compactText : styles.text}>
         {countdownText(deadline)}
       </Typography>
     </View>
@@ -25,11 +25,15 @@ const CountdownTimer: React.FC = () => {
 }
 
 interface CountdownStyles {
+  compactContainer: ViewStyle
+  compactText: TextStyle
   container: ViewStyle
   text: TextStyle
 }
 
 const themedStyles = (theme: Theme): CountdownStyles => ({
+  compactContainer: { marginTop: 20 },
+  compactText: { fontFamily: "PremiereSans", fontSize: 10, lineHeight: 16, letterSpacing: 1, textAlign: "center", color: theme.colors.textSecondary },
   container: {
     marginTop: theme.spacing.large,
     padding: theme.spacing.small,

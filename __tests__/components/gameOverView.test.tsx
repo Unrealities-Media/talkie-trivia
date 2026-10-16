@@ -6,7 +6,10 @@ import { defaultPlayerGame } from "../../src/models/default"
 const render = (ui: React.ReactElement) => renderComponent(<ThemeProvider>{ui}</ThemeProvider>)
 
 jest.mock("../../src/utils/hooks/useExternalLink", () => ({ useExternalLink: () => ({ openLink: jest.fn() }) }))
-jest.mock("../../src/components/difficultySelector", () => () => null)
+jest.mock("../../src/components/difficultySelector", () => () => {
+  const { Text } = require("react-native")
+  return <Text>Daily challenge choices</Text>
+})
 jest.mock("../../src/components/countdownTimer", () => () => null)
 jest.mock("../../src/components/gameOver/shareResultButton", () => () => null)
 jest.mock("../../src/components/guesses", () => {
@@ -23,7 +26,7 @@ const game = {
 describe("Movie celebration", () => {
   it("shows the saved score, outcome and available movie details once", () => {
     render(<GameOverView playerGame={game} lastGuessResult={null} />)
-    for (const text of ["The Matrix", "That's a wrap!", "Solved in 2 guesses", "423", "POINTS", "The Wachowskis", "Keanu Reeves", "A complete movie clue.", "Another movie?"]) {
+    for (const text of ["The Matrix", "That's a wrap!", "Solved in 2 guesses · Medium", "423", "POINTS EARNED", "The Wachowskis", "Keanu Reeves", "A complete movie clue.", "Another movie?"]) {
       expect(screen.getByText(text)).toBeTruthy()
     }
     expect(screen.queryByText("Guess history content")).toBeNull()
@@ -38,12 +41,34 @@ describe("Movie celebration", () => {
   ])("describes a non-winning result accurately", (gaveUp, title, message) => {
     render(<GameOverView playerGame={{ ...game, correctAnswer: false, gaveUp: gaveUp as boolean, guessesMax: 2, score: 0 }} lastGuessResult={null} />)
     expect(screen.getByText(title as string)).toBeTruthy()
-    expect(screen.getByText(message as string)).toBeTruthy()
+    expect(screen.getByText(`${message} · Medium`)).toBeTruthy()
     expect(screen.getByText("0")).toBeTruthy()
   })
   it("does not invent a saved score before confirmation", () => {
     render(<GameOverView playerGame={{ ...game, statsProcessed: false }} lastGuessResult={null} />)
     expect(screen.getByText("Score unavailable")).toBeTruthy()
     expect(screen.queryByText("423")).toBeNull()
+  })
+  it("opens difficulty choices only on request and resets them for another result", () => {
+    const view = render(<GameOverView playerGame={game} lastGuessResult={null} />)
+    expect(screen.queryByText("Daily challenge choices")).toBeNull()
+    fireEvent.press(screen.getByRole("button", { name: "Choose another difficulty →" }))
+    expect(screen.getByText("Daily challenge choices")).toBeTruthy()
+    view.rerender(<ThemeProvider><GameOverView playerGame={{ ...game, id: "other-result" }} lastGuessResult={null} /></ThemeProvider>)
+    expect(screen.queryByText("Daily challenge choices")).toBeNull()
+  })
+  it("shows the full saved synopsis instead of the difficulty clue", () => {
+    render(<GameOverView playerGame={{ ...game, triviaItem: { ...game.triviaItem, metadata: { fullSummary: "The complete published synopsis." } } }} lastGuessResult={null} />)
+    expect(screen.getByText("The complete published synopsis.")).toBeTruthy()
+    expect(screen.queryByText("A complete movie clue.")).toBeNull()
+  })
+  it("falls back from a failed backdrop to the poster, then to local artwork", () => {
+    render(<GameOverView playerGame={{ ...game, triviaItem: { ...game.triviaItem, posterPath: "/poster.jpg", metadata: { backdrop_path: "/backdrop.jpg" } } }} lastGuessResult={null} />)
+    expect(screen.getByTestId("reward-backdrop").props.source.uri).toContain("/backdrop.jpg")
+    fireEvent(screen.getByTestId("reward-backdrop"), "error")
+    expect(screen.getByTestId("reward-backdrop").props.source.uri).toContain("/poster.jpg")
+    fireEvent(screen.getByTestId("reward-poster"), "error")
+    expect(screen.getByTestId("reward-backdrop").props.source.uri).toBeUndefined()
+    expect(screen.getByTestId("reward-poster").props.source.uri).toBeUndefined()
   })
 })
