@@ -7,6 +7,7 @@ const render = (ui: React.ReactElement) => renderComponent(<ThemeProvider>{ui}</
 
 jest.mock("../../src/utils/hooks/useExternalLink", () => ({ useExternalLink: () => ({ openLink: jest.fn() }) }))
 jest.mock("../../src/components/countdownTimer", () => () => null)
+jest.mock("../../src/components/nextChallenge", () => () => null)
 jest.mock("../../src/components/gameOver/shareResultButton", () => () => null)
 jest.mock("../../src/components/guesses", () => {
   const { Text } = require("react-native")

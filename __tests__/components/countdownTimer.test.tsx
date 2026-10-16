@@ -13,10 +13,10 @@ describe("server UTC countdown", () => {
   afterEach(() => { cleanup(); jest.useRealTimers() })
   it("counts down against monotonic time even if the device clock changes", () => {
     render(<ThemeProvider><CountdownTimer /></ThemeProvider>)
-    expect(screen.getByText("Next game in 00:00:10 · 00:00 UTC")).toBeTruthy()
+    expect(screen.getByText("Daily reset in 00:00:10 · 00:00 UTC")).toBeTruthy()
     jest.setSystemTime(new Date("2035-01-01T13:00:00-11:00"))
     act(() => jest.advanceTimersByTime(1000))
-    expect(screen.getByText("Next game in 00:00:09 · 00:00 UTC")).toBeTruthy()
+    expect(screen.getByText("Daily reset in 00:00:09 · 00:00 UTC")).toBeTruthy()
   })
   it("waits for the next server challenge rather than resetting the countdown locally", () => {
     render(<ThemeProvider><CountdownTimer /></ThemeProvider>)
