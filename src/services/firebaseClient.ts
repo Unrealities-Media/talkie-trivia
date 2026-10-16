@@ -10,6 +10,9 @@ import {
   getAuth,
   Auth,
   connectAuthEmulator,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
 } from "firebase/auth"
 import * as FirebaseAuth from "firebase/auth"
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions"
@@ -48,7 +51,16 @@ try {
 }
 
 if (Platform.OS === "web") {
-  auth = getAuth(app)
+  try {
+    // Google sign-in uses Expo's OAuth flow and Firebase credentials. Firebase's
+    // unused popup resolver eagerly loads Google scripts on Safari/mobile.
+    auth = initializeAuth(app, {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
+    })
+  } catch (error) {
+    if ((error as { code?: string }).code !== "auth/already-initialized") throw error
+    auth = getAuth(app)
+  }
 } else {
   try {
     const { getReactNativePersistence } = FirebaseAuth as any
