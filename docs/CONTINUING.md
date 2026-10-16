@@ -6,13 +6,17 @@ This is the current handoff; older audits preserve evidence from their dates.
 
 ## Shipped state
 
-- PRs 18–42 are merged. PR42 head `a207f39a1865b6ad18c0f082c79e536700668059`
-  passed all nine checks. All 47 live files matched its export at 06:32:27 UTC;
-  a dedicated beta guest's saved wrong guess preserved search focus at 06:32:29 UTC.
+- PRs 18–45 are merged. PR45 head `1435908fa65f0f1dd23dd6653789cc0089e2fdc3`
+  passed all nine checks. All 47 live files matched its export at 07:10:42 UTC;
+  a dedicated beta guest's history refresh preserved keyboard position at 07:10:38 UTC.
 - Recent web improvements include next-challenge navigation, startup recovery,
   gameplay while fonts load, completed-search announcements, live reduced-motion
   preferences and keyboard continuity after guessing. Disabled Sentry runtime
   code was removed from the bundle. Deployment also checks backend endpoint readiness.
+- History cards now expose date, difficulty, result and score in accessible names.
+  The Profile challenge chooser scrolls on short screens. Keyboard history paging,
+  refresh and retry hand focus to a stable page-status message; an isolated browser
+  fixture traverses 45 results across three pages without seeding live accounts.
 - The missing PR30 backend rollout was completed at 05:03 UTC. All 13 functions
   are ACTIVE. A live guest win, Profile statistics, All Stats and reload passed
   at 05:06:49 UTC with statistics version 3 and no browser errors.
@@ -22,10 +26,14 @@ This is the current handoff; older audits preserve evidence from their dates.
 - Optional help and direct mode switching replace the intrusive explanations
   and mode confirmation. Keyboard/state accessibility and cinematic rewards
   shipped. Full reward synopsis is stored separately from the difficulty clue.
-- Chromium CI passed. The additional local Firefox/WebKit run against PR42 passed
-  36 tests with four intentionally skipped duplicate viewport cases. It covers the
-  recent startup, font, motion and search-focus changes on desktop/mobile layouts.
-  Local evidence is `.expo/post-ux-browser-engines.log` in the shared root.
+- Chromium CI passed through PR45. Follow-up Firefox/WebKit verification found
+  two Firefox differences: native focus only partly exposed the last challenge
+  choice, and keyboard activation could leave `:focus-visible` false. The candidate
+  fixes explicitly scroll focused choices and use the click's activation detail
+  for history focus. All 42 Firefox/WebKit checks pass with six intentionally
+  skipped duplicate viewport cases, including pointer refresh not requesting focus.
+  Local evidence is `.expo/browser-focus-after.log` in the shared root; the preceding
+  three failures are in `.expo/history-navigation-browser-engines.log`.
   These engine checks
   do not establish real Safari, physical-device or Google provider acceptance.
 - The explicitly approved anonymous test guest was deleted. Server reads

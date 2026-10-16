@@ -85,5 +85,8 @@ test('keyboard history paging keeps its position through older, newer and refres
   await page.keyboard.press('Enter')
   await expect(row('01')).toBeVisible()
   await expect(status).toBeFocused()
+  await refresh.click()
+  await expect(row('01')).toBeVisible()
+  await expect(status).not.toBeFocused()
   expect(observed.errors).toEqual([])
 })

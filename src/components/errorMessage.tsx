@@ -1,5 +1,5 @@
 import React, { memo } from "react"
-import { View, ViewStyle, TextStyle } from "react-native"
+import { View, ViewStyle, TextStyle, GestureResponderEvent } from "react-native"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Button } from "./ui/button"
 import { Typography } from "./ui/typography"
@@ -7,7 +7,7 @@ import { u } from "../styles/utils"
 
 interface ErrorMessageProps {
   message: string
-  onRetry?: () => void
+  onRetry?: (event: GestureResponderEvent) => void
 }
 
 const ErrorMessage: React.FC<ErrorMessageProps> = memo(
