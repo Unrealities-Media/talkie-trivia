@@ -32,7 +32,8 @@ test("public pages require operator/contact and an HTTPS origin", () => {
   assert.match(mixedCase.privacy, /&lt;ScRiPt/)
   assert.doesNotMatch(mixedCase.privacy, /<script\b/i)
   assert.match(pages["delete-account"], /mailto:tom@unrealities.media/)
-  assert.match(pages["delete-account"], /href="\/profile"/)
+  assert.match(pages["delete-account"], /href="\/profile\/settings"/)
+  assert.match(pages.privacy, /href="\/profile\/settings"/)
 })
 test("deploy rejects the wrong project, emulator receipts and modified output", () => {
   const parent = path.resolve(__dirname, "../.expo")

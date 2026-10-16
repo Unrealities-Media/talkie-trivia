@@ -130,7 +130,7 @@ export function useGoogleAuth(onAuthStateChange: (user: User | null) => void | P
       const auth = getAuth()
       if (await mergeStorage.read()) throw new Error("Finish combining accounts before requesting deletion.")
       const source = auth.currentUser
-      if (!source || source.uid !== uid) throw new Error("Your account changed. Reopen Profile before continuing.")
+      if (!source || source.uid !== uid) throw new Error("Your account changed. Reopen Profile > Settings before continuing.")
       if (!source.isAnonymous && Constants.expoConfig?.extra?.googleConfigured === false && !isLocalDemoIdentity()) throw new Error("Google sign-in is not configured for this build.")
       if (!source.isAnonymous) {
         const idToken = await requestIdentity()

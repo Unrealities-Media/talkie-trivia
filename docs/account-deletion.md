@@ -3,7 +3,7 @@
 ## Current state
 
 The backend and in-app flow are implemented with unit/component and real emulator
-checks. Profile offers deletion for guests and linked Google accounts. This is
+checks. Profile > Settings offers deletion for guests and linked Google accounts. This is
 not release approval: real-provider validation, ownership-verified support recovery,
 cross-device recovery and deployed scheduler/monitoring remain release gates.
 The public deletion instructions are published, as verified by the

@@ -14,7 +14,7 @@ const validDate = validChallengeKey
 const validId = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length <= 200 && !value.includes("/")
 const validHint = (hint: any) => hint && typeof hint.type === "string" && typeof hint.label === "string"
 function requireUser(uid: string) {
-  if (auth.currentUser?.uid !== uid) throw new Error("Your account changed. Reopen Profile to view its guest records.")
+  if (auth.currentUser?.uid !== uid) throw new Error("Your account changed. Reopen Profile > Settings to view its guest records.")
 }
 async function requireAvailable(uid: string) {
   requireUser(uid)
