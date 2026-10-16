@@ -45,7 +45,7 @@ Schema-2 hashes cover all five variants in fixed level order with the
 only the selected description is copied into the player's game. Legacy
 schema-1 hashes remain readable; the publisher never replaces scheduled dates.
 
-`content/beta-movies.json` contains 40 draft sets (200 clues), with source
+`content/beta-movies.json` contains 60 draft sets (300 clues), with source
 references to the repository's TMDB snapshot. `content/beta-clue-drafts.md`
 provides the readable review copy. They are not marked approved. Local emulator
 seeding uses these drafts; existing emulator dates remain immutable, so use an

@@ -49,3 +49,30 @@ need blind playtest feedback to assess difficulty and ambiguity.
 These additions are intended for the ten missing October 22–23 slots. Publication
 must use a fresh preview, retain existing immutable challenges, and follow the
 reviewed-PR workflow. Adding entries here does not itself publish them.
+
+## October 24–25 refill review
+
+A read-only inventory on October 16 found 50 scheduled slots, 50 distinct movies,
+and no unused reviewed sets. All 40 slots for October 16–23 were valid. Added ten
+sets (50 variants), bringing the beta pool to 60 movies: Cool Runnings,
+Mrs. Doubtfire, Roman Holiday, How to Train Your Dragon (2010), Hugo,
+The Grand Budapest Hotel, Chef, The Intern, Hidden Figures, and Klaus.
+
+Reviewer: `codex-beta-review`, an AI editorial review for the invited beta.
+Compared adaptations against the repository source synopses and catalog IDs.
+Very Easy retains each source verbatim. Easy removes character names and direct
+title identifiers; Medium removes named locations and gender; Hard removes
+distinctive settings and mechanisms; Very Hard retains a causal conflict.
+Source wording includes separation, parental loss, discrimination, conflict,
+and a sedative, but no graphic description. Suitability flags apply to clue text,
+not film age ratings or rights clearance. Blind difficulty calibration remains
+dependent on player feedback.
+
+Excluded both Karate Kid versions from this refill because the abstract variants
+would not fairly distinguish the remakes. Excluded Singin' in the Rain because
+its stored original synopsis is shorter than the publication minimum. No source
+synopsis was expanded or rewritten to bypass that requirement.
+
+Drafts remain unapproved; only the separate beta publication copy records this
+review. The production pool and released catalog are unchanged. Publication must
+preview ten new slots for October 24–25 and preserve every existing snapshot.

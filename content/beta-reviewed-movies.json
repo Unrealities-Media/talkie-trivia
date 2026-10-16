@@ -1298,5 +1298,265 @@
     "ageAppropriate": true,
     "factsChecked": true,
     "contentHash": "6f57f42a08fa4016a40ac916db778e2c48f031bc0a061603c36e6539b96acbc6"
+  },
+  {
+    "movieId": 788,
+    "description": "Loving but irresponsible dad Daniel Hillard, estranged from his exasperated spouse, is crushed by a court order allowing only weekly visits with his kids. When Daniel learns his ex needs a housekeeper, he gets the job -- disguised as a British nanny. Soon he becomes not only his children's best pal but the kind of parent he should have been from the start.",
+    "imdbId": "tt0107614",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Loving but irresponsible dad Daniel Hillard, estranged from his exasperated spouse, is crushed by a court order allowing only weekly visits with his kids. When Daniel learns his ex needs a housekeeper, he gets the job -- disguised as a British nanny. Soon he becomes not only his children's best pal but the kind of parent he should have been from the start.",
+      "LEVEL_2": "An irresponsible father is limited to weekly visits after separating from his wife. When she needs household help, he disguises himself as a British nanny and takes the job to remain close to his children.",
+      "LEVEL_3": "A parent with limited access to their children adopts a disguise to work in the other parent's household. The deception provides time together and an opportunity to become more dependable.",
+      "LEVEL_4": "Someone whose behavior has led to separation finds a way back into family life under a false identity. Maintaining the deception also requires practicing responsibilities previously neglected.",
+      "LEVEL_5": "A false identity offers a second chance to fulfill a neglected responsibility."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 788
+    },
+    "reviewedBy": "codex-beta-review",
+    "reviewedAt": "2026-10-16T04:15:12.283Z",
+    "approved": true,
+    "ageAppropriate": true,
+    "factsChecked": true,
+    "contentHash": "93c894674e77919aefa45559ca840d1310abd294c87fa7993b026296e93317f0"
+  },
+  {
+    "movieId": 804,
+    "description": "Overwhelmed by her suffocating schedule, touring European princess Ann takes off for a night while in Rome. When a sedative she took from her doctor kicks in, however, she falls asleep on a park bench and is found by an American reporter, Joe Bradley, who takes her back to his apartment for safety. At work the next morning, Joe finds out Ann's regal identity and bets his editor he can get exclusive interview with her, but romance soon gets in the way.",
+    "imdbId": "tt0046250",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Overwhelmed by her suffocating schedule, touring European princess Ann takes off for a night while in Rome. When a sedative she took from her doctor kicks in, however, she falls asleep on a park bench and is found by an American reporter, Joe Bradley, who takes her back to his apartment for safety. At work the next morning, Joe finds out Ann's regal identity and bets his editor he can get exclusive interview with her, but romance soon gets in the way.",
+      "LEVEL_2": "A touring princess escapes her demanding schedule in Rome and falls asleep after taking a sedative. An American reporter helps her, then plans an exclusive story after discovering her identity, but romance complicates his scheme.",
+      "LEVEL_3": "A public figure escapes a restrictive schedule and receives help from a reporter who initially does not recognize them. Learning their identity creates a professional opportunity that developing affection complicates.",
+      "LEVEL_4": "Someone seeking a brief escape from public obligations encounters a person who later sees a way to profit from the meeting. Growing affection puts that opportunity in conflict with the freedom that made it possible.",
+      "LEVEL_5": "An escape from obligation offers someone else an opportunity that affection complicates."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 804
+    },
+    "reviewedBy": "codex-beta-review",
+    "reviewedAt": "2026-10-16T04:15:12.284Z",
+    "approved": true,
+    "ageAppropriate": true,
+    "factsChecked": true,
+    "contentHash": "7eb175f451318153568085c71a5b24a117a9650d13f3895f4bedd181d81bb685"
+  },
+  {
+    "movieId": 864,
+    "description": "When a Jamaican sprinter is disqualified from the Olympic Games, he enlists the help of a dishonored coach to start the first Jamaican bobsled team.",
+    "imdbId": "tt0106611",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "When a Jamaican sprinter is disqualified from the Olympic Games, he enlists the help of a dishonored coach to start the first Jamaican bobsled team.",
+      "LEVEL_2": "After being disqualified from the Olympics, a Jamaican sprinter turns to a disgraced coach to form the country's first bobsled team.",
+      "LEVEL_3": "An athlete barred from an international competition seeks a different route back, recruiting a disgraced coach to help create a team in a sport new to their country.",
+      "LEVEL_4": "After losing a route to a major ambition, a competitor pursues an unfamiliar alternative. Progress depends on help from someone whose own standing has been damaged and on building a team without a local precedent.",
+      "LEVEL_5": "A blocked ambition leads to an unfamiliar route and an ally seeking renewed standing."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 864
+    },
+    "reviewedBy": "codex-beta-review",
+    "reviewedAt": "2026-10-16T04:15:12.284Z",
+    "approved": true,
+    "ageAppropriate": true,
+    "factsChecked": true,
+    "contentHash": "b19c68506fd64f4895c7a7aeb0d1d6af8133f3fe36b0c0f490319eff8a0c7547"
+  },
+  {
+    "movieId": 10191,
+    "description": "As the son of a Viking leader on the cusp of manhood, shy Hiccup Horrendous Haddock III faces a rite of passage: he must kill a dragon to prove his warrior mettle. But after downing a feared dragon, he realizes that he no longer wants to destroy it, and instead befriends the beast – which he names Toothless – much to the chagrin of his warrior father.",
+    "imdbId": "tt0892769",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "As the son of a Viking leader on the cusp of manhood, shy Hiccup Horrendous Haddock III faces a rite of passage: he must kill a dragon to prove his warrior mettle. But after downing a feared dragon, he realizes that he no longer wants to destroy it, and instead befriends the beast – which he names Toothless – much to the chagrin of his warrior father.",
+      "LEVEL_2": "A young Viking is expected to kill a dragon to prove himself. After bringing down a feared creature, he chooses friendship instead, putting him at odds with his warrior father.",
+      "LEVEL_3": "A young person is expected to destroy a feared creature as a test of belonging. An encounter leads to friendship instead, challenging a parent and the community that set the test.",
+      "LEVEL_4": "A young person seeks acceptance by confronting something the community regards as an enemy. Getting close enough to succeed produces a bond that makes the expected proof of loyalty impossible.",
+      "LEVEL_5": "A test of belonging creates a bond that challenges the terms of acceptance."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 10191
+    },
+    "reviewedBy": "codex-beta-review",
+    "reviewedAt": "2026-10-16T04:15:12.284Z",
+    "approved": true,
+    "ageAppropriate": true,
+    "factsChecked": true,
+    "contentHash": "45a71969eff2fa176a1840f56418beb1319663196370b04536a04c9ae1e1614d"
+  },
+  {
+    "movieId": 44826,
+    "description": "Orphaned and alone except for an uncle, Hugo Cabret lives in the walls of a train station in 1930s Paris. Hugo's job is to oil and maintain the station's clocks, but to him, his more important task is to protect a broken automaton and notebook left to him by his late father. Accompanied by the goddaughter of an embittered toy merchant, Hugo embarks on a quest to solve the mystery of the automaton and find a place he can call home.",
+    "imdbId": "tt0970179",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Orphaned and alone except for an uncle, Hugo Cabret lives in the walls of a train station in 1930s Paris. Hugo's job is to oil and maintain the station's clocks, but to him, his more important task is to protect a broken automaton and notebook left to him by his late father. Accompanied by the goddaughter of an embittered toy merchant, Hugo embarks on a quest to solve the mystery of the automaton and find a place he can call home.",
+      "LEVEL_2": "An orphan secretly maintains clocks inside a Paris train station while protecting a broken mechanical figure and notebook left by his father. With a toy merchant's goddaughter, he tries to solve the machine's mystery and find a home.",
+      "LEVEL_3": "An orphan living out of sight at a busy station protects a damaged mechanical inheritance. A new companion helps investigate its mystery while the child searches for a place to belong.",
+      "LEVEL_4": "A child living without a secure home protects unfinished work left by a lost parent. With a new companion, an effort to understand that inheritance becomes part of a search for belonging.",
+      "LEVEL_5": "Understanding an unfinished inheritance becomes part of finding a place to belong."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 44826
+    },
+    "reviewedBy": "codex-beta-review",
+    "reviewedAt": "2026-10-16T04:15:12.284Z",
+    "approved": true,
+    "ageAppropriate": true,
+    "factsChecked": true,
+    "contentHash": "cf1c6473d087666d638a256da78444a2726e084dd8a68523d11bed37796ca90b"
+  },
+  {
+    "movieId": 120467,
+    "description": "The Grand Budapest Hotel tells of a legendary concierge at a famous European hotel between the wars and his friendship with a young employee who becomes his trusted protégé. The story involves the theft and recovery of a priceless Renaissance painting, the battle for an enormous family fortune and the slow and then sudden upheavals that transformed Europe during the first half of the 20th century.",
+    "imdbId": "tt2278388",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "The Grand Budapest Hotel tells of a legendary concierge at a famous European hotel between the wars and his friendship with a young employee who becomes his trusted protégé. The story involves the theft and recovery of a priceless Renaissance painting, the battle for an enormous family fortune and the slow and then sudden upheavals that transformed Europe during the first half of the 20th century.",
+      "LEVEL_2": "A celebrated concierge and a young employee form a close friendship at a European hotel between the world wars. They become involved in a stolen Renaissance painting and a struggle over a large family fortune as their world changes.",
+      "LEVEL_3": "An experienced hospitality worker takes a younger colleague under their wing. Their friendship becomes entangled with stolen art and a disputed inheritance during a period of upheaval.",
+      "LEVEL_4": "An established professional and a young protégé build a friendship amid competing claims to valuable possessions. Their connection develops as the larger world supporting their way of life undergoes upheaval.",
+      "LEVEL_5": "A mentorship becomes entangled in disputed possessions as a familiar world changes."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 120467
+    },
+    "reviewedBy": "codex-beta-review",
+    "reviewedAt": "2026-10-16T04:15:12.285Z",
+    "approved": true,
+    "ageAppropriate": true,
+    "factsChecked": true,
+    "contentHash": "a20d611fa7a2b5593fa8aec01b60578f3f5b3d10d085f1209915bd1a6ec33ec7"
+  },
+  {
+    "movieId": 212778,
+    "description": "When Chef Carl Casper suddenly quits his job at a prominent Los Angeles restaurant after refusing to compromise his creative integrity for its controlling owner, he is left to figure out what's next. Finding himself in Miami, he teams up with his ex-wife, his friend and his son to launch a food truck. Taking to the road, Chef Carl goes back to his roots to reignite his passion for the kitchen -- and zest for life and love.",
+    "imdbId": "tt2883512",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "When Chef Carl Casper suddenly quits his job at a prominent Los Angeles restaurant after refusing to compromise his creative integrity for its controlling owner, he is left to figure out what's next. Finding himself in Miami, he teams up with his ex-wife, his friend and his son to launch a food truck. Taking to the road, Chef Carl goes back to his roots to reignite his passion for the kitchen -- and zest for life and love.",
+      "LEVEL_2": "A restaurant cook quits rather than surrender creative control to an overbearing owner. With his former wife, a friend and his son, he starts a food truck and takes to the road to rediscover his enthusiasm for cooking and family life.",
+      "LEVEL_3": "A skilled cook leaves a job after a conflict over creative freedom. Help from family and a friend makes a mobile business possible, offering a way to reconnect with both the work and loved ones.",
+      "LEVEL_4": "A professional gives up a prominent position rather than accept limits on their work. Starting again on a smaller, independent scale draws in family and a friend, making renewal personal as well as professional.",
+      "LEVEL_5": "Leaving a restrictive success creates a smaller venture and a chance to reconnect."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 212778
+    },
+    "reviewedBy": "codex-beta-review",
+    "reviewedAt": "2026-10-16T04:15:12.285Z",
+    "approved": true,
+    "ageAppropriate": true,
+    "factsChecked": true,
+    "contentHash": "b45b09946a06e856358b469daabe662c2e086e040eed570a6431e55ca4a526b5"
+  },
+  {
+    "movieId": 257211,
+    "description": "70-year-old widower Ben Whittaker has discovered that retirement isn't all it's cracked up to be. Seizing an opportunity to get back in the game, he becomes a senior intern at an online fashion site, founded and run by Jules Ostin.",
+    "imdbId": "tt2361509",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "70-year-old widower Ben Whittaker has discovered that retirement isn't all it's cracked up to be. Seizing an opportunity to get back in the game, he becomes a senior intern at an online fashion site, founded and run by Jules Ostin.",
+      "LEVEL_2": "A seventy-year-old widower finds retirement unsatisfying and takes a junior placement at an online fashion business run by a younger woman.",
+      "LEVEL_3": "An older person dissatisfied with retirement returns to working life through a junior placement at a recently established online business.",
+      "LEVEL_4": "Someone who has reached an expected endpoint finds that stepping away is unfulfilling. Seeking renewed purpose means accepting a beginner's position in an unfamiliar workplace.",
+      "LEVEL_5": "Moving beyond an unfulfilling endpoint requires accepting a beginner's place."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 257211
+    },
+    "reviewedBy": "codex-beta-review",
+    "reviewedAt": "2026-10-16T04:15:12.285Z",
+    "approved": true,
+    "ageAppropriate": true,
+    "factsChecked": true,
+    "contentHash": "9a9c8d0a31aa1c01329785dbe5ac8935efae44cb2ae3f9ea3502711758fc49ca"
+  },
+  {
+    "movieId": 381284,
+    "description": "The untold story of Katherine G. Johnson, Dorothy Vaughan and Mary Jackson – brilliant African-American women working at NASA and serving as the brains behind one of the greatest operations in history – the launch of astronaut John Glenn into orbit. The visionary trio crossed all gender and race lines to inspire generations to dream big.",
+    "imdbId": "tt4846340",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "The untold story of Katherine G. Johnson, Dorothy Vaughan and Mary Jackson – brilliant African-American women working at NASA and serving as the brains behind one of the greatest operations in history – the launch of astronaut John Glenn into orbit. The visionary trio crossed all gender and race lines to inspire generations to dream big.",
+      "LEVEL_2": "Three African-American women working at a space agency provide essential mathematical and technical work for an astronaut's orbital flight, overcoming barriers of race and gender.",
+      "LEVEL_3": "Three skilled colleagues help make a major space mission possible while confronting institutional barriers that obstruct recognition of their abilities and contributions.",
+      "LEVEL_4": "Three colleagues contribute indispensable expertise to an ambitious shared undertaking while working within an institution that places obstacles in their path. Their achievement challenges assumptions about who belongs there.",
+      "LEVEL_5": "People kept at the margins provide expertise essential to a shared achievement."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 381284
+    },
+    "reviewedBy": "codex-beta-review",
+    "reviewedAt": "2026-10-16T04:15:12.285Z",
+    "approved": true,
+    "ageAppropriate": true,
+    "factsChecked": true,
+    "contentHash": "b2b20d3d03bc3f347c0007c2e99040c0c8fa4ec8d4e2a0919583fc371cc16d3f"
+  },
+  {
+    "movieId": 508965,
+    "description": "When Jesper distinguishes himself as the Postal Academy's worst student, he is sent to Smeerensburg, a small village located on an icy island above the Arctic Circle, where grumpy inhabitants barely exchange words, let alone letters. Jesper is about to give up and abandon his duty as a postman when he meets local teacher Alva and Klaus, a mysterious carpenter who lives alone in a cabin full of handmade toys.",
+    "imdbId": "tt4729430",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "When Jesper distinguishes himself as the Postal Academy's worst student, he is sent to Smeerensburg, a small village located on an icy island above the Arctic Circle, where grumpy inhabitants barely exchange words, let alone letters. Jesper is about to give up and abandon his duty as a postman when he meets local teacher Alva and Klaus, a mysterious carpenter who lives alone in a cabin full of handmade toys.",
+      "LEVEL_2": "A failing postal student is assigned to an icy island village whose hostile inhabitants barely speak or write to each other. Near giving up, he meets a teacher and a solitary carpenter with a cabin full of handmade toys.",
+      "LEVEL_3": "An unsuccessful trainee receives an assignment in an isolated community whose residents rarely communicate. Just as the task seems hopeless, encounters with a teacher and a reclusive maker offer new possibilities.",
+      "LEVEL_4": "A poorly performing newcomer is assigned a task that depends on cooperation in a community unwilling to communicate. At the point of giving up, unexpected acquaintances suggest the situation may not be hopeless.",
+      "LEVEL_5": "An unwanted assignment depends on cooperation from people who refuse to communicate."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 508965
+    },
+    "reviewedBy": "codex-beta-review",
+    "reviewedAt": "2026-10-16T04:15:12.285Z",
+    "approved": true,
+    "ageAppropriate": true,
+    "factsChecked": true,
+    "contentHash": "ff4e43f90b296aee809066647be9995bf078d1345071a6395724da48130d75c2"
   }
 ]
