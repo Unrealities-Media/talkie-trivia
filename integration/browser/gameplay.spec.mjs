@@ -106,7 +106,13 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   expect(observed.errors).toEqual([])
 })
 
-test('Easy hint purchase and a wrong guess survive reload', async ({ page }) => {
+test('saved hints and guesses survive offline navigation, reconnection and reload', async ({ page }) => {
+  // WebChannel probes this image after a connection failure. Keep the test
+  // isolated: simulate its network failure without allowing a Google request.
+  await page.route(url => url.origin === 'https://www.google.com' && url.pathname === '/images/cleardot.gif', route => {
+    if (route.request().resourceType() === 'image') return route.abort('internetdisconnected')
+    return route.fallback()
+  })
   await page.goto('/game')
   await expect(page.getByRole('searchbox')).toBeVisible()
   await page.getByRole('button', { name: /^Play Easy\./ }).click()
@@ -124,6 +130,18 @@ test('Easy hint purchase and a wrong guess survive reload', async ({ page }) => 
   await page.getByRole('searchbox').fill(wrong.t)
   await page.getByRole('button', { name: new RegExp(`^Select and guess: ${escape(wrong.t)}`) }).first().click()
   await expect(page.getByRole('searchbox')).toHaveValue('')
+  await page.context().setOffline(true)
+  await expect(page.getByText(/You’re offline/)).toBeVisible()
+  await expect(page.getByRole('searchbox')).toHaveCount(0)
+  await page.getByRole('tab', { name: 'Profile', exact: true }).click()
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  await expect(page.getByText('Account settings', { exact: true })).toBeVisible()
+  await page.getByRole('tab', { name: 'Play', exact: true }).click()
+  await expect(page.getByText(/You’re offline/)).toBeVisible()
+  await page.context().setOffline(false)
+  await expect(page.getByRole('searchbox')).toBeVisible()
+  await expect(page.getByText(/^2 hints left/)).toBeVisible()
+  await expect(page.getByLabel(directorLabel, { exact: true })).toBeVisible()
   await page.reload()
   await expect(page.getByText(/^2 hints left/)).toBeVisible()
   await expect(page.getByLabel(directorLabel, { exact: true })).toBeVisible()
