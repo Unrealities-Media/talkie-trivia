@@ -1,7 +1,7 @@
 # Beta content review
 
 Reviewer: `codex-beta-review` (AI review, not a claimed human sign-off).
-Scope: 40 movie sets / 200 clues for the user's explicitly authorized hosted beta.
+Scope: 80 movie sets / 400 clues for the user's explicitly authorized hosted beta.
 The production approval pool remains separate. Publish using
 `-reviewed ../../content/beta-reviewed-movies.json`.
 
@@ -77,3 +77,36 @@ synopsis was expanded or rewritten to bypass that requirement.
 Drafts remain unapproved; only the separate beta publication copy records this
 review. The production pool and released catalog are unchanged. Publication must
 preview ten new slots for October 24–25 and preserve every existing snapshot.
+
+## Four-day reserve review
+
+The October 16 09:31 UTC read-only check confirmed all 50 October 16–25 slots
+valid, 60 distinct scheduled movies, and no unused reviewed content. Added 20
+sets / 100 variants to provide four days of reserve without publishing early.
+
+Reviewer remains `codex-beta-review`, an AI editorial review for the invited
+beta. The additions are Encanto, Despicable Me, Tangled, Turning Red, Luca,
+Kung Fu Panda, Brave, Megamind, Soul, Rango, Enchanted, The Mitchells vs. the
+Machines, Babe, Rudy, Hunt for the Wilderpeople, Billy Elliot, The Muppets,
+Bend It Like Beckham, Galaxy Quest, and The Goonies.
+
+Compared every adaptation with the repository synopsis. Very Easy preserves it
+verbatim. Easy removes names and direct titles; Medium removes named places and
+gender; Hard removes distinctive mechanisms and settings; Very Hard retains a
+short causal conflict. Checked catalog membership, unique selected titles,
+unused movie IDs, source identity, direct title leaks and content digests.
+Excluded ambiguous remake candidates including Moana, The Parent Trap and
+Little Women. Rejected Waking Ned because its original is shorter than the
+required minimum. No original was expanded to satisfy validation.
+
+The original text includes family conflict, orphanhood, danger, a manhunt,
+industrial conflict and an accident separating a spirit from its body, but no
+graphic detail. These suitability flags describe clue text, not film ratings
+or licensing. The short titles Soul, Luca, Brave, Babe and Rudy received the
+same manual text comparison; this remains AI review, not human sign-off.
+Ambiguous Hard/Very Hard clues still require blind tester feedback.
+
+Draft copies remain unapproved. The beta publication pool records this review;
+production approvals and live schedules remain unchanged. Before using the
+reserve, rerun the live inventory and preview the exact target horizon to
+preserve all existing challenge snapshots. Do not publish from stale plans.

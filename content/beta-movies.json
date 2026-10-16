@@ -1558,5 +1558,525 @@
     "ageAppropriate": false,
     "factsChecked": false,
     "contentHash": "ff4e43f90b296aee809066647be9995bf078d1345071a6395724da48130d75c2"
+  },
+  {
+    "movieId": 568124,
+    "description": "The tale of an extraordinary family, the Madrigals, who live hidden in the mountains of Colombia, in a magical house, in a vibrant town, in a wondrous, charmed place called an Encanto. The magic of the Encanto has blessed every child in the family—every child except one, Mirabel. But when she discovers that the magic surrounding the Encanto is in danger, Mirabel decides that she, the only ordinary Madrigal, might just be her exceptional family's last hope.",
+    "imdbId": "tt2953050",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "The tale of an extraordinary family, the Madrigals, who live hidden in the mountains of Colombia, in a magical house, in a vibrant town, in a wondrous, charmed place called an Encanto. The magic of the Encanto has blessed every child in the family—every child except one, Mirabel. But when she discovers that the magic surrounding the Encanto is in danger, Mirabel decides that she, the only ordinary Madrigal, might just be her exceptional family's last hope.",
+      "LEVEL_2": "In a magical family, every child receives a special gift except one girl. When the magic that protects their home begins to fail, the ordinary family member may be the only person who can save it.",
+      "LEVEL_3": "The only member of an extraordinary family without a special ability discovers that the source of everyone else’s gifts is threatened. Protecting the family may depend on the person who seems least equipped to help.",
+      "LEVEL_4": "Someone defined by what they lack recognizes a threat to everything their family relies on. Being the exception may make them essential to its survival.",
+      "LEVEL_5": "The person without the family’s advantage may be its last hope of keeping it."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 568124
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "92e6f12f35fe84a5a45bd1e5dffe85525a72879ca854d2e9fcdf74339f7ed58e"
+  },
+  {
+    "movieId": 20352,
+    "description": "Villainous Gru lives up to his reputation as a despicable, deplorable and downright unlikable guy when he hatches a plan to steal the moon from the sky. But he has a tough time staying on task after three orphans land in his care.",
+    "imdbId": "tt1323594",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Villainous Gru lives up to his reputation as a despicable, deplorable and downright unlikable guy when he hatches a plan to steal the moon from the sky. But he has a tough time staying on task after three orphans land in his care.",
+      "LEVEL_2": "A notorious villain plans to steal the moon, but looking after three orphaned girls makes it difficult for him to concentrate on his scheme.",
+      "LEVEL_3": "An ambitious criminal plans an extraordinary theft. Unexpected responsibility for three children interferes with a life previously devoted to wrongdoing.",
+      "LEVEL_4": "A carefully planned act of selfish ambition becomes difficult to pursue when its creator unexpectedly becomes responsible for others.",
+      "LEVEL_5": "Caring for others disrupts a scheme built entirely around personal ambition."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 20352
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "7d4d683574642b926effaaafcfc9298ce11cd9559570cfbb9e62784ad7b064ec"
+  },
+  {
+    "movieId": 38757,
+    "description": "When the kingdom's most wanted-and most charming-bandit Flynn Rider hides out in a mysterious tower, he's taken hostage by Rapunzel, a beautiful and feisty tower-bound teen with 70 feet of magical, golden hair. Flynn's curious captor, who's looking for her ticket out of the tower where she's been locked away for years, strikes a deal with the handsome thief and the unlikely duo sets off on an action-packed escapade, complete with a super-cop horse, an over-protective chameleon and a gruff gang of pub thugs.",
+    "imdbId": "tt0398286",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "When the kingdom's most wanted-and most charming-bandit Flynn Rider hides out in a mysterious tower, he's taken hostage by Rapunzel, a beautiful and feisty tower-bound teen with 70 feet of magical, golden hair. Flynn's curious captor, who's looking for her ticket out of the tower where she's been locked away for years, strikes a deal with the handsome thief and the unlikely duo sets off on an action-packed escapade, complete with a super-cop horse, an over-protective chameleon and a gruff gang of pub thugs.",
+      "LEVEL_2": "A charming thief seeks refuge in a tower and becomes the captive of a young woman with extraordinarily long magical hair. She bargains with him for a way out of the place where she has been confined for years.",
+      "LEVEL_3": "A fugitive hides in an isolated home and is captured by its long-confined resident. An agreement turns an attempted escape from pursuit into a chance for someone else to experience freedom.",
+      "LEVEL_4": "One person’s search for safety interrupts another’s confinement. Each has something the other needs, and an unlikely bargain sends them beyond familiar limits.",
+      "LEVEL_5": "An intruder seeking refuge becomes a captive’s opportunity to leave."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 38757
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "be6aff89e9a67aae1f143bef00e2142570eaedbaf8a26ba694743b6158d69b78"
+  },
+  {
+    "movieId": 508947,
+    "description": "Thirteen-year-old Mei is experiencing the awkwardness of being a teenager with a twist – when she gets too excited, she transforms into a giant red panda.",
+    "imdbId": "tt8097030",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Thirteen-year-old Mei is experiencing the awkwardness of being a teenager with a twist – when she gets too excited, she transforms into a giant red panda.",
+      "LEVEL_2": "An adolescent girl has an unusual complication to growing up: whenever her excitement becomes too much, she turns into an enormous red panda.",
+      "LEVEL_3": "An adolescent’s strong excitement triggers an involuntary transformation into a very large animal, making an already awkward stage of life harder to navigate.",
+      "LEVEL_4": "Growing up becomes more complicated when strong feelings cause a dramatic change that cannot be kept on the inside.",
+      "LEVEL_5": "The excitement of growing up produces a change too large to hide."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 508947
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "e379460c378013a77f25f88cdae4adf1f1478d31a76c4cfa09c9051f32e6faac"
+  },
+  {
+    "movieId": 508943,
+    "description": "Luca and his best friend Alberto experience an unforgettable summer on the Italian Riviera. But all the fun is threatened by a deeply-held secret: they are sea monsters from another world just below the water’s surface.",
+    "imdbId": "tt12801262",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Luca and his best friend Alberto experience an unforgettable summer on the Italian Riviera. But all the fun is threatened by a deeply-held secret: they are sea monsters from another world just below the water’s surface.",
+      "LEVEL_2": "Two boys enjoy a wonderful summer on the Italian coast, but their friendship and adventures are threatened by the secret that they are creatures from beneath the sea.",
+      "LEVEL_3": "Two friends enjoy a summer away from their underwater home. Their happiness is endangered by the need to conceal what they really are.",
+      "LEVEL_4": "A joyful shared experience depends on keeping a fundamental truth hidden. Discovery could threaten everything two friends are enjoying.",
+      "LEVEL_5": "Two friends’ happiness is threatened by the truth about who they are."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 508943
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "d38439dcde13fd633d5a1eada3f505b08d2f058d728dcd2fe6cfde8b2d0ad7d7"
+  },
+  {
+    "movieId": 9502,
+    "description": "When the Valley of Peace is threatened, lazy Po the panda discovers his destiny as the \"chosen one\" and trains to become a kung fu hero, but transforming the unsleek slacker into a brave warrior won't be easy. It's up to Master Shifu and the Furious Five -- Tigress, Crane, Mantis, Viper and Monkey -- to give it a try.",
+    "imdbId": "tt0441773",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "When the Valley of Peace is threatened, lazy Po the panda discovers his destiny as the \"chosen one\" and trains to become a kung fu hero, but transforming the unsleek slacker into a brave warrior won't be easy. It's up to Master Shifu and the Furious Five -- Tigress, Crane, Mantis, Viper and Monkey -- to give it a try.",
+      "LEVEL_2": "An unlikely bear is chosen to protect a threatened valley. A demanding master and a group of skilled fighters must turn this unfit slacker into a martial-arts hero.",
+      "LEVEL_3": "A seemingly unqualified animal is selected to defend a threatened community. Experienced fighters face the difficult task of training the unexpected recruit for a heroic role.",
+      "LEVEL_4": "A community’s hopes are placed in someone who appears unsuited to the task. Those charged with preparing the newcomer must bridge the gap between expectation and ability.",
+      "LEVEL_5": "Everyone’s safety depends on preparing the least likely person to protect them."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 9502
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "1d0e370c2f4fc061d9e67e1a724127ee7397a5e5ba03eebaad01871fecff8194"
+  },
+  {
+    "movieId": 62177,
+    "description": "Brave is set in the mystical Scottish Highlands, where Mérida is the princess of a kingdom ruled by King Fergus and Queen Elinor. An unruly daughter and an accomplished archer, Mérida one day defies a sacred custom of the land and inadvertently brings turmoil to the kingdom. In an attempt to set things right, Mérida seeks out an eccentric old Wise Woman and is granted an ill-fated wish. Also figuring into Mérida’s quest — and serving as comic relief — are the kingdom’s three lords: the enormous Lord MacGuffin, the surly Lord Macintosh, and the disagreeable Lord Dingwall.",
+    "imdbId": "tt1217209",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Brave is set in the mystical Scottish Highlands, where Mérida is the princess of a kingdom ruled by King Fergus and Queen Elinor. An unruly daughter and an accomplished archer, Mérida one day defies a sacred custom of the land and inadvertently brings turmoil to the kingdom. In an attempt to set things right, Mérida seeks out an eccentric old Wise Woman and is granted an ill-fated wish. Also figuring into Mérida’s quest — and serving as comic relief — are the kingdom’s three lords: the enormous Lord MacGuffin, the surly Lord Macintosh, and the disagreeable Lord Dingwall.",
+      "LEVEL_2": "A headstrong princess and skilled archer defies an ancient custom, bringing trouble to her kingdom. Her attempt to repair the damage leads her to an eccentric wise woman and a disastrous wish.",
+      "LEVEL_3": "A royal heir challenges an established custom and causes turmoil. Seeking a magical way to put matters right brings another unwelcome consequence.",
+      "LEVEL_4": "Defying an inherited expectation creates a crisis. An attempt to undo the consequences through an unusual intervention only complicates the problem.",
+      "LEVEL_5": "An attempt to escape expectations leads to a remedy that makes matters worse."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 62177
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "4185b7c37f1b86fee4d0517a9b2071cd418b33e785add95d2dbd8c02972e5614"
+  },
+  {
+    "movieId": 38055,
+    "description": "After Megamind, a highly intelligent alien supervillain, defeats his long-time nemesis Metro Man, Megamind creates a new hero to fight, but must act to save the city when his \"creation\" becomes an even worse villain than he was.",
+    "imdbId": "tt1001526",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "After Megamind, a highly intelligent alien supervillain, defeats his long-time nemesis Metro Man, Megamind creates a new hero to fight, but must act to save the city when his \"creation\" becomes an even worse villain than he was.",
+      "LEVEL_2": "An alien supervillain finally defeats his heroic rival and creates a replacement opponent. When the new hero becomes a worse villain, the original troublemaker must protect the city himself.",
+      "LEVEL_3": "A villain eliminates a longstanding rival and manufactures another opponent. The replacement becomes a greater danger, forcing its creator into a protective role.",
+      "LEVEL_4": "After achieving a long-sought victory, someone tries to recreate the struggle that gave life purpose. The substitute becomes a threat its creator must stop.",
+      "LEVEL_5": "Replacing a defeated rival creates a danger that reverses the victor’s role."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 38055
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "2a147312aa367e77c3453319d9115948279d2372173ac0318ffcadfc9b21b1ff"
+  },
+  {
+    "movieId": 508442,
+    "description": "Joe Gardner is a middle school teacher with a love for jazz music. After a successful audition at the Half Note Club, he suddenly gets into an accident that separates his soul from his body and is transported to the You Seminar, a center in which souls develop and gain passions before being transported to a newborn child. Joe must enlist help from the other souls-in-training, like 22, a soul who has spent eons in the You Seminar, in order to get back to Earth.",
+    "imdbId": "tt2948372",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Joe Gardner is a middle school teacher with a love for jazz music. After a successful audition at the Half Note Club, he suddenly gets into an accident that separates his soul from his body and is transported to the You Seminar, a center in which souls develop and gain passions before being transported to a newborn child. Joe must enlist help from the other souls-in-training, like 22, a soul who has spent eons in the You Seminar, in order to get back to Earth.",
+      "LEVEL_2": "A jazz-loving teacher wins an important audition, then an accident separates his spirit from his body. In a place where new spirits prepare for life, he seeks help finding a way back.",
+      "LEVEL_3": "A music teacher’s professional breakthrough is interrupted by an accident. Separated from the body and surrounded by beings preparing to enter life, the teacher searches for help returning.",
+      "LEVEL_4": "An unexpected interruption separates someone from a long-awaited opportunity. Returning to it requires help from those whose experience of life is very different.",
+      "LEVEL_5": "Reaching a long-awaited opportunity is followed by a struggle to return to it."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 508442
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "0b071a9ad096664fde4f2b0900d57dbbbfc57f69773a340adbf29613cdb4ae56"
+  },
+  {
+    "movieId": 44896,
+    "description": "When Rango, a lost family pet, accidentally winds up in the gritty, gun-slinging town of Dirt, the less-than-courageous lizard suddenly finds he stands out. Welcomed as the last hope the town has been waiting for, new Sheriff Rango is forced to play his new role to the hilt.",
+    "imdbId": "tt1192628",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "When Rango, a lost family pet, accidentally winds up in the gritty, gun-slinging town of Dirt, the less-than-courageous lizard suddenly finds he stands out. Welcomed as the last hope the town has been waiting for, new Sheriff Rango is forced to play his new role to the hilt.",
+      "LEVEL_2": "A lost pet lizard arrives in a rough frontier town and is welcomed as its last hope. Appointed sheriff despite his lack of courage, he must try to live up to the role.",
+      "LEVEL_3": "A lost household animal enters a dangerous community and is mistaken for the protector it needs. An unexpected position of authority demands courage the newcomer does not possess.",
+      "LEVEL_4": "An outsider receives a role built on others’ hopes rather than proven ability. Living up to that confidence becomes unavoidable when the role carries real responsibility.",
+      "LEVEL_5": "Being treated as everyone’s hope forces an unlikely newcomer to act the part."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 44896
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "3ce1168d1c1f7cd3a8259e554b1a2b07b0e7c63be27d10eb3666a96948358b3e"
+  },
+  {
+    "movieId": 4523,
+    "description": "The beautiful princess Giselle is banished by an evil queen from her magical, musical animated land and finds herself in the gritty reality of the streets of modern-day Manhattan. Shocked by this strange new environment that doesn't operate on a \"happily ever after\" basis, Giselle is now adrift in a chaotic world badly in need of enchantment. But when Giselle begins to fall in love with a charmingly flawed divorce lawyer who has come to her aid - even though she is already promised to a perfect fairy tale prince back home - she has to wonder: Can a storybook view of romance survive in the real world?",
+    "imdbId": "tt0461770",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "The beautiful princess Giselle is banished by an evil queen from her magical, musical animated land and finds herself in the gritty reality of the streets of modern-day Manhattan. Shocked by this strange new environment that doesn't operate on a \"happily ever after\" basis, Giselle is now adrift in a chaotic world badly in need of enchantment. But when Giselle begins to fall in love with a charmingly flawed divorce lawyer who has come to her aid - even though she is already promised to a perfect fairy tale prince back home - she has to wonder: Can a storybook view of romance survive in the real world?",
+      "LEVEL_2": "An evil queen banishes an animated princess to modern Manhattan. Help from a divorced lawyer becomes a new romance, challenging the princess’s expectations despite the prince waiting in her storybook world.",
+      "LEVEL_3": "A royal exile leaves a magical animated world for an unfamiliar modern city. Falling for a helpful local complicates an existing romantic promise and a storybook understanding of love.",
+      "LEVEL_4": "Forced into an unfamiliar reality, someone encounters a relationship that challenges an idealized view of love and a commitment left behind.",
+      "LEVEL_5": "A new reality challenges both an ideal of love and an earlier promise."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 4523
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "a3f460fedbe7d24b341fffc6764174a1d6ca55d2e8ab4443b953ebdf5280d7ab"
+  },
+  {
+    "movieId": 501929,
+    "description": "A quirky, dysfunctional family's road trip is upended when they find themselves in the middle of the robot apocalypse and suddenly become humanity's unlikeliest last hope.",
+    "imdbId": "tt7979580",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "A quirky, dysfunctional family's road trip is upended when they find themselves in the middle of the robot apocalypse and suddenly become humanity's unlikeliest last hope.",
+      "LEVEL_2": "An eccentric family’s road trip is interrupted by a robot uprising, leaving the unlikely travelers as humanity’s last hope.",
+      "LEVEL_3": "A family struggling with its own differences is caught in a worldwide machine uprising while traveling together. The group unexpectedly becomes the best hope of stopping the disaster.",
+      "LEVEL_4": "An ordinary journey places a troubled group at the center of an extraordinary crisis. People who struggle together must now become everyone else’s hope.",
+      "LEVEL_5": "A group’s troubled journey becomes a crisis that everyone needs them to solve."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 501929
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "6f0ebd8862f1be3bd7a9623a1c24103f5f6d8e18d8c24fd2ee444e544c97e57f"
+  },
+  {
+    "movieId": 9598,
+    "description": "Babe is a little pig who doesn't quite know his place in the world. With a bunch of odd friends, like Ferdinand the duck who thinks he is a rooster and Fly the dog he calls mum, Babe realises that he has the makings to become the greatest sheep pig of all time, and Farmer Hogget knows it. With the help of the sheep dogs, Babe learns that a pig can be anything that he wants to be.",
+    "imdbId": "tt0112431",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Babe is a little pig who doesn't quite know his place in the world. With a bunch of odd friends, like Ferdinand the duck who thinks he is a rooster and Fly the dog he calls mum, Babe realises that he has the makings to become the greatest sheep pig of all time, and Farmer Hogget knows it. With the help of the sheep dogs, Babe learns that a pig can be anything that he wants to be.",
+      "LEVEL_2": "A young pig raised among unusual farm animals discovers a talent for working with sheep. With help from sheepdogs and a supportive farmer, he pursues a role nobody expects a pig to fill.",
+      "LEVEL_3": "An uncertain farm animal finds an unexpected aptitude for another species’ work. Encouragement and training offer a chance to challenge assumptions about what it can become.",
+      "LEVEL_4": "Someone unsure of their place discovers a talent outside the role assigned to them. Support from others makes an unlikely ambition possible.",
+      "LEVEL_5": "An unexpected talent challenges the limits of an assigned place in the world."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 9598
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "39204f6c4f919afca4855bffe301c03eaf4053e5a69b22300b587b65477b54da"
+  },
+  {
+    "movieId": 14534,
+    "description": "Rudy grew up in a steel mill town where most people ended up working, but wanted to play football at Notre Dame instead. There were only a couple of problems. His grades were a little low, his athletic skills were poor, and he was only half the size of the other players. But he had the drive and the spirit of 5 people and has set his sights upon joining the team.",
+    "imdbId": "tt0108002",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Rudy grew up in a steel mill town where most people ended up working, but wanted to play football at Notre Dame instead. There were only a couple of problems. His grades were a little low, his athletic skills were poor, and he was only half the size of the other players. But he had the drive and the spirit of 5 people and has set his sights upon joining the team.",
+      "LEVEL_2": "A young man from a steel town dreams of playing football at a prestigious university. Poor grades, limited athletic ability and small size stand in his way, but he remains determined to join the team.",
+      "LEVEL_3": "An aspiring athlete pursues a place on an elite college team despite academic, physical and sporting disadvantages. Determination remains strong where qualifications fall short.",
+      "LEVEL_4": "Someone pursues a highly competitive ambition despite lacking many of the expected advantages. Commitment must carry an effort that conventional measures would dismiss.",
+      "LEVEL_5": "A persistent ambition survives repeated evidence of being an unlikely candidate."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 14534
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "0275cc42d8bb7711c4a40e4a5e30e061a9e7b531928771052d9b817ab35a5a4b"
+  },
+  {
+    "movieId": 371645,
+    "description": "Ricky is a defiant young city kid who finds himself on the run with his cantankerous foster uncle in the wild New Zealand bush. A national manhunt ensues, and the two are forced to put aside their differences and work together to survive.",
+    "imdbId": "tt4698684",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Ricky is a defiant young city kid who finds himself on the run with his cantankerous foster uncle in the wild New Zealand bush. A national manhunt ensues, and the two are forced to put aside their differences and work together to survive.",
+      "LEVEL_2": "A rebellious city boy and his difficult foster uncle go on the run in the New Zealand wilderness. With a national manhunt underway, they must cooperate to survive.",
+      "LEVEL_3": "A defiant young person and an unwilling foster relative become the subjects of a national manhunt. Survival in the wilderness requires them to set aside their differences.",
+      "LEVEL_4": "Two incompatible companions become fugitives together. Remaining free and surviving depend on cooperation neither would normally choose.",
+      "LEVEL_5": "A shared pursuit forces incompatible companions to rely on each other."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 371645
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "24fa0dcec40f6464e28d02a0ed6a17257e47473acbdba513e0490fdf66783fd9"
+  },
+  {
+    "movieId": 71,
+    "description": "County Durham, England, 1984. The miners' strike has started and the police have started coming up from Bethnal Green, starting a class war with the lower classes suffering. Caught in the middle of the conflict is 11-year old Billy Elliot, who, after leaving his boxing club for the day, stumbles upon a ballet class and finds out that he's naturally talented. He practices with his teacher Mrs. Wilkinson for an upcoming audition in Newcastle-upon Tyne for the royal Ballet school in London.",
+    "imdbId": "tt0249462",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "County Durham, England, 1984. The miners' strike has started and the police have started coming up from Bethnal Green, starting a class war with the lower classes suffering. Caught in the middle of the conflict is 11-year old Billy Elliot, who, after leaving his boxing club for the day, stumbles upon a ballet class and finds out that he's naturally talented. He practices with his teacher Mrs. Wilkinson for an upcoming audition in Newcastle-upon Tyne for the royal Ballet school in London.",
+      "LEVEL_2": "During a bitter miners’ strike, a boy leaves his boxing club and discovers a natural talent for ballet. A teacher helps him prepare for an audition at a prestigious dance school.",
+      "LEVEL_3": "A young person discovers an unexpected talent for dance amid a community’s industrial conflict. Training with a supportive teacher leads toward an important school audition.",
+      "LEVEL_4": "An accidental encounter reveals an unexpected aptitude during a period of community turmoil. A mentor helps turn that discovery into a chance at a different future.",
+      "LEVEL_5": "An unexpected talent offers a new direction amid a community’s conflict."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 71
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "af08be5a731556d20fffeadbd27a5d92ccb7ab2366839bc524321c0f7df3a3f1"
+  },
+  {
+    "movieId": 64328,
+    "description": "When Kermit the Frog and the Muppets learn that their beloved theater is slated for demolition, a sympathetic human, Gary, and his puppet brother, Walter, swoop in to help the gang put on a show and raise the $10 million they need to save the day.",
+    "imdbId": "tt1204342",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "When Kermit the Frog and the Muppets learn that their beloved theater is slated for demolition, a sympathetic human, Gary, and his puppet brother, Walter, swoop in to help the gang put on a show and raise the $10 million they need to save the day.",
+      "LEVEL_2": "A famous group of puppet performers learns that its old theater will be demolished. A human fan and his puppet brother help organize a show to raise the millions needed to save it.",
+      "LEVEL_3": "Performers face losing their beloved theater to demolition. Two sympathetic relatives help arrange a fundraising show to protect the group’s home.",
+      "LEVEL_4": "A group’s shared home is threatened with destruction. Supporters try to turn the group’s own talents into the money needed to preserve it.",
+      "LEVEL_5": "Saving a shared home depends on turning talent into urgent support."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 64328
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "f32990d36389456f47d0497c82e727ad994bbea28b18288398a198bbd459a776"
+  },
+  {
+    "movieId": 455,
+    "description": "Jess Bhamra, the daughter of a strict Indian couple in London, is not permitted to play organized soccer, even though she is 18. When Jess is playing for fun one day, her impressive skills are seen by Jules Paxton, who then convinces Jess to play for her semi-pro team. Jess uses elaborate excuses to hide her matches from her family while also dealing with her romantic feelings for her coach, Joe.",
+    "imdbId": "tt0286499",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Jess Bhamra, the daughter of a strict Indian couple in London, is not permitted to play organized soccer, even though she is 18. When Jess is playing for fun one day, her impressive skills are seen by Jules Paxton, who then convinces Jess to play for her semi-pro team. Jess uses elaborate excuses to hide her matches from her family while also dealing with her romantic feelings for her coach, Joe.",
+      "LEVEL_2": "A talented young woman joins a semi-professional soccer team against her strict parents’ wishes. She hides her matches behind elaborate excuses while developing feelings for her coach.",
+      "LEVEL_3": "A gifted athlete secretly joins an organized team despite family opposition. Keeping the matches hidden becomes more complicated as feelings develop for the coach.",
+      "LEVEL_4": "Pursuing a forbidden ambition requires an increasingly elaborate deception at home. An emotional attachment within the pursuit adds another complication.",
+      "LEVEL_5": "A concealed ambition grows harder to manage when feelings become involved."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 455
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "ac6f053f9713e1efe4a9e78d6b127fb11368934c9f0e950da1de6a4dac6187f1"
+  },
+  {
+    "movieId": 926,
+    "description": "For four years, the courageous crew of the NSEA protector - \"Commander Peter Quincy Taggart\", \"Lt. Tawny Madison and \"Dr.Lazarus\" - set off on a thrilling and often dangerous mission in space...and then their series was cancelled! Now, twenty years later, aliens under attack have mistaken the Galaxy Quest television transmissions for \"historical documents\" and beam up the crew of has-been actors to save the universe. With no script, no director and no clue, the actors must turn in the performances of their lives.",
+    "imdbId": "tt0177789",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "For four years, the courageous crew of the NSEA protector - \"Commander Peter Quincy Taggart\", \"Lt. Tawny Madison and \"Dr.Lazarus\" - set off on a thrilling and often dangerous mission in space...and then their series was cancelled! Now, twenty years later, aliens under attack have mistaken the Galaxy Quest television transmissions for \"historical documents\" and beam up the crew of has-been actors to save the universe. With no script, no director and no clue, the actors must turn in the performances of their lives.",
+      "LEVEL_2": "Aliens mistake an old science-fiction television series for historical fact and recruit its former actors to rescue them. The washed-up cast must handle a real space crisis without a script.",
+      "LEVEL_3": "Performers from a long-cancelled space adventure are recruited by aliens who believe their fictional exploits were real. The cast must turn imagined expertise into a response to genuine danger.",
+      "LEVEL_4": "A group is asked to solve a real crisis because others mistake its past performances for authentic achievements. Pretending to be capable is no longer enough.",
+      "LEVEL_5": "Being mistaken for former heroes creates a real obligation to become them."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 926
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "a46da49508fa68fb5b8cdeb209620a39a2e600b26dc10850440b686bfb963e14"
+  },
+  {
+    "movieId": 9340,
+    "description": "A young teenager named Mikey Walsh finds an old treasure map in his father's attic. Hoping to save their homes from demolition, Mikey and his friends Data Wang, Chunk Cohen, and Mouth Devereaux run off on a big quest to find the secret stash of Pirate One-Eyed Willie.",
+    "imdbId": "tt0089218",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "A young teenager named Mikey Walsh finds an old treasure map in his father's attic. Hoping to save their homes from demolition, Mikey and his friends Data Wang, Chunk Cohen, and Mouth Devereaux run off on a big quest to find the secret stash of Pirate One-Eyed Willie.",
+      "LEVEL_2": "A boy discovers an old pirate treasure map in his father’s attic. He and his friends follow it in the hope of finding enough wealth to save their homes from demolition.",
+      "LEVEL_3": "A group of young friends follows a discovered treasure map, hoping a hidden pirate fortune can prevent the destruction of their homes.",
+      "LEVEL_4": "A threatened group turns a chance discovery into a risky search for a way to protect what they stand to lose.",
+      "LEVEL_5": "A chance discovery offers a desperate way to save a shared home."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 9340
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "ea62a49220a3a7231c2a1ee3cf983bfd07845d416feefc0e62a89beda3d14873"
   }
 ]
