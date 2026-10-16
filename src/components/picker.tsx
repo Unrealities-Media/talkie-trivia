@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react"
-import { View } from "react-native"
+import { Platform, View } from "react-native"
 import { ListRenderItemInfo } from "@shopify/flash-list"
 import {
   useAnimatedStyle,
@@ -29,6 +29,7 @@ import { GAME_MODE_CONFIG } from "../config/difficulty"
 import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
 
 const PickerContainer: FC = memo(() => {
+  const pickerRef = useRef<View>(null)
   const {
     isInteractionsDisabled,
     basicItems,
@@ -161,6 +162,15 @@ const PickerContainer: FC = memo(() => {
   const handleSelectItem = useCallback(
     (item: BasicTriviaItem) => {
       if (isInteractionsDisabled || guessedIds.has(String(item.id))) return
+      if (Platform.OS === "web" && typeof document !== "undefined") {
+        const root = pickerRef.current as unknown as HTMLElement | null
+        const active = document.activeElement
+        // Hand off keyboard focus before clearing the selected result. Pointer
+        // selection must not unexpectedly summon a phone's software keyboard.
+        if (active?.getAttribute("role") === "button" && active.matches(":focus-visible") && root?.contains(active)) {
+          root.querySelector<HTMLInputElement>('input[role="searchbox"]')?.focus()
+        }
+      }
       setExpandedItemId(null)
       setDetailedItem(null)
       makeGuess(item)
@@ -198,7 +208,7 @@ const PickerContainer: FC = memo(() => {
   }
 
   return (
-    <View style={{ width: "100%" }}>
+    <View ref={pickerRef} style={{ width: "100%" }}>
       <PickerUI
         query={query}
         isSearching={isSearching}
