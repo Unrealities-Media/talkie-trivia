@@ -6,9 +6,9 @@ This is the current handoff; older audits preserve evidence from their dates.
 
 ## Shipped state
 
-- PRs 18–47 are merged. PR47 head `83cb16e00862e3b6346adcb140cdbbbde87969f6`
-  passed all nine checks. All 47 live files matched its export at 07:46:19 UTC;
-  the live clue font loaded successfully with no browser errors at 07:46:21 UTC.
+- PRs 18–48 are merged. PR48 head `86021a7adfe52a7e6b8941ea815b5063d0fe9d50`
+  passed all nine checks. All 47 live files matched its export at 07:58:11 UTC;
+  a read-only live recovery-status/search check passed at 07:58:02 UTC.
 - Recent web improvements include next-challenge navigation, startup recovery,
   gameplay while fonts load, completed-search announcements, live reduced-motion
   preferences and keyboard continuity after guessing. Disabled Sentry runtime
@@ -45,12 +45,16 @@ This is the current handoff; older audits preserve evidence from their dates.
   Local evidence: `.expo/web-clue-font-browser.log` in the shared root.
   This is an asset-size improvement, not a measured startup-latency claim.
 - Save recovery review reproduced keyboard focus falling to the page body after
-  a failed retry on Chromium desktop and mobile. The next candidate preserves
+  a failed retry on Chromium desktop and mobile. PR48 preserves
   focus on a stable save status and resumes search after success only while the
   player still has focus there. Pointer retries and later focus changes are respected.
   Twelve targeted checks passed across Chromium, Firefox and WebKit, covering
   retry failure, success, original move identity, reload and no extra guesses.
   Evidence: `.expo/save-recovery-before.log` and `.expo/save-recovery-after.log`.
+- CI cost review found the standalone Firebase suite ran for 2m30s on UI-only
+  PR48. The next candidate scopes that suite conservatively while retaining
+  browser/emulator gameplay on every PR. See [CI rollout](ci-rollout.md) for
+  the allowlist, full-verification fallbacks and measurement limits.
 - The explicitly approved anonymous test guest was deleted. Server reads
   confirmed its Auth account and owned game/history/statistics data absent;
   completion survives reload without creating another guest.

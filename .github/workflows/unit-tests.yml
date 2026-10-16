@@ -175,8 +175,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
+      - name: Determine Firebase contract scope
+        id: scope
+        run: node scripts/emulator-contract-scope.cjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.scope.outputs.run == 'true'
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -184,24 +189,30 @@ jobs:
             integration/package-lock.json
             functions/package-lock.json
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        if: steps.scope.outputs.run == 'true'
         with:
           distribution: temurin
           java-version: 21
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: steps.scope.outputs.run == 'true'
         with:
           go-version-file: utils/pipeline/go.mod
           cache-dependency-path: utils/pipeline/go.sum
       - name: Install locked dependencies
+        if: steps.scope.outputs.run == 'true'
         run: |
           npm --prefix functions ci
           npm --prefix integration ci
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: steps.scope.outputs.run == 'true'
         with:
           path: .expo/firebase-emulators
           key: firebase-emulators-${{ runner.os }}-${{ hashFiles('integration/package-lock.json') }}
       - name: Verify emulator dependency compatibility
+        if: steps.scope.outputs.run == 'true'
         run: npm --prefix integration run test:dependencies
       - name: Test isolated demo project
+        if: steps.scope.outputs.run == 'true'
         run: npm --prefix integration test
         env:
           FIREBASE_CLI_DISABLE_USAGE_REPORTING: 'true'

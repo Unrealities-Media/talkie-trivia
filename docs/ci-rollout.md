@@ -1,5 +1,30 @@
 # CI rollout checkpoint
 
+## Standalone Firebase contract scope (October 16)
+
+The standalone Firebase job spent 2m30s in run `38870037818` on PR48, which
+changed only the interface, browser tests and documentation. Its required check
+now always reports a scope decision, but installs toolchains/dependencies and
+runs the standalone suite only when relevant inputs may have changed.
+
+`scripts/emulator-contract-scope.cjs` permits omission only when every changed
+path belongs to the explicit presentation/browser-test/Markdown allowlist.
+Backend, rules, catalog, shared types, services/state, dependencies, workflows,
+verification scripts and unknown paths run the suite. Manual and merge-queue
+runs, invalid metadata, missing history, non-ancestor bases and empty diffs also
+run it. Renames include both old and new paths. The PR comparison includes the
+synthetic merge result; pushes compare against their preceding commit.
+
+Browser gameplay against isolated emulators, unit tests, coverage, Go checks,
+security checks and required check names remain unchanged. This does not omit
+backend verification on backend changes. The classifier and workflow changes
+in this rollout themselves trigger the full suite. Native builds stay disabled.
+
+Validation includes real Git fixtures, workflow-output checks and actionlint.
+Replaying the last UI-only merge selects the inexpensive path. Savings are an
+estimate from the previous job timing until a later applicable CI run measures
+them; no extra documentation-only PR is needed just to trigger that measurement.
+
 ## Incremental secret scanning follow-up (October 15)
 
 Routine PRs scan from the PR base; main/master pushes scan from the event's
