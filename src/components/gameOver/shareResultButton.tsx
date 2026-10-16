@@ -28,7 +28,7 @@ const ShareResultButton: React.FC<ShareResultButtonProps> = ({
     setStatus("")
     setCopyText("")
     try {
-      if (Platform.OS === "web" && typeof navigator !== "undefined" && !navigator.share) {
+      const copyResult = async () => {
         const text = generateShareMessage(playerGame)
         try {
           await navigator.clipboard.writeText(text)
@@ -37,6 +37,17 @@ const ShareResultButton: React.FC<ShareResultButtonProps> = ({
           setCopyText(text)
           setStatus("Select and copy your result below.")
         }
+      }
+      if (Platform.OS === "web") {
+        if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+          try {
+            // The utility handles dismissal without throwing. Only a failed
+            // share sheet should fall back to copying the result.
+            await shareGameResult(playerGame)
+          } catch {
+            await copyResult()
+          }
+        } else await copyResult()
       } else await shareGameResult(playerGame)
     } catch (error) {
       console.error("Error during sharing process:", error)

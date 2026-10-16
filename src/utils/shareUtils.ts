@@ -38,7 +38,9 @@ export const shareGameResult = async (game: PlayerGame): Promise<void> => {
       dialogTitle: "Share your Talkie Trivia results!",
     })
     // This is the platform-reported result, not proof that a recipient received it.
-    if (result.action === Share.sharedAction) analyticsService.trackShareResults(outcome)
+    // React Native Web returns the Web Share promise, which resolves without
+    // a result object. A successful browser share must not become an error.
+    if (result?.action === Share.sharedAction) analyticsService.trackShareResults(outcome)
   } catch (error: unknown) {
     if (error && typeof error === "object" && (
       ("name" in error && error.name === "AbortError") ||
