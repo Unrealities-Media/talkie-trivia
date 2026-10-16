@@ -65,11 +65,10 @@ test('cinematic reward matches the selected composition and handles result varia
   const cast = await page.getByText('Starring', { exact: true }).boundingBox()
   const story = await page.getByText('The story', { exact: true }).boundingBox()
   expect(cast.y).toBeLessThan(story.y)
-  await expect(page.getByRole('button', { name: /^Play Very Easy\./ })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Choose another difficulty →' }).click()
+  await expect(page.getByRole('button', { name: /^Play Very Easy\./ })).toHaveCount(1)
   await expect(page.getByRole('button', { name: /^Play Very Easy\./ })).toBeVisible()
-  await page.getByRole('button', { name: 'Hide difficulties' }).click()
   await page.getByRole('button', { name: /^View your guesses/ }).click()
+  await expect(page.getByRole('button', { name: /^Hide your guesses/ })).toHaveAttribute('aria-expanded', 'true')
   await page.getByRole('button', { name: /^Hide your guesses/ }).click()
   for (const width of [390, 320, 1440]) {
     await page.setViewportSize({ width, height: 900 })
