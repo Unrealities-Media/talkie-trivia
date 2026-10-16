@@ -37,7 +37,7 @@ jest.mock("../../../src/state/gameStore")
 jest.mock("expo-constants", () => ({ expoConfig: { version: "1.0.0", extra: { publicSiteUrl: "https://beta.example.com" } } }))
 
 // Import after mocks
-import ProfileScreen from "../../../src/app/(tabs)/profile"
+import ProfileScreen from "../../../src/app/(tabs)/profile/settings"
 
 const mockUseAuth = useAuth as jest.Mock
 const mockUseGameStore = useGameStore as unknown as jest.Mock
@@ -46,7 +46,7 @@ const renderWithTheme = (ui: ReactElement) => {
   return render(<ThemeProvider>{ui}</ThemeProvider>)
 }
 
-describe("App: ProfileScreen", () => {
+describe("App: ProfileSettingsScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockUseGameStore.mockImplementation((selector: any) =>

@@ -12,6 +12,14 @@ jest.mock("../../src/components/playerStats", () => {
 const view = (id = "p1") => <ThemeProvider><AccountStats player={{ id, name: "Player" }} /></ThemeProvider>
 describe("statistics independent of daily content", () => {
   beforeEach(() => jest.clearAllMocks())
+  it("summarizes all wins while keeping the full breakdown off the dashboard", async () => {
+    ;(gameService.fetchPlayerStats as jest.Mock).mockResolvedValue({ games: 4, wins: [1, 1, 1, 0, 0], allTimeScore: 1650, currentStreak: 1 })
+    render(<ThemeProvider><AccountStats player={{ id: "p1", name: "Player" }} compact /></ThemeProvider>)
+    await screen.findByText("1,650")
+    expect(screen.getByText("3 / 4")).toBeTruthy()
+    expect(screen.getByText("1 day")).toBeTruthy()
+    expect(screen.queryByText("Saved games: 4")).toBeNull()
+  })
   it("reads account stats even when today's challenge is loading or unavailable", async () => {
     ;(gameService.fetchPlayerStats as jest.Mock).mockResolvedValue({ games: 18 })
     render(view())

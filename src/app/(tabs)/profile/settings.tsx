@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState, useCallback, useEffect } from "react"
+import React, { lazy, Suspense } from "react"
 import {
   ScrollView,
   View,
@@ -10,35 +10,29 @@ import {
 } from "react-native"
 import { Image } from "expo-image"
 import { LinearGradient } from "expo-linear-gradient"
-import LoadingIndicator from "../../components/loadingIndicator"
-import { useAuth } from "../../contexts/authContext"
-import { GameHistoryEntry } from "../../models/gameHistory"
-import ErrorMessage from "../../components/errorMessage"
-import ProfileSection from "../../components/profileSection"
-import { useStyles, Theme } from "../../utils/hooks/useStyles"
-import { useTheme } from "../../contexts/themeContext"
-import { useExternalLink } from "../../utils/hooks/useExternalLink"
-import { u } from "../../styles/utils"
+import LoadingIndicator from "../../../components/loadingIndicator"
+import { useAuth } from "../../../contexts/authContext"
+import ErrorMessage from "../../../components/errorMessage"
+import ProfileSection from "../../../components/profileSection"
+import { useStyles, Theme } from "../../../utils/hooks/useStyles"
+import { useTheme } from "../../../contexts/themeContext"
+import { useExternalLink } from "../../../utils/hooks/useExternalLink"
+import { u } from "../../../styles/utils"
 import Constants from "expo-constants"
 
-const GoogleLogin = lazy(() => import("../../components/googleLogin"))
-const AccountDeletion = lazy(() => import("../../components/accountDeletion"))
-const AccountMerge = lazy(() => import("../../components/accountMerge"))
-const SessionRecovery = lazy(() => import("../../components/sessionRecovery"))
-const AccountStats = lazy(() => import("../../components/accountStats"))
-const GameHistory = lazy(() => import("../../components/gameHistory"))
-const GuestArchive = lazy(() => import("../../components/guestArchive"))
-const ThemeSelector = lazy(() => import("../../components/themeSelector"))
-const ReminderSettings = lazy(() => import("../../components/reminderSettings"))
-const HistoryDetailModal = lazy(
-  () => import("../../components/historyDetailModal"),
-)
+const GoogleLogin = lazy(() => import("../../../components/googleLogin"))
+const AccountDeletion = lazy(() => import("../../../components/accountDeletion"))
+const AccountMerge = lazy(() => import("../../../components/accountMerge"))
+const SessionRecovery = lazy(() => import("../../../components/sessionRecovery"))
+const GuestArchive = lazy(() => import("../../../components/guestArchive"))
+const ThemeSelector = lazy(() => import("../../../components/themeSelector"))
+const ReminderSettings = lazy(() => import("../../../components/reminderSettings"))
 
 const Footer = () => {
   const styles = useStyles(themedStyles)
   const { openLink } = useExternalLink()
   const version = Constants.expoConfig?.version || "1.0.0"
-  const tmdbLogo = require("../../../assets/tmdb_blue_square.svg")
+  const tmdbLogo = require("../../../../assets/tmdb_blue_square.svg")
 
   return (
     <View style={styles.footer}>
@@ -58,22 +52,10 @@ const Footer = () => {
   )
 }
 
-const ProfileScreen: React.FC = () => {
+const SettingsScreen: React.FC = () => {
   const { player, user, deletion, merge, mergeProposal, lostSession, loading: authLoading, error: authError, retryAuthentication } = useAuth()
   const styles = useStyles(themedStyles)
   const { colors } = useTheme()
-
-  const [selectedHistoryItem, setSelectedHistoryItem] =
-    useState<{ uid: string; item: GameHistoryEntry } | null>(null)
-  useEffect(() => { setSelectedHistoryItem(null) }, [player?.id])
-
-  const handleHistoryItemPress = useCallback((item: GameHistoryEntry) => {
-    if (player) setSelectedHistoryItem({ uid: player.id, item })
-  }, [player])
-
-  const handleModalClose = useCallback(() => {
-    setSelectedHistoryItem(null)
-  }, [])
 
   const isGoogleSignedIn = player && user && !user.isAnonymous
   const isUserAuthenticated = player && user
@@ -93,7 +75,7 @@ const ProfileScreen: React.FC = () => {
           <Suspense fallback={<LoadingIndicator />}>
             <View style={styles.contentArea}>
               <View style={styles.header}>
-                <Text accessibilityRole="header" style={styles.title}>Your profile</Text>
+                <Text accessibilityRole="header" style={styles.title}>Account settings</Text>
                 <Text style={styles.welcome}>{displayName ? `Welcome back, ${displayName}.` : "Your life in movies, one challenge at a time."}</Text>
               </View>
 
@@ -101,12 +83,6 @@ const ProfileScreen: React.FC = () => {
               {(merge || mergeProposal) && <AccountMerge />}
               {!authLoading && lostSession && !deletion && <SessionRecovery />}
               {!authLoading && !isUserAuthenticated && !deletion && !lostSession && !merge && !mergeProposal && <ErrorMessage message={authError || "Your player account could not be opened."} onRetry={retryAuthentication} />}
-              {isUserAuthenticated && <ProfileSection title="Statistics" icon="bar-chart">
-                <AccountStats key={player.id} player={player} />
-              </ProfileSection>}
-              {isUserAuthenticated && <ProfileSection title="Game History" icon="history">
-                <GameHistory key={player.id} onHistoryItemPress={handleHistoryItemPress} />
-              </ProfileSection>}
               {isUserAuthenticated && !isGoogleSignedIn && (
                 <View style={styles.signInPromptContainer}>
                   <Text style={styles.signInPromptTitle}>
@@ -142,12 +118,7 @@ const ProfileScreen: React.FC = () => {
           </Suspense>
         </ScrollView>
       </LinearGradient>
-      <Suspense fallback={null}>
-        <HistoryDetailModal
-          historyItem={isUserAuthenticated && selectedHistoryItem && selectedHistoryItem.uid === player.id ? selectedHistoryItem.item : null}
-          onClose={handleModalClose}
-        />
-      </Suspense>
+
     </>
   )
 }
@@ -256,4 +227,4 @@ const themedStyles = (theme: Theme): ProfileScreenStyles => ({
   },
 })
 
-export default ProfileScreen
+export default SettingsScreen
