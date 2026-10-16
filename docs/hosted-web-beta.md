@@ -16,7 +16,8 @@ provisioning a new staging project; preparation evidence is historical.
 - Site origin; the default `https://PROJECT_ID.web.app` needs no custom domain.
 - Reviewed movie clues and confirmation of content/image rights. The production
   approval list is still empty. The build does not approve or publish demo clues.
-  [Forty movie sets (200 clue drafts)](../content/beta-clue-drafts.md) are ready for review.
+  [Eighty movie sets (400 clues)](../content/beta-clue-drafts.md) have a separate
+  [AI beta review](../content/beta-content-review.md); human rights clearance remains open.
 - Review the generated privacy notice, particularly provider logs/backups and
   retention, against the actual Firebase configuration. Confirm someone monitors
   the support mailbox and handles ownership-verified deletion requests.

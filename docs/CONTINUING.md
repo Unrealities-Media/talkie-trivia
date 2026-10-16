@@ -6,12 +6,15 @@ This is the current handoff; older audits preserve evidence from their dates.
 
 ## Shipped state
 
-- Archive detail recovery candidate: keyboard retry keeps focus in a stable saved
+- PR54 is merged and deployed: keyboard retry keeps focus in a stable saved
   result panel when its button is replaced; pointer retry does not request focus.
   Loading now includes a readable status. A 320-by-480 error layout retains Retry
   and Close. Six history/retry checks pass across Chromium, Firefox and WebKit,
   plus nine focused tests and typecheck. Evidence: shared-root
   `.expo/archive-detail-before.log` and `.expo/archive-detail-after.log`.
+  Four additional Firefox/WebKit gameplay/share checks passed. All nine CI checks
+  passed for head `c6eee514d3f21ab605eb6b6e7df3eb00e99ecb98`. All 47 live files
+  matched at 09:29:34 UTC; live archive/copy verification passed at 09:29:36 UTC.
 
 - PR53 is merged and deployed: archived results now use the shared web sharing
   control, including manual copy when sharing and clipboard access fail. The copy
@@ -134,7 +137,7 @@ native findings; use dated evidence when an older row describes pending work.
 | Work | Current evidence and remaining action |
 | --- | --- |
 | Google identity | Real Google linking, collision/cancel, cross-device recovery and reauthenticated deletion still need disposable provider-account acceptance. Guest deletion does not close this gate. |
-| Content | Last verified schedule contains 50 slots for October 16–25 UTC. Replenish before October 26; automatic publication is not established. Beta editorial review is separate from human rights clearance; production approvals remain empty. |
+| Content | At October 16 09:31 UTC all 50 October 16–25 slots passed validation, with 60 distinct scheduled movies and no unused reviewed reserve. The new content batch adds 20 AI-reviewed beta sets (four days), increasing the local pool to 80. It does not publish them. Rerun inventory and preview before replenishing for October 26 onward. Automatic publication is not established; human rights clearance remains separate and production approvals empty. |
 | Abuse protection | Per-account gameplay throttling is deployed. App Check and broader anonymous/API abuse protection remain unfinished. A hidden URL and `noindex` do not enforce invitations. |
 | Recovery | Delete protection and Hosting preview recovery pass. No backup schedule/PITR or actual database restore has been verified; backend rollback remains open. Choose retention/cost policy before enabling paid backup storage. |
 | Operations | Manual health checks exist, but alert/budget notification delivery and monitored support-mailbox handling remain unverified. Do not infer delivery from configuration or a successful API response. |
