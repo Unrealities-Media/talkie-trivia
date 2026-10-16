@@ -2,16 +2,17 @@ import { useEffect, useState } from "react"
 import { AccessibilityInfo, Platform } from "react-native"
 import { useReducedMotion } from "react-native-reanimated"
 
+const webPreference = () => Platform.OS === "web" && typeof window !== "undefined" && typeof window.matchMedia === "function"
+  ? window.matchMedia("(prefers-reduced-motion: reduce)") : null
+
 // Read synchronously to avoid briefly opening the curtains before the preference
 // resolves, then subscribe so changes made while the app is open apply as well.
 export function usePremiereMotion() {
   const initial = useReducedMotion()
-  const [reduced, setReduced] = useState(() =>
-    Platform.OS === "web" && typeof window !== "undefined"
-      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches : initial)
+  const [reduced, setReduced] = useState(() => webPreference()?.matches ?? initial)
   useEffect(() => {
-    if (Platform.OS === "web" && typeof window !== "undefined") {
-      const media = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const media = webPreference()
+    if (media) {
       const update = () => setReduced(media.matches)
       update()
       media.addEventListener("change", update)
