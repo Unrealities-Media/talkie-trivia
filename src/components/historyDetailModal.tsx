@@ -18,6 +18,8 @@ import DetailModal from "./detailModal"
 import Facts from "./facts"
 import ResultSummary from "./gameOver/resultSummary"
 import FullPlotSection from "./gameOver/fullPlotSection"
+import ErrorMessage from "./errorMessage"
+import { movieReward } from "../services/movieRewardService"
 
 const GuessesContainer = lazy(() => import("./guesses"))
 
@@ -41,6 +43,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
   >([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     if (!historyItem || !player) {
@@ -72,7 +75,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
       } catch (e: any) {
         if (!active) return
         console.error("Failed to fetch history details:", e)
-        setError(e.message || "Failed to load history.")
+        setError("Could not load this result. Please try again.")
       } finally {
         if (active) setIsLoading(false)
       }
@@ -80,7 +83,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
 
     fetchData()
     return () => { active = false }
-  }, [historyItem, player])
+  }, [historyItem, player, attempt])
 
   const renderModalContent = () => {
     if (isLoading) {
@@ -93,7 +96,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
     if (error) {
       return (
         <View style={styles.errorContainer}>
-          <Typography variant="error">{error}</Typography>
+          <ErrorMessage message={error} onRetry={() => setAttempt(value => value + 1)} />
         </View>
       )
     }
@@ -106,7 +109,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
         >
           {playerGame && <ResultSummary game={playerGame} />}
           <Facts item={item} isScrollEnabled={false} compact={true} />
-          <FullPlotSection overview={item.description} />
+          <FullPlotSection overview={movieReward(item).summary} />
           {playerGame && (
             <View style={styles.guessesSection}>
               <View style={styles.divider} />
