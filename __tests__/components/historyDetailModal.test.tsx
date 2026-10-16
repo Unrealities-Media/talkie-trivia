@@ -175,7 +175,7 @@ describe("HistoryDetailModal Component", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {})
 
-      mockGameService.fetchPlayerGameById.mockRejectedValue(new Error("Network Error"))
+      mockGameService.fetchPlayerGameById.mockRejectedValueOnce(new Error("Network Error"))
 
       renderWithTheme(
         <HistoryDetailModal
@@ -185,13 +185,19 @@ describe("HistoryDetailModal Component", () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText("Network Error")).toBeTruthy()
+        expect(screen.getByText("Could not load this result. Please try again.")).toBeTruthy()
       })
+
+      fireEvent.press(screen.getByText("Retry"))
+      expect(await screen.findByTestId("mock-facts")).toBeTruthy()
+      expect(mockGameService.fetchPlayerGameById).toHaveBeenCalledTimes(2)
 
       consoleSpy.mockRestore()
     })
 
     it("should render Facts and Guesses when data loads successfully", async () => {
+      mockGameService.fetchPlayerGameById.mockResolvedValue({ ...mockPlayerGame,
+        triviaItem: { ...mockTriviaItem, metadata: { fullSummary: "The complete saved movie synopsis." } } })
       renderWithTheme(
         <HistoryDetailModal
           historyItem={mockHistoryItem}
@@ -213,6 +219,8 @@ describe("HistoryDetailModal Component", () => {
       expect(facts.props["data-title"]).toBe("Mock Movie Full")
       // @ts-ignore
       expect(guesses.props["data-guesses-count"]).toBe(2)
+      expect(screen.getByText("The complete saved movie synopsis.")).toBeTruthy()
+      expect(screen.queryByText("A mock description")).toBeNull()
     })
   })
 
