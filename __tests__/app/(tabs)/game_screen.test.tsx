@@ -65,19 +65,24 @@ it.each(["recovery", "auth loading", "auth error", "deletion", "offline", "game 
     renderGame()
     expect(screen.queryByText(/· daily challenge/)).toBeNull()
     if (mode === "recovery") expect(screen.getByText("Reopen your account")).toBeTruthy()
-    fireEvent.press(screen.getByRole("button", { name: "How to play" }))
-    expect(screen.getByText("Five movies each day")).toBeTruthy()
+    if (["game loading", "game error", "no game"].includes(mode)) {
+      fireEvent.press(screen.getByRole("button", { name: "How to play" }))
+      expect(screen.getByText("Guess the movie")).toBeTruthy()
+    } else {
+      expect(screen.queryByRole("button", { name: "How to play" })).toBeNull()
+      expect(screen.queryByRole("button", { name: /^Play / })).toBeNull()
+    }
     expect(state.initializeGame).not.toHaveBeenCalled()
   }
 )
 
-it("keeps practice separate from the saved daily game and statistics", () => {
+it("opens and closes optional help without changing the saved daily game", () => {
   const original = JSON.stringify(state)
   renderGame()
   fireEvent.press(screen.getByRole("button", { name: "How to play" }))
-  fireEvent.press(screen.getByRole("button", { name: "Try a practice example" }))
-  fireEvent.press(screen.getByRole("button", { name: "Moon Detective (1992)" }))
-  fireEvent.press(screen.getByRole("button", { name: "Space Bakery (1995)" }))
+  expect(screen.getByText("Guess the movie")).toBeTruthy()
+  fireEvent.press(screen.getByRole("button", { name: "Close help" }))
+  expect(screen.queryByText("Guess the movie")).toBeNull()
   expect(JSON.stringify(state)).toBe(original)
   expect(state.initializeGame).not.toHaveBeenCalled()
   expect(state.makeGuess).not.toHaveBeenCalled()
