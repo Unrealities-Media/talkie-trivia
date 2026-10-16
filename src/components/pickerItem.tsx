@@ -76,7 +76,7 @@ const PickerItem = memo<ItemProps>(
     const titleWithYear = `${item.title}${releaseYear}`
 
     const imageSource = item.posterPath && failedPoster !== item.posterPath
-      ? { uri: `${API_CONFIG.TMDB_IMAGE_BASE_URL_W500}${item.posterPath}` }
+      ? { uri: `${API_CONFIG.TMDB_IMAGE_BASE_URL_W185}${item.posterPath}` }
       : defaultPoster
     const fullImageSource = item.posterPath && failedPoster !== item.posterPath
       ? { uri: `${API_CONFIG.TMDB_IMAGE_BASE_URL_W500}${item.posterPath}` }

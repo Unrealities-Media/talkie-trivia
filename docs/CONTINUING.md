@@ -6,6 +6,16 @@ This is the current handoff; older audits preserve evidence from their dates.
 
 ## Shipped state
 
+- Search thumbnail candidate: 60-by-90 search images request w185 instead of w500;
+  expanded previews retain w500. A sample of ten Star-title posters measured
+  160,009 versus 875,701 response-body bytes (81.7% less). This is not a page
+  latency claim. Five pairs were visually compared at 3x browser density;
+  13 picker tests and typecheck passed. Shared-root evidence:
+  `.expo/search-poster-measurement.json` and `.expo/search-posters-3x.png`.
+- PR55 merged the 20-set beta reserve after all nine checks passed for head
+  `2b287bba8efe0def5c712a6f28ca35fb59b69a75`. The pool now has 80 reviewed sets;
+  schedules were not changed and no app deployment was performed for that PR.
+
 - PR54 is merged and deployed: keyboard retry keeps focus in a stable saved
   result panel when its button is replaced; pointer retry does not request focus.
   Loading now includes a readable status. A 320-by-480 error layout retains Retry
