@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from "react"
+import React from "react"
 import {
   ScrollView,
   View,
@@ -20,13 +20,15 @@ import { useExternalLink } from "../../../utils/hooks/useExternalLink"
 import { u } from "../../../styles/utils"
 import Constants from "expo-constants"
 
-const GoogleLogin = lazy(() => import("../../../components/googleLogin"))
-const AccountDeletion = lazy(() => import("../../../components/accountDeletion"))
-const AccountMerge = lazy(() => import("../../../components/accountMerge"))
-const SessionRecovery = lazy(() => import("../../../components/sessionRecovery"))
-const GuestArchive = lazy(() => import("../../../components/guestArchive"))
-const ThemeSelector = lazy(() => import("../../../components/themeSelector"))
-const ReminderSettings = lazy(() => import("../../../components/reminderSettings"))
+// Keep settings available when an already-open app loses connectivity. Loading
+// these controls on first visit can otherwise crash the entire web app offline.
+import GoogleLogin from "../../../components/googleLogin"
+import AccountDeletion from "../../../components/accountDeletion"
+import AccountMerge from "../../../components/accountMerge"
+import SessionRecovery from "../../../components/sessionRecovery"
+import GuestArchive from "../../../components/guestArchive"
+import ThemeSelector from "../../../components/themeSelector"
+import ReminderSettings from "../../../components/reminderSettings"
 
 const Footer = () => {
   const styles = useStyles(themedStyles)
@@ -72,7 +74,6 @@ const SettingsScreen: React.FC = () => {
           contentContainerStyle={styles.scrollContentContainer}
           showsVerticalScrollIndicator={false}
         >
-          <Suspense fallback={<LoadingIndicator />}>
             <View style={styles.contentArea}>
               <View style={styles.header}>
                 <Text accessibilityRole="header" style={styles.title}>Account settings</Text>
@@ -115,7 +116,6 @@ const SettingsScreen: React.FC = () => {
 
               <Footer />
             </View>
-          </Suspense>
         </ScrollView>
       </LinearGradient>
 
