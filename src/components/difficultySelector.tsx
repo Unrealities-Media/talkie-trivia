@@ -1,5 +1,5 @@
 import React from "react"
-import { View, Pressable } from "react-native"
+import { View, Pressable, Platform, GestureResponderEvent } from "react-native"
 import { hapticsService } from "../utils/hapticsService"
 import { useGameStore } from "../state/gameStore"
 import { useAuth } from "../contexts/authContext"
@@ -8,7 +8,7 @@ import { useThemeTokens } from "../utils/hooks/useStyles"
 import { Typography } from "./ui/typography"
 import HowToPlay from "./howToPlay"
 
-const DifficultySelector = () => {
+const DifficultySelector = ({ onKeyboardNavigate }: { onKeyboardNavigate?: () => void }) => {
   const { player } = useAuth()
   const { colors } = useThemeTokens()
   const difficulty = useGameStore(state => state.nextDifficulty)
@@ -19,8 +19,9 @@ const DifficultySelector = () => {
   const gameUid = useGameStore(state => state.playerGame?.playerID)
   const initializeGame = useGameStore(state => state.initializeGame)
   const disabled = loading || (saving !== undefined && saving !== "idle")
-  const start = (value: DifficultyLevel) => {
+  const start = (value: DifficultyLevel, event: GestureResponderEvent) => {
     if (!player || disabled) return
+    if (Platform.OS === "web" && (event.nativeEvent as unknown as MouseEvent)?.detail === 0) onKeyboardNavigate?.()
     hapticsService.medium()
     setDifficulty(value)
     if (!gameUid && !disabled) void initializeGame(player, value)
@@ -37,7 +38,7 @@ const DifficultySelector = () => {
         const selected = difficulty === value
         const status = statuses?.[value]
         const mark = status === "Won" ? " ✓" : status === "Lost" ? " —" : status === "In progress" ? " ·" : ""
-        return <Pressable key={value} onPress={() => start(value)} disabled={disabled}
+        return <Pressable key={value} onPress={event => start(value, event)} disabled={disabled}
           accessibilityRole="button" accessibilityState={{ selected, disabled }}
           aria-pressed={selected}
           accessibilityLabel={`Play ${option.label}. ${status ?? "Progress not loaded"}.`}

@@ -6,10 +6,10 @@ This is the current handoff; older audits preserve evidence from their dates.
 
 ## Shipped state
 
-- PRs 18–50 are merged. PR50 head `fe96869261cd8c21f0f67605c6378263d9c695a5`
-  passed all nine checks. All 47 live files matched its export at 08:29:06 UTC;
-  a live keyboard navigation/reduced-motion check passed at 08:29:09 UTC
-  using the existing guest, with no moves submitted or page errors.
+- PRs 18–51 are merged. PR51 head `10ae19c32fe122d2717b1155c753b61b5decc3d6`
+  passed all nine checks. All 47 live files matched its export at 08:46:49 UTC;
+  a live keyboard copy-field check passed using the existing guest's completed
+  result, with no moves submitted, external shares sent, or page errors.
 - Recent web improvements include next-challenge navigation, startup recovery,
   gameplay while fonts load, completed-search announcements, live reduced-motion
   preferences and keyboard continuity after guessing. Disabled Sentry runtime
@@ -70,13 +70,28 @@ This is the current handoff; older audits preserve evidence from their dates.
   `.expo/daily-load-recovery-verified.log`; 33 focused component tests and
   TypeScript checks passed.
 - Share fallback review found that blocked browser sharing/clipboard left plain
-  text with no keyboard-focusable copy field. The current candidate provides a
+  text with no keyboard-focusable copy field. Deployed PR51 provides a
   labeled read-only field, selects the complete result on focus, and displays
   all result lines. Six guest-flow browser checks passed across Chromium,
   Firefox and WebKit desktop/phone sizes, including no spoilers, keyboard
   selection, no internal scrolling, accidental edits, and share dismissal.
   Ten component tests and TypeScript checks passed. Local evidence:
-  `.expo/share-copy-final-browser.log` in the shared root. Not yet deployed.
+  `.expo/share-copy-final-browser.log` in the shared root. CI exposed a test
+  timing race: React Native Web defers selection one event-loop turn for Safari.
+  The assertion now waits for the selection; the corrected Chromium check and
+  all nine CI checks passed before deployment.
+- Result-transition review reproduced focus on the page body after closing a
+  reveal (`.expo/result-navigation-before.log`, Chromium desktop/phone).
+  The current candidate recovers abandoned focus at the result heading after
+  a reveal, and gives keyboard challenge navigation a stable daily-game target
+  while controls disappear or become disabled during loading. Pointer activation
+  and subsequent focus changes do not request an asynchronous focus jump.
+  The first broader run verified automatic reveals in all six browser variants
+  and exposed difficulty-button focus loss, now included in this same batch.
+  All six final Chromium/Firefox/WebKit desktop/phone navigation cases passed
+  in `.expo/result-navigation-final.log`, covering pointer use and moving
+  focus during delayed loading. Forty focused component tests and TypeScript
+  checks passed. This candidate is not yet deployed.
 - The explicitly approved anonymous test guest was deleted. Server reads
   confirmed its Auth account and owned game/history/statistics data absent;
   completion survives reload without creating another guest.

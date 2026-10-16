@@ -1,5 +1,5 @@
-import React from "react"
-import { View, ViewStyle } from "react-native"
+import React, { useEffect, useRef } from "react"
+import { Platform, View, ViewStyle } from "react-native"
 import CluesContainer from "./clues"
 import GameplayView from "./gameplayView"
 import GameOverView from "./gameOverView"
@@ -16,12 +16,25 @@ const GameplayContainer: React.FC = () => {
     (state) => state.completeRevealSequence
   )
   const styles = useStyles(themedStyles)
+  const root = useRef<View>(null)
+  const previousStatus = useRef(gameStatus)
+  useEffect(() => {
+    const finishedReveal = previousStatus.current === "revealing" && gameStatus === "gameOver"
+    previousStatus.current = gameStatus
+    // The modal cannot restore focus to the search controls it replaced.
+    // Only recover abandoned focus; revisiting a result or moving elsewhere
+    // must not take the player's keyboard position away.
+    if (Platform.OS === "web" && finishedReveal && document.activeElement === document.body) {
+      const node = root.current as unknown as HTMLElement | null
+      node?.querySelector<HTMLElement>('[data-testid="result-heading"]')?.focus()
+    }
+  }, [gameStatus])
 
   // Prepare the result and its artwork underneath the modal for its final dissolve.
   const showGameOverView = gameStatus === "gameOver" || gameStatus === "revealing"
 
   return (
-    <View style={styles.container}>
+    <View ref={root} style={styles.container}>
       {showGameOverView ? (
         <GameOverView
           playerGame={playerGame}

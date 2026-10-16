@@ -1,4 +1,5 @@
 import React from "react"
+import { Platform } from "react-native"
 import { useAuth } from "../contexts/authContext"
 import { useGameStore } from "../state/gameStore"
 import { DIFFICULTY_MODES, DifficultyLevel } from "../config/difficulty"
@@ -21,8 +22,15 @@ export default function NextChallenge() {
     || deadline === null || performance.now() >= deadline) return null
   const disabled = loading || syncStatus !== "idle"
   return <Button title={`${statuses[next] === "In progress" ? "Continue" : "Next challenge:"} ${DIFFICULTY_MODES[next].label}`}
-    disabled={disabled} onPress={() => {
+    disabled={disabled} onPress={event => {
       // A tab can remain open across the daily reset between render and click.
-      if (!disabled && performance.now() < deadline) setDifficulty(next)
+      if (!disabled && performance.now() < deadline) {
+        if (Platform.OS === "web" && (event.nativeEvent as unknown as MouseEvent)?.detail === 0) {
+          // This button disappears during loading; the daily-game region stays.
+          const button = event.currentTarget as unknown as HTMLElement
+          button.closest<HTMLElement>('[data-daily-game]')?.focus()
+        }
+        setDifficulty(next)
+      }
     }} />
 }
