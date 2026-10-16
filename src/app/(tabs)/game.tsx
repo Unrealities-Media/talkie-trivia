@@ -28,14 +28,14 @@ const GameLayout = ({ children, showDifficulty }: { children: React.ReactNode; s
   const insets = useSafeAreaInsets()
   const scroll = useRef<ScrollView>(null)
   const gameStatus = useGameStore(state => state.gameStatus)
+  const gameId = useGameStore(state => state.playerGame?.id)
   useEffect(() => {
-    if (gameStatus !== "gameOver" && gameStatus !== "revealing") return
     Keyboard.dismiss()
-    // The result replaces a potentially long, scrolled list of guess tickets.
-    // Begin the premiere at its masthead rather than retaining the search offset.
+    // New challenges and results start at their clue/masthead, even when the
+    // previous movie's synopsis or guess history was scrolled far down.
     const frame = requestAnimationFrame(() => scroll.current?.scrollTo({ y: 0, animated: false }))
     return () => cancelAnimationFrame(frame)
-  }, [gameStatus])
+  }, [gameId, gameStatus])
   const pendingFrame = useRef<number | null>(null)
   const revealSearch = useCallback(() => {
     if (Platform.OS !== "android" || !Keyboard.isVisible() || pendingFrame.current !== null) return
@@ -86,7 +86,7 @@ const GameLayout = ({ children, showDifficulty }: { children: React.ReactNode; s
       <View style={styles.headerContainer}>
         <PremiereMasthead reward={gameStatus === "gameOver" || gameStatus === "revealing"} />
       </View>
-      {showDifficulty && gameStatus !== "gameOver" && gameStatus !== "revealing" && <View style={[styles.headerContainer, { paddingHorizontal: 20 }]}><DifficultySelector /></View>}
+      {showDifficulty && <View style={[styles.headerContainer, { paddingHorizontal: 20, paddingBottom: 12 }]}><DifficultySelector /></View>}
       {children}
     </ScrollView>
     </KeyboardAvoidingView>

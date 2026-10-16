@@ -6,10 +6,6 @@ import { defaultPlayerGame } from "../../src/models/default"
 const render = (ui: React.ReactElement) => renderComponent(<ThemeProvider>{ui}</ThemeProvider>)
 
 jest.mock("../../src/utils/hooks/useExternalLink", () => ({ useExternalLink: () => ({ openLink: jest.fn() }) }))
-jest.mock("../../src/components/difficultySelector", () => () => {
-  const { Text } = require("react-native")
-  return <Text>Daily challenge choices</Text>
-})
 jest.mock("../../src/components/countdownTimer", () => () => null)
 jest.mock("../../src/components/gameOver/shareResultButton", () => () => null)
 jest.mock("../../src/components/guesses", () => {
@@ -26,7 +22,7 @@ const game = {
 describe("Movie celebration", () => {
   it("shows the saved score, outcome and available movie details once", () => {
     render(<GameOverView playerGame={game} lastGuessResult={null} />)
-    for (const text of ["The Matrix", "That's a wrap!", "Solved in 2 guesses · Medium", "423", "POINTS EARNED", "The Wachowskis", "Keanu Reeves", "A complete movie clue.", "Another movie?"]) {
+    for (const text of ["The Matrix", "That's a wrap!", "Solved in 2 guesses · Medium", "423", "POINTS EARNED", "The Wachowskis", "Keanu Reeves", "A complete movie clue."]) {
       expect(screen.getByText(text)).toBeTruthy()
     }
     expect(screen.queryByText("Guess history content")).toBeNull()
@@ -49,13 +45,12 @@ describe("Movie celebration", () => {
     expect(screen.getByText("Score unavailable")).toBeTruthy()
     expect(screen.queryByText("423")).toBeNull()
   })
-  it("opens difficulty choices only on request and resets them for another result", () => {
+  it("resets expanded guess history for another result", () => {
     const view = render(<GameOverView playerGame={game} lastGuessResult={null} />)
-    expect(screen.queryByText("Daily challenge choices")).toBeNull()
-    fireEvent.press(screen.getByRole("button", { name: "Choose another difficulty →" }))
-    expect(screen.getByText("Daily challenge choices")).toBeTruthy()
+    fireEvent.press(screen.getByRole("button", { name: /View your guesses/ }))
+    expect(screen.getByText("Guess history content")).toBeTruthy()
     view.rerender(<ThemeProvider><GameOverView playerGame={{ ...game, id: "other-result" }} lastGuessResult={null} /></ThemeProvider>)
-    expect(screen.queryByText("Daily challenge choices")).toBeNull()
+    expect(screen.queryByText("Guess history content")).toBeNull()
   })
   it("shows the full saved synopsis instead of the difficulty clue", () => {
     render(<GameOverView playerGame={{ ...game, triviaItem: { ...game.triviaItem, metadata: { fullSummary: "The complete published synopsis." } } }} lastGuessResult={null} />)

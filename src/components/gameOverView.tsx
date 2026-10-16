@@ -11,7 +11,6 @@ import { releaseYear } from "../utils/dateDisplay"
 import { imdbPersonUrl, imdbTitleUrl } from "../utils/imdbLinks"
 import { movieReward } from "../services/movieRewardService"
 import { useExternalLink } from "../utils/hooks/useExternalLink"
-import DifficultySelector from "./difficultySelector"
 import CountdownTimer from "./countdownTimer"
 import GuessesContainer from "./guesses"
 import ShareResultButton from "./gameOver/shareResultButton"
@@ -33,7 +32,6 @@ function MovieRewardScreen({ playerGame: game, lastGuessResult }: GameOverViewPr
   const { width, fontScale } = useWindowDimensions()
   const narrow = width <= 390
   const [showGuesses, setShowGuesses] = useState(false)
-  const [showDifficulties, setShowDifficulties] = useState(false)
   const [failedImages, setFailedImages] = useState<string[]>([])
   const { openLink } = useExternalLink()
   const movie = game.triviaItem
@@ -118,18 +116,12 @@ function MovieRewardScreen({ playerGame: game, lastGuessResult }: GameOverViewPr
     </View>
     <View style={s.actions}><ShareResultButton playerGame={game} /></View>
     {game.guesses.length > 0 && <View style={s.history}>
-      <Pressable accessibilityRole="button" accessibilityState={{ expanded: showGuesses }} onPress={() => setShowGuesses(value => !value)} style={s.historyToggle}>
+      <Pressable accessibilityRole="button" accessibilityState={{ expanded: showGuesses }} aria-expanded={showGuesses} onPress={() => setShowGuesses(value => !value)} style={s.historyToggle}>
         <Text style={s.link}>{showGuesses ? "Hide" : "View"} your guesses ({game.guesses.length}) {showGuesses ? "−" : "+"}</Text>
       </Pressable>
       {showGuesses && <GuessesContainer lastGuessResult={lastGuessResult} />}
     </View>}
     <View style={s.next}>
-      <Text accessibilityRole="header" style={s.nextTitle}>Another movie?</Text>
-      <Text style={s.nextMessage}>Each difficulty has a different movie today.</Text>
-      <Pressable accessibilityRole="button" accessibilityState={{ expanded: showDifficulties }} onPress={() => setShowDifficulties(value => !value)} style={s.difficultyToggle}>
-        <Text style={s.link}>{showDifficulties ? "Hide difficulties" : "Choose another difficulty →"}</Text>
-      </Pressable>
-      {showDifficulties && <DifficultySelector />}
       <CountdownTimer compact />
     </View>
   </Animated.View>
@@ -183,7 +175,4 @@ const themedStyles = (theme: Theme) => StyleSheet.create({
   history: { borderTopWidth: 1, borderColor: `${theme.colors.border}77`, marginHorizontal: 25, marginBottom: 20 },
   historyToggle: { minHeight: 44, justifyContent: "center" },
   next: { alignItems: "center", borderTopWidth: 1, borderColor: `${theme.colors.border}77`, paddingTop: 20, paddingBottom: 23, paddingHorizontal: 22 },
-  nextTitle: { fontFamily: "PremiereDisplay", fontSize: 26, lineHeight: 32, color: theme.colors.textPrimary, marginBottom: 8 },
-  nextMessage: { fontFamily: "PremiereSans", fontSize: 12, lineHeight: 19, color: theme.colors.textSecondary, textAlign: "center" },
-  difficultyToggle: { minHeight: 44, justifyContent: "center", marginTop: 3 },
 })
