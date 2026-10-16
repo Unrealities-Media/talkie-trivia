@@ -1,4 +1,4 @@
-# Beta clue wording — 40 movies, 200 clues
+# Beta clue wording — 60 movies, 300 clues
 
 Source drafts are retained in beta-movies.json. The separately reviewed beta publication copy is beta-reviewed-movies.json; see beta-content-review.md for scope and findings. Very Easy preserves the stored TMDB synopsis exactly.
 
@@ -1104,3 +1104,224 @@ Someone caught between incompatible rules must create a life inside what was mea
 
 An unresolved status turns waiting into a way of life.
 
+## October 24–25 refill — ten additional beta sets
+
+### Mrs. Doubtfire (TMDB 788)
+
+**Very Easy (LEVEL_1)**
+
+Loving but irresponsible dad Daniel Hillard, estranged from his exasperated spouse, is crushed by a court order allowing only weekly visits with his kids. When Daniel learns his ex needs a housekeeper, he gets the job -- disguised as a British nanny. Soon he becomes not only his children's best pal but the kind of parent he should have been from the start.
+
+**Easy (LEVEL_2)**
+
+An irresponsible father is limited to weekly visits after separating from his wife. When she needs household help, he disguises himself as a British nanny and takes the job to remain close to his children.
+
+**Medium (LEVEL_3)**
+
+A parent with limited access to their children adopts a disguise to work in the other parent's household. The deception provides time together and an opportunity to become more dependable.
+
+**Hard (LEVEL_4)**
+
+Someone whose behavior has led to separation finds a way back into family life under a false identity. Maintaining the deception also requires practicing responsibilities previously neglected.
+
+**Very Hard (LEVEL_5)**
+
+A false identity offers a second chance to fulfill a neglected responsibility.
+
+### Roman Holiday (TMDB 804)
+
+**Very Easy (LEVEL_1)**
+
+Overwhelmed by her suffocating schedule, touring European princess Ann takes off for a night while in Rome. When a sedative she took from her doctor kicks in, however, she falls asleep on a park bench and is found by an American reporter, Joe Bradley, who takes her back to his apartment for safety. At work the next morning, Joe finds out Ann's regal identity and bets his editor he can get exclusive interview with her, but romance soon gets in the way.
+
+**Easy (LEVEL_2)**
+
+A touring princess escapes her demanding schedule in Rome and falls asleep after taking a sedative. An American reporter helps her, then plans an exclusive story after discovering her identity, but romance complicates his scheme.
+
+**Medium (LEVEL_3)**
+
+A public figure escapes a restrictive schedule and receives help from a reporter who initially does not recognize them. Learning their identity creates a professional opportunity that developing affection complicates.
+
+**Hard (LEVEL_4)**
+
+Someone seeking a brief escape from public obligations encounters a person who later sees a way to profit from the meeting. Growing affection puts that opportunity in conflict with the freedom that made it possible.
+
+**Very Hard (LEVEL_5)**
+
+An escape from obligation offers someone else an opportunity that affection complicates.
+
+### Cool Runnings (TMDB 864)
+
+**Very Easy (LEVEL_1)**
+
+When a Jamaican sprinter is disqualified from the Olympic Games, he enlists the help of a dishonored coach to start the first Jamaican bobsled team.
+
+**Easy (LEVEL_2)**
+
+After being disqualified from the Olympics, a Jamaican sprinter turns to a disgraced coach to form the country's first bobsled team.
+
+**Medium (LEVEL_3)**
+
+An athlete barred from an international competition seeks a different route back, recruiting a disgraced coach to help create a team in a sport new to their country.
+
+**Hard (LEVEL_4)**
+
+After losing a route to a major ambition, a competitor pursues an unfamiliar alternative. Progress depends on help from someone whose own standing has been damaged and on building a team without a local precedent.
+
+**Very Hard (LEVEL_5)**
+
+A blocked ambition leads to an unfamiliar route and an ally seeking renewed standing.
+
+### A League of Their Own (TMDB 11287)
+
+**Very Easy (LEVEL_1)**
+
+As America's stock of athletic young men is depleted during World War II, a professional all-female baseball league springs up in the Midwest, funded by publicity-hungry candy maker Walter Harvey. Competitive sisters Dottie Hinson and Kit Keller spar with each other, scout Ernie Capadino and grumpy has-been coach Jimmy Dugan on their way to fame.
+
+**Easy (LEVEL_2)**
+
+During wartime, a promoter establishes professional women's baseball as male players leave for military service. Two competitive sisters contend with each other and a difficult former star serving as their coach.
+
+**Medium (LEVEL_3)**
+
+Wartime shortages create an opening for athletes previously excluded from professional baseball. Two competitive siblings pursue the opportunity while dealing with rivalry and a difficult coach.
+
+**Hard (LEVEL_4)**
+
+A disruption creates a professional opportunity for people previously left out. Two siblings pursue success within the same venture, while their rivalry and a difficult mentor complicate the chance to prove themselves.
+
+**Very Hard (LEVEL_5)**
+
+A new opportunity to prove oneself intensifies a rivalry within a family.
+
+### Hugo (TMDB 44826)
+
+**Very Easy (LEVEL_1)**
+
+Orphaned and alone except for an uncle, Hugo Cabret lives in the walls of a train station in 1930s Paris. Hugo's job is to oil and maintain the station's clocks, but to him, his more important task is to protect a broken automaton and notebook left to him by his late father. Accompanied by the goddaughter of an embittered toy merchant, Hugo embarks on a quest to solve the mystery of the automaton and find a place he can call home.
+
+**Easy (LEVEL_2)**
+
+An orphan secretly maintains clocks inside a Paris train station while protecting a broken mechanical figure and notebook left by his father. With a toy merchant's goddaughter, he tries to solve the machine's mystery and find a home.
+
+**Medium (LEVEL_3)**
+
+An orphan living out of sight at a busy station protects a damaged mechanical inheritance. A new companion helps investigate its mystery while the child searches for a place to belong.
+
+**Hard (LEVEL_4)**
+
+A child living without a secure home protects unfinished work left by a lost parent. With a new companion, an effort to understand that inheritance becomes part of a search for belonging.
+
+**Very Hard (LEVEL_5)**
+
+Understanding an unfinished inheritance becomes part of finding a place to belong.
+
+### The Grand Budapest Hotel (TMDB 120467)
+
+**Very Easy (LEVEL_1)**
+
+The Grand Budapest Hotel tells of a legendary concierge at a famous European hotel between the wars and his friendship with a young employee who becomes his trusted protégé. The story involves the theft and recovery of a priceless Renaissance painting, the battle for an enormous family fortune and the slow and then sudden upheavals that transformed Europe during the first half of the 20th century.
+
+**Easy (LEVEL_2)**
+
+A celebrated concierge and a young employee form a close friendship at a European hotel between the world wars. They become involved in a stolen Renaissance painting and a struggle over a large family fortune as their world changes.
+
+**Medium (LEVEL_3)**
+
+An experienced hospitality worker takes a younger colleague under their wing. Their friendship becomes entangled with stolen art and a disputed inheritance during a period of upheaval.
+
+**Hard (LEVEL_4)**
+
+An established professional and a young protégé build a friendship amid competing claims to valuable possessions. Their connection develops as the larger world supporting their way of life undergoes upheaval.
+
+**Very Hard (LEVEL_5)**
+
+A mentorship becomes entangled in disputed possessions as a familiar world changes.
+
+### Chef (TMDB 212778)
+
+**Very Easy (LEVEL_1)**
+
+When Chef Carl Casper suddenly quits his job at a prominent Los Angeles restaurant after refusing to compromise his creative integrity for its controlling owner, he is left to figure out what's next. Finding himself in Miami, he teams up with his ex-wife, his friend and his son to launch a food truck. Taking to the road, Chef Carl goes back to his roots to reignite his passion for the kitchen -- and zest for life and love.
+
+**Easy (LEVEL_2)**
+
+A restaurant cook quits rather than surrender creative control to an overbearing owner. With his former wife, a friend and his son, he starts a food truck and takes to the road to rediscover his enthusiasm for cooking and family life.
+
+**Medium (LEVEL_3)**
+
+A skilled cook leaves a job after a conflict over creative freedom. Help from family and a friend makes a mobile business possible, offering a way to reconnect with both the work and loved ones.
+
+**Hard (LEVEL_4)**
+
+A professional gives up a prominent position rather than accept limits on their work. Starting again on a smaller, independent scale draws in family and a friend, making renewal personal as well as professional.
+
+**Very Hard (LEVEL_5)**
+
+Leaving a restrictive success creates a smaller venture and a chance to reconnect.
+
+### The Intern (TMDB 257211)
+
+**Very Easy (LEVEL_1)**
+
+70-year-old widower Ben Whittaker has discovered that retirement isn't all it's cracked up to be. Seizing an opportunity to get back in the game, he becomes a senior intern at an online fashion site, founded and run by Jules Ostin.
+
+**Easy (LEVEL_2)**
+
+A seventy-year-old widower finds retirement unsatisfying and takes a junior placement at an online fashion business run by a younger woman.
+
+**Medium (LEVEL_3)**
+
+An older person dissatisfied with retirement returns to working life through a junior placement at a recently established online business.
+
+**Hard (LEVEL_4)**
+
+Someone who has reached an expected endpoint finds that stepping away is unfulfilling. Seeking renewed purpose means accepting a beginner's position in an unfamiliar workplace.
+
+**Very Hard (LEVEL_5)**
+
+Moving beyond an unfulfilling endpoint requires accepting a beginner's place.
+
+### Hidden Figures (TMDB 381284)
+
+**Very Easy (LEVEL_1)**
+
+The untold story of Katherine G. Johnson, Dorothy Vaughan and Mary Jackson – brilliant African-American women working at NASA and serving as the brains behind one of the greatest operations in history – the launch of astronaut John Glenn into orbit. The visionary trio crossed all gender and race lines to inspire generations to dream big.
+
+**Easy (LEVEL_2)**
+
+Three African-American women working at a space agency provide essential mathematical and technical work for an astronaut's orbital flight, overcoming barriers of race and gender.
+
+**Medium (LEVEL_3)**
+
+Three skilled colleagues help make a major space mission possible while confronting institutional barriers that obstruct recognition of their abilities and contributions.
+
+**Hard (LEVEL_4)**
+
+Three colleagues contribute indispensable expertise to an ambitious shared undertaking while working within an institution that places obstacles in their path. Their achievement challenges assumptions about who belongs there.
+
+**Very Hard (LEVEL_5)**
+
+People kept at the margins provide expertise essential to a shared achievement.
+
+### Klaus (TMDB 508965)
+
+**Very Easy (LEVEL_1)**
+
+When Jesper distinguishes himself as the Postal Academy's worst student, he is sent to Smeerensburg, a small village located on an icy island above the Arctic Circle, where grumpy inhabitants barely exchange words, let alone letters. Jesper is about to give up and abandon his duty as a postman when he meets local teacher Alva and Klaus, a mysterious carpenter who lives alone in a cabin full of handmade toys.
+
+**Easy (LEVEL_2)**
+
+A failing postal student is assigned to an icy island village whose hostile inhabitants barely speak or write to each other. Near giving up, he meets a teacher and a solitary carpenter with a cabin full of handmade toys.
+
+**Medium (LEVEL_3)**
+
+An unsuccessful trainee receives an assignment in an isolated community whose residents rarely communicate. Just as the task seems hopeless, encounters with a teacher and a reclusive maker offer new possibilities.
+
+**Hard (LEVEL_4)**
+
+A poorly performing newcomer is assigned a task that depends on cooperation in a community unwilling to communicate. At the point of giving up, unexpected acquaintances suggest the situation may not be hopeless.
+
+**Very Hard (LEVEL_5)**
+
+An unwanted assignment depends on cooperation from people who refuse to communicate.

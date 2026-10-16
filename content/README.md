@@ -56,7 +56,7 @@ personal contact details out of reviewer handles.
 All five variants must be present, each 20–2500 characters. Title/alias checks
 apply to levels 2–5 and taglines; the verbatim original is exempt. Review all five
 as one set. See [difficulty behavior](../docs/clue-difficulty.md) and the
-[40 beta sets](beta-clue-drafts.md). `beta-movies.json` is draft input, not an
+[60 beta sets](beta-clue-drafts.md). `beta-movies.json` is draft input, not an
 approved publication pool.
 
 Use a reviewed PR for content changes. Keep enough unused approved movies to fill
