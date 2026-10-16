@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useState } from "react"
-import { View, Text, ScrollView, Pressable } from "react-native"
+import { View, Text, ScrollView, Pressable, Platform } from "react-native"
 import { router } from "expo-router"
 import { useAuth } from "../../../contexts/authContext"
 import { useTheme } from "../../../contexts/themeContext"
@@ -94,6 +94,11 @@ export default function ProfileScreen() {
         <View style={{ gap: 10, marginTop: 16 }}>
           {(Object.keys(DIFFICULTY_MODES) as DifficultyLevel[]).map(level => <Button key={level}
             title={`${DIFFICULTY_MODES[level].label} · ${ready ? statuses[level] ?? "Not started" : "Reload progress"}`}
+            onFocus={event => {
+              if (Platform.OS === "web") {
+                (event.currentTarget as unknown as HTMLElement).scrollIntoView({ block: "nearest", inline: "nearest" })
+              }
+            }}
             disabled={blocked} onPress={() => openGame(level)} />)}
         </View>
       </ScrollView>
