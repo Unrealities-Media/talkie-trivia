@@ -95,7 +95,8 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   await page.getByRole('button', { name: 'Share Your Result', exact: true }).focus()
   await page.keyboard.press('Tab')
   await expect(shareText).toBeFocused()
-  expect(await shareText.evaluate(node => node.value.slice(node.selectionStart, node.selectionEnd))).toBe(resultToCopy)
+  // React Native Web defers selection one event-loop turn for Safari.
+  await expect.poll(() => shareText.evaluate(node => node.value.slice(node.selectionStart, node.selectionEnd))).toBe(resultToCopy)
   await page.keyboard.type('accidental edit')
   await expect(shareText).toHaveValue(resultToCopy)
   for (const dismissed of [false, true]) {
