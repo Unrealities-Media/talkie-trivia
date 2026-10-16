@@ -54,6 +54,18 @@ describe("GameHistory Component", () => {
 
   afterEach(cleanup);
 
+  it("shows only three recent movies and keeps their result actions", async () => {
+    const entries = Array.from({ length: 4 }, (_, i) => ({ ...mockHistoryData[0], itemId: i, itemTitle: `Movie ${i}` }));
+    mockGameService.fetchGameHistory.mockResolvedValue({ entries, next: null });
+    renderWithTheme(<GameHistory compact onHistoryItemPress={onHistoryItemPressMock} />);
+    await screen.findByText("Movie 0");
+    expect(screen.getByText("Movie 2")).toBeTruthy();
+    expect(screen.queryByText("Movie 3")).toBeNull();
+    expect(screen.queryByText("Refresh history")).toBeNull();
+    fireEvent.press(screen.getByLabelText("View Movie 1 result"));
+    expect(onHistoryItemPressMock).toHaveBeenCalledWith(entries[1]);
+  });
+
   it("navigates older/newer pages without accumulating rows and refreshes from the newest page", async () => {
     const cursor = { uid: "test-player-id", dateId: "2025-11-15", id: "2025-11-15" };
     const older = { ...mockHistoryData[0], dateId: "2025-11-14", itemTitle: "Older movie" };

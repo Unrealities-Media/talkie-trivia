@@ -38,9 +38,10 @@ const GameHistorySkeletonItem = memo(() => {
 interface GameHistoryItemProps {
   item: GameHistoryEntry
   onPress: (item: GameHistoryEntry) => void
+  compact?: boolean
 }
 
-const GameHistoryItem = memo(({ item, onPress }: GameHistoryItemProps) => {
+const GameHistoryItem = memo(({ item, onPress, compact }: GameHistoryItemProps) => {
   const styles = useStyles(themedStyles)
   const posterUri = `${API_CONFIG.TMDB_IMAGE_BASE_URL_W185}${item.posterPath}`
   const difficultyLabel = DIFFICULTY_MODES[item.difficulty]?.label || "Unknown"
@@ -75,26 +76,31 @@ const GameHistoryItem = memo(({ item, onPress }: GameHistoryItemProps) => {
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`View ${item.itemTitle} result`}
       testID={`history-item-${item.itemTitle}`}
       onPress={handlePress}
       style={({ pressed }) => [
         styles.itemContainer,
+        compact && styles.compactItem,
         pressed && styles.itemPressed,
       ]}
     >
-      <Image source={{ uri: posterUri }} style={styles.posterImage} />
+      <Image source={item.posterPath ? { uri: posterUri } : require("../../assets/movie_default.png")} style={[styles.posterImage, compact && { width: 44, height: 65 }]} />
       <View style={styles.infoContainer}>
-        <Typography style={styles.itemTitle} numberOfLines={2}>
+        <Typography style={[styles.itemTitle, compact && { fontSize: 14 }]} numberOfLines={2}>
           {item.itemTitle}
         </Typography>
-        <Typography style={styles.dateText}>{formattedDate}</Typography>
-        <Typography style={styles.difficultyText}>
-          Difficulty: {difficultyLabel}
-        </Typography>
-        {getResultText()}
+        {!compact && <Typography style={styles.dateText}>{formattedDate}</Typography>}
+        {compact ? <Typography style={styles.compactResult}>
+          {difficultyLabel} · {item.wasCorrect ? `Solved in ${item.guessCount} ${item.guessCount === 1 ? "guess" : "guesses"}` : item.gaveUp ? "Gave up" : "Not solved"}
+        </Typography> : <>
+          <Typography style={styles.difficultyText}>Difficulty: {difficultyLabel}</Typography>
+          {getResultText()}
+        </>}
       </View>
       <View style={styles.scoreContainer}>
-        <Typography style={styles.scoreText}>{item.score}</Typography>
+        <Typography style={[styles.scoreText, compact && { fontSize: 15 }]}>{item.score}</Typography>
         <Typography style={styles.scoreLabel}>PTS</Typography>
       </View>
     </Pressable>
@@ -103,9 +109,10 @@ const GameHistoryItem = memo(({ item, onPress }: GameHistoryItemProps) => {
 
 interface GameHistoryProps {
   onHistoryItemPress: (item: GameHistoryEntry) => void
+  compact?: boolean
 }
 
-const HistoryForAccount = ({ uid, onHistoryItemPress }: GameHistoryProps & { uid: string | null }) => {
+const HistoryForAccount = ({ uid, onHistoryItemPress, compact = false }: GameHistoryProps & { uid: string | null }) => {
   const styles = useStyles(themedStyles)
   const [history, setHistory] = useState<GameHistoryEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -150,7 +157,7 @@ const HistoryForAccount = ({ uid, onHistoryItemPress }: GameHistoryProps & { uid
 
   return (
     <View style={styles.container}>
-      {uid && <View style={styles.pageControls}>
+      {uid && !compact && <View style={styles.pageControls}>
         <Typography accessibilityLiveRegion="polite">History page {page + 1} · Newest games first</Typography>
         <Button title="Refresh history" variant="secondary" disabled={loading} onPress={() => {
           setPage(0); setCursors([null]); setAttempt(value => value + 1)
@@ -161,13 +168,16 @@ const HistoryForAccount = ({ uid, onHistoryItemPress }: GameHistoryProps & { uid
         }} />}
       </View>}
       {loading ? <View>
-        {Array(5)
+        {Array(compact ? 3 : 5)
           .fill(0)
           .map((_, index) => (
             <GameHistorySkeletonItem key={`skeleton-${index}`} />
           ))}
       </View> : error ? <View style={styles.emptyContainer}>
         <ErrorMessage message={error} onRetry={() => setAttempt(value => value + 1)} />
+      </View> : compact ? <View>
+        {history.slice(0, 3).map(item => <GameHistoryItem key={item.challengeId ?? `${item.dateId}-${item.difficulty}-${item.itemId}`} item={item} onPress={onHistoryItemPress} compact />)}
+        {history.length === 0 && <Typography style={styles.emptyText}>Your collection starts with your first completed challenge.</Typography>}
       </View> :
       <FlashList
         data={history}
@@ -195,6 +205,11 @@ const GameHistory = (props: GameHistoryProps) => {
 }
 
 const themedStyles = (theme: Theme): any => ({
+  compactItem: {
+    backgroundColor: "transparent", borderWidth: 0, borderBottomWidth: 1,
+    borderRadius: 0, paddingHorizontal: 0, paddingVertical: 8, marginBottom: 0,
+  },
+  compactResult: { fontFamily: "PremiereSans", fontSize: 12, lineHeight: 18, color: theme.colors.textSecondary },
   container: {
     flex: 1,
     width: "100%",
