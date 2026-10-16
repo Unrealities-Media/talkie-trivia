@@ -74,7 +74,7 @@ export const startGame = onCall(options, async request => {
       revision: 0, actions: [], startDate: now.toISOString(), endDate: now.toISOString(),
       statsProcessed: false, score: 0, scoringVersion: 1,
       triviaItem: { id: answer.i, title: answer.t, description, posterPath: answer.p,
-        releaseDate: answer.y, metadata: { imdb_id: content.imdbId || null, tagline: content.tagline || null }, hints: hints(answer) },
+        releaseDate: answer.y, metadata: { imdb_id: content.imdbId || null, tagline: content.tagline || null, fullSummary: content.description }, hints: hints(answer) },
     }
     tx.create(paths.game, game)
     if (!statsDoc.exists) tx.create(paths.stats, stats)

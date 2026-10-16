@@ -84,7 +84,7 @@ const GameLayout = ({ children, showDifficulty }: { children: React.ReactNode; s
       automaticallyAdjustKeyboardInsets
     >
       <View style={styles.headerContainer}>
-        <PremiereMasthead />
+        <PremiereMasthead reward={gameStatus === "gameOver" || gameStatus === "revealing"} />
       </View>
       {showDifficulty && gameStatus !== "gameOver" && gameStatus !== "revealing" && <View style={[styles.headerContainer, { paddingHorizontal: 20 }]}><DifficultySelector /></View>}
       {children}

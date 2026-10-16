@@ -1,4 +1,5 @@
 export const API_CONFIG = {
+  TMDB_IMAGE_BASE_URL_W780: "https://image.tmdb.org/t/p/w780",
   TMDB_IMAGE_BASE_URL_W92: "https://image.tmdb.org/t/p/w92",
   TMDB_IMAGE_BASE_URL_W185: "https://image.tmdb.org/t/p/w185",
   TMDB_IMAGE_BASE_URL_W500: "https://image.tmdb.org/t/p/w500",
