@@ -101,9 +101,22 @@ export const PickerUI: React.FC<PickerUIProps> = memo(
     const calculatedHeight = measuredContent?.items === results
       ? measuredContent.height : results.length * ITEM_HEIGHT * Math.max(1, fontScale)
     const containerHeight = Math.min(calculatedHeight, MAX_CONTAINER_HEIGHT)
+    const searchStatus = showResults && !isSearching && query.trim()
+      ? results.length > 0
+        ? `${results.length} ${results.length === 1 ? "title" : "titles"} found for "${query}".`
+        : `No titles found for "${query}". Try another spelling or omit the year.`
+      : ""
 
     return (
       <View style={styles.container}>
+        {Platform.OS === "web" && (
+          // Keep the live region mounted before results arrive. Announce only
+          // completed searches without moving focus or reading every movie row.
+          <div role="status" aria-live="polite" aria-atomic="true" data-testid="search-status"
+            style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" }}>
+            {searchStatus}
+          </div>
+        )}
         <Animated.View style={animatedInputStyle}>
           <LinearGradient colors={["#63706A", "#1B3034", "#0A181C", "#48524A"]} locations={[0, 0.12, 0.8, 1]} style={styles.canister}>
           <LinearGradient colors={["#F5E6C8", "#DCC69E"]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.inputContainer}>
@@ -174,7 +187,7 @@ export const PickerUI: React.FC<PickerUIProps> = memo(
                 </View>
               </>
             ) : query.trim().length > 0 ? (
-              <Text style={styles.noResultsText} accessibilityLiveRegion="polite">
+              <Text style={styles.noResultsText} accessibilityLiveRegion={Platform.OS === "web" ? undefined : "polite"}>
                 No titles found for "{query}". Try another spelling or omit the year.
               </Text>
             ) : null}
