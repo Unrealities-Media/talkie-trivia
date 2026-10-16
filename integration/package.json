@@ -9,7 +9,7 @@
     "test:dependencies": "node --test dependency-contracts.test.mjs",
     "test": "node run-emulators.mjs",
     "test:browser": "node run-browser.mjs",
-    "test:browser-safety": "node --test browser/network-policy.test.mjs browser/verify-build.test.mjs",
+    "test:browser-safety": "node --test browser/network-policy.test.mjs browser/verify-build.test.mjs browser/page-errors.test.mjs",
     "test:running": "node run-contracts.mjs"
   },
   "devDependencies": {
