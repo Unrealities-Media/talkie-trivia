@@ -54,3 +54,24 @@ test('explains JavaScript-disabled browsing without an endless loading message',
     await expect(page.getByText('Opening your daily movies…', { exact: true })).toBeHidden()
   } finally { await context.close() }
 })
+
+test('gameplay and navigation remain usable while custom font downloads are stalled', async ({ page }) => {
+  let release
+  const gate = new Promise(resolve => { release = resolve })
+  let fontRequests = 0
+  await page.route(/\.(ttf|otf|woff2?)(\?|$)/, async route => { fontRequests++; await gate; await route.continue() })
+  try {
+    await page.goto('/game', { waitUntil: 'domcontentloaded' })
+    // Do not accept the old fallback that appeared only after a font timeout.
+    await expect(page.getByRole('tab', { name: 'Play', exact: true })).toBeVisible({ timeout: 2000 })
+    await expect(page.getByRole('searchbox')).toBeVisible()
+    expect(fontRequests).toBeGreaterThan(0)
+    await page.getByRole('tab', { name: 'Profile', exact: true }).click()
+    await page.getByRole('button', { name: 'Settings', exact: true }).click()
+    await expect(page.getByText('Account settings', { exact: true })).toBeVisible()
+    await page.getByRole('tab', { name: 'Play', exact: true }).click()
+    await expect(page.getByRole('searchbox')).toBeVisible()
+  } finally { release() }
+  await page.evaluate(() => document.fonts.ready)
+  await expect(page.getByRole('searchbox')).toBeVisible()
+})
