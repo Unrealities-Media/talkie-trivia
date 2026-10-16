@@ -39,6 +39,7 @@ const DifficultySelector = () => {
         const mark = status === "Won" ? " ✓" : status === "Lost" ? " —" : status === "In progress" ? " ·" : ""
         return <Pressable key={value} onPress={() => start(value)} disabled={disabled}
           accessibilityRole="button" accessibilityState={{ selected, disabled }}
+          aria-pressed={selected}
           accessibilityLabel={`Play ${option.label}. ${status ?? "Progress not loaded"}.`}
           style={({ pressed }) => ({ flex: 1, minHeight: 44, paddingVertical: 8, paddingHorizontal: 2, justifyContent: "center", borderRadius: 6, backgroundColor: selected ? colors.primary : colors.surface, opacity: pressed || disabled ? 0.7 : 1 })}>
           <Typography style={{ fontSize: 12, lineHeight: 16, textAlign: "center", color: selected ? colors.onAccent : colors.textPrimary }}>{option.label}{mark}</Typography>

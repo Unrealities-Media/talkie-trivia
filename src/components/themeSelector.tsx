@@ -38,6 +38,7 @@ const ThemeSelector = () => {
               ]}
               accessibilityRole="button"
               accessibilityState={{ selected: theme === option.value }}
+              aria-pressed={theme === option.value}
               accessibilityLabel={`Set theme to ${option.label}`}
             >
               <Typography
