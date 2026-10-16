@@ -59,6 +59,12 @@ it("does not report dismissal as sharing", async () => {
   expect(analyticsService.trackShareResults).not.toHaveBeenCalled()
 })
 
+it("accepts the browser's successful share response without an action object", async () => {
+  ;(Share.share as jest.Mock).mockResolvedValueOnce(undefined)
+  await expect(shareGameResult(game())).resolves.toBeUndefined()
+  expect(analyticsService.trackShareResults).not.toHaveBeenCalled()
+})
+
 it("handles cancellation errors and permits a later retry", async () => {
   ;(Share.share as jest.Mock).mockRejectedValueOnce({ name: "AbortError" })
   await expect(shareGameResult(game())).resolves.toBeUndefined()

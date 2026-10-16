@@ -38,20 +38,47 @@ describe("GameOver Component: ShareResultButton", () => {
     expect(screen.getByText("Share Your Result")).toBeTruthy()
   })
 
-  it.each([false, true])("offers usable web sharing when clipboard denial is %s", async denied => {
+  it.each([
+    [false, false], [false, true], [true, false], [true, true],
+  ])("offers usable web sharing when the share sheet fails: %s, clipboard denied: %s", async (failedSheet, denied) => {
     const platform = Platform.OS
     const navigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, "navigator")
     const writeText = denied ? jest.fn().mockRejectedValue(new Error("Denied")) : jest.fn().mockResolvedValue(undefined)
     try {
       Platform.OS = "web"
-      Object.defineProperty(globalThis, "navigator", { configurable: true, value: { clipboard: { writeText } } })
+      Object.defineProperty(globalThis, "navigator", { configurable: true, value: { share: failedSheet ? jest.fn() : undefined, clipboard: { writeText } } })
+      jest.mocked(shareGameResult).mockRejectedValue(new Error("Share sheet unavailable"))
       jest.mocked(generateShareMessage).mockReturnValue("Talkie Trivia · spoiler-free result")
       renderWithTheme(<ShareResultButton playerGame={mockPlayerGame} />)
       fireEvent.press(screen.getByRole("button"))
       await waitFor(() => expect(screen.getByText(denied ? "Select and copy your result below." : "Result copied. Share it with a fellow movie lover.")).toBeTruthy())
       expect(writeText).toHaveBeenCalledWith("Talkie Trivia · spoiler-free result")
       if (denied) expect(screen.getByText("Talkie Trivia · spoiler-free result").props.selectable).toBe(true)
-      expect(shareGameResult).not.toHaveBeenCalled()
+      if (failedSheet) expect(shareGameResult).toHaveBeenCalledWith(mockPlayerGame)
+      else expect(shareGameResult).not.toHaveBeenCalled()
+      expect(Alert.alert).not.toHaveBeenCalled()
+    } finally {
+      Platform.OS = platform
+      if (navigatorDescriptor) Object.defineProperty(globalThis, "navigator", navigatorDescriptor)
+      else Reflect.deleteProperty(globalThis, "navigator")
+    }
+  })
+
+  it("does not copy or show an error when the web share utility completes or handles dismissal", async () => {
+    const platform = Platform.OS
+    const navigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, "navigator")
+    const writeText = jest.fn()
+    try {
+      Platform.OS = "web"
+      Object.defineProperty(globalThis, "navigator", { configurable: true, value: { share: jest.fn(), clipboard: { writeText } } })
+      jest.mocked(shareGameResult).mockResolvedValue(undefined)
+      renderWithTheme(<ShareResultButton playerGame={mockPlayerGame} />)
+      fireEvent.press(screen.getByRole("button"))
+      await waitFor(() => expect(screen.getByRole("button")).not.toBeDisabled())
+      expect(shareGameResult).toHaveBeenCalledWith(mockPlayerGame)
+      expect(writeText).not.toHaveBeenCalled()
+      expect(generateShareMessage).not.toHaveBeenCalled()
+      expect(screen.queryByText(/Could not share|Select and copy|Result copied/)).toBeNull()
     } finally {
       Platform.OS = platform
       if (navigatorDescriptor) Object.defineProperty(globalThis, "navigator", navigatorDescriptor)

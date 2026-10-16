@@ -64,6 +64,27 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
   await expect(page.getByText("That's a wrap!", { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Share Your Result', exact: true }).click()
   await expect(page.getByText(/Result copied|Select and copy your result below/)).toBeVisible()
+  // Some browsers expose sharing but cannot open an OS share sheet. Keep the
+  // result usable even when both the sheet and clipboard are unavailable.
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'share', { configurable: true, value: async () => { throw new DOMException('Unavailable', 'NotAllowedError') } })
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new DOMException('Denied', 'NotAllowedError') } } })
+  })
+  await page.getByRole('button', { name: 'Share Your Result', exact: true }).click()
+  await expect(page.getByText('Select and copy your result below.', { exact: true })).toBeVisible()
+  const shareText = page.getByText(/^Talkie Trivia /)
+  await expect(shareText).toBeVisible()
+  await expect(shareText).not.toContainText(answer.t)
+  for (const dismissed of [false, true]) {
+    await page.evaluate(dismissed => {
+      Object.defineProperty(navigator, 'share', { configurable: true, value: async () => {
+        if (dismissed) throw new DOMException('Share dismissed', 'AbortError')
+      } })
+    }, dismissed)
+    await page.getByRole('button', { name: 'Share Your Result', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Share Your Result', exact: true })).toBeEnabled()
+    await expect(page.getByText(/Result copied|Select and copy|Could not share/)).toHaveCount(0)
+  }
   await page.getByRole('tab', { name: 'Archive', exact: true }).click()
   await expect(page.getByText(answer.t, { exact: true }).first()).toBeVisible()
   const savedResult = page.getByRole('button', { name: `View ${answer.t} result`, exact: true })
