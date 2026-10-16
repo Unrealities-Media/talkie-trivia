@@ -44,6 +44,8 @@ interface GameHistoryItemProps {
 const GameHistoryItem = memo(({ item, onPress, compact }: GameHistoryItemProps) => {
   const styles = useStyles(themedStyles)
   const posterUri = `${API_CONFIG.TMDB_IMAGE_BASE_URL_W185}${item.posterPath}`
+  const [failedPoster, setFailedPoster] = useState<string | null>(null)
+  const fallbackPoster = require("../../assets/movie_default.png")
   const difficultyLabel = DIFFICULTY_MODES[item.difficulty]?.label || "Unknown"
   const date = new Date(item.dateId)
   const formattedDate = date.toLocaleDateString("en-US", {
@@ -89,7 +91,9 @@ const GameHistoryItem = memo(({ item, onPress, compact }: GameHistoryItemProps) 
         pressed && styles.itemPressed,
       ]}
     >
-      <Image source={item.posterPath ? { uri: posterUri } : require("../../assets/movie_default.png")} style={[styles.posterImage, compact && { width: 44, height: 65 }]} />
+      <Image testID="history-poster" source={item.posterPath && failedPoster !== posterUri ? { uri: posterUri } : fallbackPoster}
+        placeholder={fallbackPoster} onError={() => setFailedPoster(posterUri)}
+        style={[styles.posterImage, compact && { width: 44, height: 65 }]} />
       <View style={styles.infoContainer}>
         <Typography style={[styles.itemTitle, compact && { fontSize: 14 }]} numberOfLines={2}>
           {item.itemTitle}

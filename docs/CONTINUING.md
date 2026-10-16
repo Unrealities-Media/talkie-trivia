@@ -6,10 +6,19 @@ This is the current handoff; older audits preserve evidence from their dates.
 
 ## Shipped state
 
-- PRs 18–51 are merged. PR51 head `10ae19c32fe122d2717b1155c753b61b5decc3d6`
-  passed all nine checks. All 47 live files matched its export at 08:46:49 UTC;
-  a live keyboard copy-field check passed using the existing guest's completed
-  result, with no moves submitted, external shares sent, or page errors.
+- Archive resilience candidate: archived results now use the shared web sharing
+  control, including manual copy when sharing and clipboard access fail. The copy
+  field scrolls into view on focus above the fixed Close button. Failed archive
+  posters fall back to the bundled poster; failed cast portraits retain names and
+  links. Thirty-six focused unit tests, typecheck and six guest flows across
+  Chromium, Firefox and WebKit pass. The browser flows block poster requests and
+  check saved-result copying at 320 by 480. Evidence: shared-root
+  `.expo/archive-resilience-final.log`. Native builds remain disabled.
+
+- PRs 18–52 are merged. PR52 head `f3f369b3c0a9498c03570fa9f232b1895064045d`
+  passed all nine checks. All 47 live files matched its export at 09:02:12 UTC;
+  live keyboard continuation, search access and returning to a saved result
+  passed at 09:02:34 UTC, with no moves submitted or page errors.
 - Recent web improvements include next-challenge navigation, startup recovery,
   gameplay while fonts load, completed-search announcements, live reduced-motion
   preferences and keyboard continuity after guessing. Disabled Sentry runtime
@@ -82,7 +91,7 @@ This is the current handoff; older audits preserve evidence from their dates.
   all nine CI checks passed before deployment.
 - Result-transition review reproduced focus on the page body after closing a
   reveal (`.expo/result-navigation-before.log`, Chromium desktop/phone).
-  The current candidate recovers abandoned focus at the result heading after
+  Deployed PR52 recovers abandoned focus at the result heading after
   a reveal, and gives keyboard challenge navigation a stable daily-game target
   while controls disappear or become disabled during loading. Pointer activation
   and subsequent focus changes do not request an asynchronous focus jump.
@@ -91,7 +100,8 @@ This is the current handoff; older audits preserve evidence from their dates.
   All six final Chromium/Firefox/WebKit desktop/phone navigation cases passed
   in `.expo/result-navigation-final.log`, covering pointer use and moving
   focus during delayed loading. Forty focused component tests and TypeScript
-  checks passed. This candidate is not yet deployed.
+  checks passed. The live check waits until account initialization enables the
+  difficulty control before attempting keyboard activation.
 - The explicitly approved anonymous test guest was deleted. Server reads
   confirmed its Auth account and owned game/history/statistics data absent;
   completion survives reload without creating another guest.

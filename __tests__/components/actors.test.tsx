@@ -29,3 +29,15 @@ it("respects the cast limit and tolerates absent or empty names", () => {
   expect(screen.getByText("First")).toBeTruthy()
   expect(screen.queryByText("Second")).toBeNull()
 })
+
+it("falls back to the actor name and keeps its link when a portrait fails", () => {
+  const actor = { name: "Example Actor", imdb_id: "nm0000138", profile_path: "/broken.jpg" }
+  const press = jest.fn()
+  const view = render(<ThemeProvider><Actors actors={[actor]} onActorPress={press} /></ThemeProvider>)
+  fireEvent(screen.getByTestId("mock-expo-image"), "error")
+  expect(screen.queryByTestId("mock-expo-image")).toBeNull()
+  fireEvent.press(screen.getByRole("link", { name: "Open IMDb page for Example Actor" }))
+  expect(press).toHaveBeenCalledWith(actor)
+  view.rerender(<ThemeProvider><Actors actors={[{ ...actor, profile_path: "/replacement.jpg" }]} onActorPress={press} /></ThemeProvider>)
+  expect(screen.getByTestId("mock-expo-image").props["data-source"]).toContain("/replacement.jpg")
+})

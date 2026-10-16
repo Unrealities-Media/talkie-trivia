@@ -20,6 +20,8 @@ import ResultSummary from "./gameOver/resultSummary"
 import FullPlotSection from "./gameOver/fullPlotSection"
 import ErrorMessage from "./errorMessage"
 import { movieReward } from "../services/movieRewardService"
+import ShareResultButton from "./gameOver/shareResultButton"
+import { savedScore } from "../utils/resultSummary"
 
 const GuessesContainer = lazy(() => import("./guesses"))
 
@@ -108,6 +110,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
           showsVerticalScrollIndicator={false}
         >
           {playerGame && <ResultSummary game={playerGame} />}
+          {playerGame && savedScore(playerGame) !== null && <ShareResultButton playerGame={playerGame} />}
           <Facts item={item} isScrollEnabled={false} compact={true} />
           <FullPlotSection overview={movieReward(item).summary} />
           {playerGame && (
@@ -140,7 +143,7 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
 
   return (
     <Suspense fallback={null}>
-      <DetailModal show={!!historyItem} toggleModal={onClose} playerGame={playerGame}>
+      <DetailModal show={!!historyItem} toggleModal={onClose}>
         {renderModalContent()}
       </DetailModal>
     </Suspense>

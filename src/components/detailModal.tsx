@@ -1,48 +1,29 @@
-import React, { ReactNode, useState } from "react"
+import React, { ReactNode } from "react"
 import {
   Modal,
   Pressable,
   View,
-  Alert,
   ViewStyle,
   StyleSheet,
 } from "react-native"
-import { PlayerGame } from "../models/game"
-import { shareGameResult } from "../utils/shareUtils"
-import { savedScore } from "../utils/resultSummary"
 import { hapticsService } from "../utils/hapticsService"
 import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Button } from "./ui/button"
 import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
 
 interface DetailModalProps {
-  playerGame?: PlayerGame | null
   show: boolean
   toggleModal: (show: boolean) => void
   children: ReactNode
 }
 
 const DetailModal: React.FC<DetailModalProps> = ({
-  playerGame,
   show,
   toggleModal,
   children,
 }) => {
   const styles = useStyles(themedStyles)
   const reducedMotion = usePremiereMotion()
-  const [isSharing, setIsSharing] = useState(false)
-
-  const handleShare = async () => {
-    if (!playerGame || isSharing) return
-    setIsSharing(true)
-    try {
-      await shareGameResult(playerGame)
-    } catch {
-      Alert.alert("Sharing Failed", "Your result could not be shared. Please try again.")
-    } finally {
-      setIsSharing(false)
-    }
-  }
 
   const handleClose = () => {
     hapticsService.light()
@@ -77,15 +58,6 @@ const DetailModal: React.FC<DetailModalProps> = ({
               onPress={handleClose}
               style={styles.button}
             />
-            {playerGame && savedScore(playerGame) !== null && (
-              <Button
-                title="Share"
-                variant="primary"
-                onPress={handleShare}
-                isLoading={isSharing}
-                style={styles.button}
-              />
-            )}
           </View>
         </View>
       </View>
