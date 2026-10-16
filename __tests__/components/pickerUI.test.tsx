@@ -8,7 +8,7 @@ import {
   RenderOptions,
 } from "@testing-library/react-native"
 import { ThemeProvider } from "../../src/contexts/themeContext"
-import { PickerUI } from "../../src/components/pickerUI"
+import { PickerUI, WebSearchResults } from "../../src/components/pickerUI"
 import { BasicTriviaItem } from "../../src/models/trivia"
 
 // --- Mocks ---
@@ -54,6 +54,22 @@ const mockRenderItem = ({ item }: any) => (
   <Text testID={`item-${item.id}`}>{item.title}</Text>
 )
 const mockHandleInputChange = jest.fn()
+
+it("batches broad web searches without losing matches and resets for a new search", () => {
+  const results = Array.from({ length: 29 }, (_, index) => ({ ...mockResults[0], id: index, title: `Title ${index}` }))
+  const view = renderWithTheme(<WebSearchResults results={results} renderItem={mockRenderItem} disabled={false} />)
+  expect(screen.getByTestId("item-11")).toBeTruthy()
+  expect(screen.queryByTestId("item-12")).toBeNull()
+  fireEvent.press(screen.getByRole("button", { name: "Show more titles (12 of 29)" }))
+  expect(screen.getByTestId("item-23")).toBeTruthy()
+  expect(screen.queryByTestId("item-24")).toBeNull()
+  fireEvent.press(screen.getByRole("button", { name: "Show more titles (24 of 29)" }))
+  expect(screen.getByTestId("item-28")).toBeTruthy()
+  expect(screen.queryByRole("button")).toBeNull()
+  view.rerender(<ThemeProvider><WebSearchResults results={[...results]} renderItem={mockRenderItem} disabled={false} /></ThemeProvider>)
+  expect(screen.queryByTestId("item-12")).toBeNull()
+  expect(screen.getByRole("button", { name: "Show more titles (12 of 29)" })).toBeTruthy()
+})
 
 describe("PickerUI Component", () => {
   beforeEach(() => {
