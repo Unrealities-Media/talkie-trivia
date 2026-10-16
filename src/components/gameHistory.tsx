@@ -1,5 +1,5 @@
-import React, { useState, useEffect, memo, useCallback } from "react"
-import { View, Pressable } from "react-native"
+import React, { useState, useEffect, useRef, memo, useCallback } from "react"
+import { View, Pressable, Platform } from "react-native"
 import { Image } from "expo-image"
 import { FlashList } from "@shopify/flash-list"
 import Animated from "react-native-reanimated"
@@ -124,6 +124,25 @@ const HistoryForAccount = ({ uid, onHistoryItemPress, compact = false }: GameHis
   const [page, setPage] = useState(0)
   const [cursors, setCursors] = useState<(HistoryCursor | null)[]>([null])
   const [next, setNext] = useState<HistoryCursor | null>(null)
+  const historyRef = useRef<View>(null)
+  const pageStatusRef = useRef<HTMLDivElement>(null)
+  const navigate = (action: () => void) => {
+    if (loading) return
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      const active = document.activeElement
+      const root = historyRef.current as unknown as HTMLElement | null
+      // Move before the focused control is disabled or removed. Never reclaim
+      // focus when the request finishes: the player may have moved elsewhere.
+      if (active?.getAttribute("role") === "button" && active.matches(":focus-visible")
+        && root?.contains(active)) {
+        pageStatusRef.current?.focus()
+      }
+    }
+    action()
+  }
+  const pageStatus = loading ? `Loading history page ${page + 1}…`
+    : error ? `History page ${page + 1} could not be loaded.`
+    : `History page ${page + 1} · Newest games first`
 
   useEffect(() => {
     let active = true
@@ -159,16 +178,18 @@ const HistoryForAccount = ({ uid, onHistoryItemPress, compact = false }: GameHis
   )
 
   return (
-    <View style={styles.container}>
+    <View ref={historyRef} style={styles.container}>
       {uid && !compact && <View style={styles.pageControls}>
-        <Typography accessibilityLiveRegion="polite">History page {page + 1} · Newest games first</Typography>
-        <Button title="Refresh history" variant="secondary" disabled={loading} onPress={() => {
+        {Platform.OS === "web" ? <div ref={pageStatusRef} tabIndex={-1} role="status" aria-live="polite" aria-atomic="true">
+          <Typography>{pageStatus}</Typography>
+        </div> : <Typography accessibilityLiveRegion="polite">{pageStatus}</Typography>}
+        <Button title="Refresh history" variant="secondary" disabled={loading} onPress={() => navigate(() => {
           setPage(0); setCursors([null]); setAttempt(value => value + 1)
-        }} />
-        {page > 0 && <Button title="Newer games" variant="secondary" disabled={loading} onPress={() => setPage(page - 1)} />}
-        {next && <Button title="Older games" variant="secondary" disabled={loading} onPress={() => {
+        })} />
+        {page > 0 && <Button title="Newer games" variant="secondary" disabled={loading} onPress={() => navigate(() => setPage(page - 1))} />}
+        {next && <Button title="Older games" variant="secondary" disabled={loading} onPress={() => navigate(() => {
           setCursors(previous => [...previous.slice(0, page + 1), next]); setPage(page + 1)
-        }} />}
+        })} />}
       </View>}
       {loading ? <View>
         {Array(compact ? 3 : 5)
@@ -177,7 +198,7 @@ const HistoryForAccount = ({ uid, onHistoryItemPress, compact = false }: GameHis
             <GameHistorySkeletonItem key={`skeleton-${index}`} />
           ))}
       </View> : error ? <View style={styles.emptyContainer}>
-        <ErrorMessage message={error} onRetry={() => setAttempt(value => value + 1)} />
+        <ErrorMessage message={error} onRetry={() => navigate(() => setAttempt(value => value + 1))} />
       </View> : compact ? <View>
         {history.slice(0, 3).map(item => <GameHistoryItem key={item.challengeId ?? `${item.dateId}-${item.difficulty}-${item.itemId}`} item={item} onPress={onHistoryItemPress} compact />)}
         {history.length === 0 && <Typography style={styles.emptyText}>Your collection starts with your first completed challenge.</Typography>}

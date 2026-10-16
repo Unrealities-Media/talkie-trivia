@@ -115,9 +115,11 @@ describe("GameHistory Component", () => {
     renderWithTheme(<GameHistory onHistoryItemPress={onHistoryItemPressMock} />);
     fireEvent.press(await screen.findByLabelText("Older games"));
     await screen.findByText("Could not load game history.");
+    expect(screen.getByText("History page 2 could not be loaded.")).toBeTruthy();
     expect(screen.getByLabelText("Newer games")).toBeTruthy();
     fireEvent.press(screen.getByText("Retry"));
     expect(await screen.findByText("Recovered")).toBeTruthy();
+    expect(screen.getByText("History page 2 · Newest games first")).toBeTruthy();
     expect(mockGameService.fetchGameHistory).toHaveBeenLastCalledWith("test-player-id", cursor);
   });
 
