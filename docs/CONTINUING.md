@@ -6,9 +6,10 @@ This is the current handoff; older audits preserve evidence from their dates.
 
 ## Shipped state
 
-- PRs 18–48 are merged. PR48 head `86021a7adfe52a7e6b8941ea815b5063d0fe9d50`
-  passed all nine checks. All 47 live files matched its export at 07:58:11 UTC;
-  a read-only live recovery-status/search check passed at 07:58:02 UTC.
+- PRs 18–50 are merged. PR50 head `fe96869261cd8c21f0f67605c6378263d9c695a5`
+  passed all nine checks. All 47 live files matched its export at 08:29:06 UTC;
+  a live keyboard navigation/reduced-motion check passed at 08:29:09 UTC
+  using the existing guest, with no moves submitted or page errors.
 - Recent web improvements include next-challenge navigation, startup recovery,
   gameplay while fonts load, completed-search announcements, live reduced-motion
   preferences and keyboard continuity after guessing. Disabled Sentry runtime
@@ -55,8 +56,11 @@ This is the current handoff; older audits preserve evidence from their dates.
   PR48. Merged PR49 scopes that suite conservatively while retaining
   browser/emulator gameplay on every PR. See [CI rollout](ci-rollout.md) for
   the allowlist, full-verification fallbacks and measurement limits.
+  On UI-only PR50, the scope job took 11 seconds and skipped standalone
+  dependency installation and emulator testing; browser gameplay still ran
+  and passed in 3m52s. This is one observed job-duration comparison.
 - Daily-game recovery review reproduced focus falling to the page body when
-  Retry failed. The current candidate preserves keyboard position in the game
+  Retry failed. Deployed PR50 preserves keyboard position in the game
   across failure and success, announces errors/loading, and respects pointer
   activation and later focus changes. The clue animation skip control is now
   available only during an actual animation, including no control under reduced
@@ -64,7 +68,15 @@ This is the current handoff; older audits preserve evidence from their dates.
   Local baseline evidence: `.expo/daily-load-recovery-before.log` in the shared
   root. All 12 targeted Chromium/Firefox/WebKit checks passed in
   `.expo/daily-load-recovery-verified.log`; 33 focused component tests and
-  TypeScript checks passed. This candidate has not yet been deployed.
+  TypeScript checks passed.
+- Share fallback review found that blocked browser sharing/clipboard left plain
+  text with no keyboard-focusable copy field. The current candidate provides a
+  labeled read-only field, selects the complete result on focus, and displays
+  all result lines. Six guest-flow browser checks passed across Chromium,
+  Firefox and WebKit desktop/phone sizes, including no spoilers, keyboard
+  selection, no internal scrolling, accidental edits, and share dismissal.
+  Ten component tests and TypeScript checks passed. Local evidence:
+  `.expo/share-copy-final-browser.log` in the shared root. Not yet deployed.
 - The explicitly approved anonymous test guest was deleted. Server reads
   confirmed its Auth account and owned game/history/statistics data absent;
   completion survives reload without creating another guest.

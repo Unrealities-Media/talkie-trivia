@@ -53,7 +53,11 @@ describe("GameOver Component: ShareResultButton", () => {
       fireEvent.press(screen.getByRole("button"))
       await waitFor(() => expect(screen.getByText(denied ? "Select and copy your result below." : "Result copied. Share it with a fellow movie lover.")).toBeTruthy())
       expect(writeText).toHaveBeenCalledWith("Talkie Trivia · spoiler-free result")
-      if (denied) expect(screen.getByText("Talkie Trivia · spoiler-free result").props.selectable).toBe(true)
+      if (denied) {
+        const field = screen.getByLabelText("Your result to copy")
+        expect(field.props.value).toBe("Talkie Trivia · spoiler-free result")
+        expect(field.props.editable).toBe(false)
+      }
       if (failedSheet) expect(shareGameResult).toHaveBeenCalledWith(mockPlayerGame)
       else expect(shareGameResult).not.toHaveBeenCalled()
       expect(Alert.alert).not.toHaveBeenCalled()
