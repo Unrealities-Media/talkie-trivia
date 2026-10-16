@@ -8,8 +8,8 @@ const { scanRange } = require('./secret-scan.cjs')
 const base = 'a'.repeat(40)
 const event = { pull_request: { base: { sha: base } } }
 
-test('only PRs with valid ancestry and unchanged scanning policy use a range', () => {
-  for (const name of ['push', 'schedule', 'workflow_dispatch', 'merge_group', undefined]) {
+test('PRs and pushes with valid ancestry and unchanged scanning policy use a range', () => {
+  for (const name of ['schedule', 'workflow_dispatch', 'merge_group', undefined]) {
     assert.equal(scanRange(name, event, () => { throw Error('must not inspect git') }), null)
   }
   for (const value of [undefined, '', '0'.repeat(40), '--all', `${base};echo unsafe`]) {
@@ -18,6 +18,12 @@ test('only PRs with valid ancestry and unchanged scanning policy use a range', (
   assert.equal(scanRange('pull_request', event, () => ''), `${base}..HEAD`)
   assert.equal(scanRange('pull_request', event, () => { throw Error('not an ancestor') }), null)
   assert.equal(scanRange('pull_request', event, args => args[0] === 'diff' ? '.gitleaksignore' : ''), null)
+  assert.equal(scanRange('push', { before: base }, () => ''), `${base}..HEAD`)
+  for (const value of [undefined, '', '0'.repeat(40), '--all']) {
+    assert.equal(scanRange('push', { before: value }, () => { throw Error('invalid base') }), null)
+  }
+  assert.equal(scanRange('push', { before: base }, () => { throw Error('force push or missing history') }), null)
+  assert.equal(scanRange('push', { before: base }, args => args[0] === 'diff' ? 'scripts/secret-scan.cjs' : ''), null)
 })
 
 test('range includes a removed intermediate value and merge-only changes', () => {
@@ -37,6 +43,7 @@ test('range includes a removed intermediate value and merge-only changes', () =>
     writeFileSync(join(cwd, 'merge.txt'), 'merge-only-fixture\n'); commit('merge')
     const range = scanRange('pull_request', { pull_request: { base: { sha } } }, git)
     assert.equal(range, `${sha}..HEAD`)
+    assert.equal(scanRange('push', { before: sha }, git), range)
     const patches = git(['log', '-p', '--full-history', '-m', range])
     assert.match(patches, /\+temporary-sensitive-fixture/)
     assert.match(patches, /\+merge-only-fixture/)
