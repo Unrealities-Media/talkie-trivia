@@ -70,14 +70,20 @@ describe("authoritative game callables", () => {
     mockQueue = Promise.resolve()
   })
   afterEach(() => jest.useRealTimers())
-  it("shares the budget across routes, counts invalid requests, and isolates accounts", async () => {
+  it("shares the valid-request budget across routes, rejects invalid requests cheaply, and isolates accounts", async () => {
     for (let i = 0; i < 10; i++) {
       await expect(start({})).rejects.toMatchObject({ code: "invalid-argument" })
       await expect(act({ type: "invalid" })).rejects.toMatchObject({ code: "invalid-argument" })
       await expect((submitGameResult as any)({ auth: { uid: "user-with-hyphens" }, data: {} })).rejects.toMatchObject({ code: "invalid-argument" })
     }
-    await expect(start()).rejects.toMatchObject({ code: "resource-exhausted" })
     expect(mockRecords.has(statsPath)).toBe(false)
+    expect(mockRecords.has("players/user-with-hyphens/privateRateLimits/gameplay")).toBe(false)
+    for (let i = 0; i < 10; i++) {
+      await start()
+      await act()
+      await (submitGameResult as any)({ auth: { uid: "user-with-hyphens" }, data: { challengeId: "2026-10-13_LEVEL_3" } })
+    }
+    await expect(start()).rejects.toMatchObject({ code: "resource-exhausted" })
     await expect(start(undefined, "another-user")).resolves.toHaveProperty("game")
     jest.advanceTimersByTime(1999)
     await expect(start()).rejects.toMatchObject({ code: "resource-exhausted" })

@@ -2,8 +2,10 @@
 
 The beta uses Firebase Hosting and a separate live staging Firebase project.
 Google linking is included. Native client IDs, Apple sign-in, and Android binary
-changes are not prerequisites for this web build. Nothing has been deployed by
-the preparation work. Local emulator builds remain the default.
+changes are not prerequisites for this web build. The beta is now deployed at
+https://talkie-trivia-beta.web.app. See [the current handoff](CONTINUING.md) for
+shipped versions and remaining gates. The setup instructions below also cover
+provisioning a new staging project; preparation evidence is historical.
 
 ## Inputs needed from the operator
 
@@ -55,7 +57,8 @@ just to test the web beta.
 
    This publishes rules/indexes, callables and scheduled cleanup jobs. Wait for
    indexes to finish building. Verify IAM, scheduler execution and deletion retry
-   logs. App Check and per-user rate controls are still unfinished: this is an
+   logs. Per-account gameplay rate controls are deployed; App Check and broader
+   anonymous/API abuse protection remain unfinished. This is an
    invited beta, not approval for an unrestricted public launch. A hidden URL and
    `noindex` do not enforce invitation-only access or prevent API abuse.
 
