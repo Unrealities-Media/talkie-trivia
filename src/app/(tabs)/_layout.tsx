@@ -16,7 +16,9 @@ const TabLayout = () => {
   const [fontsLoaded, fontError] = useFonts({
     "PremiereDisplay": font(require("../../../assets/fonts/PremiereDisplay.ttf")),
     "PremiereDisplay-Bold": font(require("../../../assets/fonts/PremiereDisplay-Bold.ttf")),
-    "PremiereClue": font(require("../../../assets/fonts/PremiereClue.ttf")),
+    "PremiereClue": font(Platform.OS === "web"
+      ? require("../../../assets/fonts/PremiereClue.woff2")
+      : require("../../../assets/fonts/PremiereClue.ttf")),
     "PremiereSans": font(require("../../../assets/fonts/PremiereSans.ttf")),
     "Arvo-Bold": font(require("../../../assets/fonts/Arvo-Bold.ttf")),
     "Arvo-Italic": font(require("../../../assets/fonts/Arvo-Italic.ttf")),

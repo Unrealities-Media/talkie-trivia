@@ -6,9 +6,9 @@ This is the current handoff; older audits preserve evidence from their dates.
 
 ## Shipped state
 
-- PRs 18–45 are merged. PR45 head `1435908fa65f0f1dd23dd6653789cc0089e2fdc3`
-  passed all nine checks. All 47 live files matched its export at 07:10:42 UTC;
-  a dedicated beta guest's history refresh preserved keyboard position at 07:10:38 UTC.
+- PRs 18–46 are merged. PR46 head `e64208b288f4d28384996c14fbf9ce62bf5128af`
+  passed all nine checks. All 47 live files matched its export at 07:28:50 UTC;
+  a dedicated beta guest passed Firefox chooser/history focus checks at 07:28:55 UTC.
 - Recent web improvements include next-challenge navigation, startup recovery,
   gameplay while fonts load, completed-search announcements, live reduced-motion
   preferences and keyboard continuity after guessing. Disabled Sentry runtime
@@ -26,9 +26,9 @@ This is the current handoff; older audits preserve evidence from their dates.
 - Optional help and direct mode switching replace the intrusive explanations
   and mode confirmation. Keyboard/state accessibility and cinematic rewards
   shipped. Full reward synopsis is stored separately from the difficulty clue.
-- Chromium CI passed through PR45. Follow-up Firefox/WebKit verification found
+- Chromium CI passed through PR46. Follow-up Firefox/WebKit verification found
   two Firefox differences: native focus only partly exposed the last challenge
-  choice, and keyboard activation could leave `:focus-visible` false. The candidate
+  choice, and keyboard activation could leave `:focus-visible` false. The shipped
   fixes explicitly scroll focused choices and use the click's activation detail
   for history focus. All 42 Firefox/WebKit checks pass with six intentionally
   skipped duplicate viewport cases, including pointer refresh not requesting focus.
@@ -36,6 +36,14 @@ This is the current handoff; older audits preserve evidence from their dates.
   three failures are in `.expo/history-navigation-browser-engines.log`.
   These engine checks
   do not establish real Safari, physical-device or Google provider acceptance.
+- The next web candidate compresses the clue font from 772,088 to 130,712 bytes
+  with WOFF2. All 3,241 glyph outlines, character mappings and advance widths
+  match the native TTF, which remains unchanged. Regenerate and verify using
+  `assets/fonts/build-web-clue.py`; its docstring pins the optional local tools.
+  Chromium, Firefox and WebKit passed 63 checks with nine intentional skips,
+  including successful WOFF2 loading after stalled font requests are released.
+  Local evidence: `.expo/web-clue-font-browser.log` in the shared root.
+  This is an asset-size improvement, not a measured startup-latency claim.
 - The explicitly approved anonymous test guest was deleted. Server reads
   confirmed its Auth account and owned game/history/statistics data absent;
   completion survives reload without creating another guest.

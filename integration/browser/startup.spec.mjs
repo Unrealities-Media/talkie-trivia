@@ -73,5 +73,13 @@ test('gameplay and navigation remain usable while custom font downloads are stal
     await expect(page.getByRole('searchbox')).toBeVisible()
   } finally { release() }
   await page.evaluate(() => document.fonts.ready)
+  // A fallback alone can look usable even when a font format fails to load.
+  await expect.poll(() => page.evaluate(() =>
+    [...document.fonts].some(font => font.family.replace(/["']/g, '') === 'PremiereClue' && font.status === 'loaded')
+  )).toBe(true)
+  const clueFonts = await page.evaluate(() => performance.getEntriesByType('resource')
+    .filter(entry => entry.name.includes('PremiereClue.')).map(entry => entry.name))
+  expect(clueFonts.some(url => /\.woff2(?:\?|$)/.test(url))).toBe(true)
+  expect(clueFonts.some(url => /\.ttf(?:\?|$)/.test(url))).toBe(false)
   await expect(page.getByRole('searchbox')).toBeVisible()
 })
