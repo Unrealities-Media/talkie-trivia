@@ -12,6 +12,7 @@ import { imdbPersonUrl, imdbTitleUrl } from "../utils/imdbLinks"
 import { movieReward } from "../services/movieRewardService"
 import { useExternalLink } from "../utils/hooks/useExternalLink"
 import CountdownTimer from "./countdownTimer"
+import NextChallenge from "./nextChallenge"
 import GuessesContainer from "./guesses"
 import ShareResultButton from "./gameOver/shareResultButton"
 import { useStyles, useThemeTokens, Theme } from "../utils/hooks/useStyles"
@@ -122,6 +123,7 @@ function MovieRewardScreen({ playerGame: game, lastGuessResult }: GameOverViewPr
       {showGuesses && <GuessesContainer lastGuessResult={lastGuessResult} />}
     </View>}
     <View style={s.next}>
+      <NextChallenge />
       <CountdownTimer compact />
     </View>
   </Animated.View>

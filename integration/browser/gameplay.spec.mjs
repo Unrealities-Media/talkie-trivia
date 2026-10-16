@@ -85,6 +85,12 @@ test('guest can start, guess, reload, reveal, win and share with saved history',
     await expect(page.getByRole('button', { name: 'Share Your Result', exact: true })).toBeEnabled()
     await expect(page.getByText(/Result copied|Select and copy|Could not share/)).toHaveCount(0)
   }
+  await expect(page.getByText(/^Daily reset in /)).toBeVisible()
+  await page.getByRole('button', { name: 'Continue Medium', exact: true }).click()
+  await expect(page.getByRole('button', { name: /^Play Medium\. In progress/ })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('searchbox')).toBeInViewport()
+  await page.getByRole('button', { name: /^Play Very Easy\./ }).click()
+  await expect(page.getByText("That's a wrap!", { exact: true })).toBeVisible()
   await page.getByRole('tab', { name: 'Archive', exact: true }).click()
   await expect(page.getByText(answer.t, { exact: true }).first()).toBeVisible()
   const savedResult = page.getByRole('button', { name: `View ${answer.t} result`, exact: true })
