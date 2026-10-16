@@ -14,7 +14,6 @@ import AccountDeletion from "../../components/accountDeletion"
 import SessionRecovery from "../../components/sessionRecovery"
 import AccountMerge from "../../components/accountMerge"
 import DifficultySelector from "../../components/difficultySelector"
-import HowToPlay from "../../components/howToPlay"
 import PremiereMasthead from "../../components/premiereMasthead"
 
 const GameplayContainer = lazy(
@@ -89,9 +88,6 @@ const GameLayout = ({ children, showDifficulty }: { children: React.ReactNode; s
       </View>
       {showDifficulty && gameStatus !== "gameOver" && gameStatus !== "revealing" && <View style={[styles.headerContainer, { paddingHorizontal: 20 }]}><DifficultySelector /></View>}
       {children}
-      <View style={[styles.headerContainer, { paddingHorizontal: 20 }]}>
-        <HowToPlay />
-      </View>
     </ScrollView>
     </KeyboardAvoidingView>
   )

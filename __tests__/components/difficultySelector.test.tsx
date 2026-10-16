@@ -50,7 +50,7 @@ describe("DifficultySelector Component", () => {
       renderWithTheme(<DifficultySelector />)
 
       expect(screen.getByText("Daily challenges")).toBeTruthy()
-      expect(screen.getAllByRole("button")).toHaveLength(5)
+      expect(screen.getAllByRole("button", { name: /^Play / })).toHaveLength(5)
 
       const mediumElements = screen.getAllByText(
         DIFFICULTY_MODES[DEFAULT_DIFFICULTY].label
@@ -60,7 +60,7 @@ describe("DifficultySelector Component", () => {
   })
 
   describe("Interactions", () => {
-    it.each(["In progress", "Won", "Lost"])("opens a saved %s challenge without a new-start confirmation", status => {
+    it.each(["Not started", "In progress", "Won", "Lost"])("opens a %s challenge directly", status => {
       mockUseGameStore.mockImplementation(selector => selector({
         nextDifficulty: DEFAULT_DIFFICULTY, playerGame: { playerID: "test-player" },
         setDifficulty: mockSetDifficulty, dailyChallenges: { LEVEL_4: status }, syncStatus: "idle",
@@ -71,17 +71,16 @@ describe("DifficultySelector Component", () => {
       expect(screen.queryByText("Start challenge")).toBeNull()
     })
 
-    it("starts a new challenge only after confirmation", () => {
+    it.each(["saving", "pending"])("keeps a %s move safe before switching", syncStatus => {
+      mockUseGameStore.mockImplementation(selector => selector({
+        nextDifficulty: DEFAULT_DIFFICULTY, playerGame: { playerID: "test-player" },
+        setDifficulty: mockSetDifficulty, syncStatus,
+      }))
       renderWithTheme(<DifficultySelector />)
-
-      const hardButton = screen.getByText("Hard")
-      fireEvent.press(hardButton)
+      const hard = screen.getByRole("button", { name: /^Play Hard\./ })
+      expect(hard).toBeDisabled()
+      fireEvent.press(hard)
       expect(mockSetDifficulty).not.toHaveBeenCalled()
-      fireEvent.press(screen.getByText("Keep browsing"))
-      expect(mockSetDifficulty).not.toHaveBeenCalled()
-      fireEvent.press(hardButton)
-      fireEvent.press(screen.getByText("Start challenge"))
-      expect(mockSetDifficulty).toHaveBeenCalledWith("LEVEL_4")
     })
   })
 })
