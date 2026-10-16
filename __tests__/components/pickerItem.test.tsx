@@ -84,7 +84,7 @@ describe("PickerItem Component", () => {
       // Check Image source
       const image = screen.getByTestId("mock-expo-image")
       expect(image.props["data-source"]).toBe(
-        `${API_CONFIG.TMDB_IMAGE_BASE_URL_W500}${mockBasicItem.posterPath}`
+        `${API_CONFIG.TMDB_IMAGE_BASE_URL_W185}${mockBasicItem.posterPath}`
       )
     })
 
