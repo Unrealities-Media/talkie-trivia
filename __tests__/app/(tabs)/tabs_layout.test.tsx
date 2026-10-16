@@ -1,7 +1,7 @@
 import React from "react"
 import { render, screen } from "@testing-library/react-native"
 import { useFonts } from "expo-font"
-import { Dimensions } from "react-native"
+import { Dimensions, Platform } from "react-native"
 
 jest.mock("react-native-safe-area-context", () => ({
   ...jest.requireActual("react-native-safe-area-context"),
@@ -11,6 +11,7 @@ jest.mock("react-native-safe-area-context", () => ({
 // Fixed mock for expo-font
 jest.mock("expo-font", () => ({
   useFonts: jest.fn(),
+  FontDisplay: { SWAP: "swap" },
 }))
 
 jest.mock("expo-router", () => ({
@@ -66,5 +67,16 @@ describe("App: TabsLayout", () => {
     render(<TabLayout />)
     expect(screen.toJSON()).toBeDefined()
     expect(screen.getByTestId("tabs-safe-area")).toHaveStyle({ paddingTop: 24, flex: 1 })
+  })
+  it("keeps web navigation available while custom fonts are pending", () => {
+    const original = Platform.OS
+    Object.defineProperty(Platform, "OS", { configurable: true, value: "web" })
+    try {
+      render(<TabLayout />)
+      expect(screen.getByTestId("tab-game")).toBeTruthy()
+      expect(screen.getByTestId("tab-profile")).toBeTruthy()
+      expect(screen.queryByTestId("loading-indicator-container")).toBeNull()
+      expect((useFonts as jest.Mock).mock.calls.at(-1)[0].PremiereSans.display).toBe("swap")
+    } finally { Object.defineProperty(Platform, "OS", { configurable: true, value: original }) }
   })
 })
