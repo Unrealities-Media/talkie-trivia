@@ -6,10 +6,15 @@ This is the current handoff; older audits preserve evidence from their dates.
 
 ## Shipped state
 
-- PRs 18–24 are merged. PR24 head `6b480154a8ac13e8dd3706f5d444a2bc363a221b`
-  passed all nine checks and merged at 02:35:43 UTC.
-- Hosting version `f42547a37b8f537e` was released at 02:24:54.240 UTC from
-  PR23. PR24 updated only the deletion recovery worker, not Hosting.
+- PRs 18–34 are merged. PR34 head `7edf1abdae69302e6281079332894a9ed9050508`
+  passed all nine checks. Hosting version `6b4734a0004dc3ef` shipped at
+  05:00:12.065 UTC; all 47 live files matched the export.
+- The missing PR30 backend rollout was completed at 05:03 UTC. All 13 functions
+  are ACTIVE. A live guest win, Profile statistics, All Stats and reload passed
+  at 05:06:49 UTC with statistics version 3 and no browser errors.
+- Search pagination, mode continuity, archive recovery, share fallbacks, Settings
+  links and offline Settings navigation have shipped. PR34's Chromium suite passed
+  eight tests with two intentional duplicate-viewport skips.
 - Optional help and direct mode switching replace the intrusive explanations
   and mode confirmation. Keyboard/state accessibility and cinematic rewards
   shipped. Full reward synopsis is stored separately from the difficulty clue.
@@ -21,9 +26,9 @@ This is the current handoff; older audits preserve evidence from their dates.
   completion survives reload without creating another guest.
 - Database delete protection is enabled. A prior Hosting artifact was verified
   on an expiring preview channel. Neither proves database restore or backend rollback.
-- At 02:41:56 UTC, `npm run beta:operations` passed all eight checks with zero
+- At 05:07:03 UTC, `npm run beta:operations` passed all eight checks with zero
   pending deletions and zero completion/receipt records overdue by one hour.
-  The reported scheduler attempt was 02:33:05 UTC, before the worker update;
+  The reported scheduler attempt was 05:02:01 UTC, before the latest backend update;
   this snapshot does not prove a successful post-update scheduled invocation.
 
 Evidence: [live rollout](audits/2026-10-16-live-web-beta.md),
@@ -37,7 +42,7 @@ native findings; use dated evidence when an older row describes pending work.
 | Work | Current evidence and remaining action |
 | --- | --- |
 | Google identity | Real Google linking, collision/cancel, cross-device recovery and reauthenticated deletion still need disposable provider-account acceptance. Guest deletion does not close this gate. |
-| Content | Last verified schedule contains 40 slots for October 16–23 UTC. Replenish before October 24; automatic publication is not established. Beta editorial review is separate from human rights clearance; production approvals remain empty. |
+| Content | Last verified schedule contains 50 slots for October 16–25 UTC. Replenish before October 26; automatic publication is not established. Beta editorial review is separate from human rights clearance; production approvals remain empty. |
 | Abuse protection | Per-account gameplay throttling is deployed. App Check and broader anonymous/API abuse protection remain unfinished. A hidden URL and `noindex` do not enforce invitations. |
 | Recovery | Delete protection and Hosting preview recovery pass. No backup schedule/PITR or actual database restore has been verified; backend rollback remains open. Choose retention/cost policy before enabling paid backup storage. |
 | Operations | Manual health checks exist, but alert/budget notification delivery and monitored support-mailbox handling remain unverified. Do not infer delivery from configuration or a successful API response. |

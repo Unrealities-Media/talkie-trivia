@@ -7,6 +7,35 @@ invited web beta; Android and iOS builds remain disabled.
 
 ## Latest release follow-up
 
+PRs 25–34 are now merged. Hosting version `6b4734a0004dc3ef` shipped PR34
+at 05:00:12.065 UTC; all 47 exported files matched the live bytes. Recent player
+fixes include search pagination, game-mode continuity, archive recovery, sharing
+fallbacks, corrected Settings links, and opening Settings after connectivity drops.
+PR34 passed all nine required checks. Its local Chromium suite passed eight tests
+with two intentional duplicate-viewport skips.
+
+At 05:03 UTC, the merged PR30 statistics backend and Firestore rules/indexes were
+deployed after discovering that Hosting had advanced without that backend rollout.
+Firebase could not grant `allUsers` invocation on the newly created statistics
+service because of the organization's IAM membership restriction. The service was
+configured with the same `invokerIamDisabled` setting as existing beta callables;
+Firebase authentication remains enforced in the callable. No organization policy
+was changed. All 13 functions were subsequently ACTIVE and pending merges were zero.
+
+Live mobile-viewport acceptance at 05:06:49 UTC saved a guest win, loaded Profile
+and All Stats through `getPlayerStatistics`, confirmed statistics version 3, and
+verified reload preserved the completed-challenge count with no browser errors.
+Local evidence: root `.expo/live-beta/statistics-acceptance.json`.
+At 05:07:03 UTC, the read-only operations check passed all eight checks with zero
+pending deletions or overdue cleanup records. The reported scheduler attempt was
+05:02:01 UTC, so it does not establish delivery after this latest backend update.
+
+PR31 extended the independently verified schedule to 50 ready slots for
+October 16–25 UTC. This remains beta editorial review, not human rights clearance.
+Android/iOS builds remained disabled throughout these changes.
+
+### Earlier PR23–24 follow-up
+
 PR23 subsequently shipped Hosting version `f42547a37b8f537e` at
 02:24:54.240 UTC. PR24 passed all nine checks and merged at 02:35:43 UTC;
 its rollout updated only `retryAccountDeletions` to concurrency one with no
@@ -97,7 +126,7 @@ cross-browser recovery, App Check/abuse protection, alert notification delivery,
 backup/restore and backend rollback, support delivery, and content/rights review.
 The Hosting artifact rollback rehearsal is now documented separately; it did not
 exercise an actual live rollback or prove compatibility with every backend version.
-Schedule replenishment beyond October 23 is still required; the current horizon
+Schedule replenishment beyond October 25 is still required; the current horizon
 does not prove automatic publication is operating.
 
 Local evidence (ignored, not required to exist in another checkout):
