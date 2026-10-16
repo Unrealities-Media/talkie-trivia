@@ -28,3 +28,24 @@ or solved percentages have been calibrated.
 
 Source drafts remain unapproved in `beta-movies.json`; the publication copy
 records this review with its actual timestamp. TMDB attribution stays in the app.
+
+## October 16 UTC refill review
+
+Added ten distinct movies (50 clue variants), bringing the beta pool to 50 sets:
+Zootopia, The Incredibles, The Martian, The Lego Movie, The Iron Giant,
+Fantastic Mr. Fox, Paddington, Chicken Run, School of Rock, and The Terminal.
+Reviewer remains `codex-beta-review`: this is AI review for the invited beta,
+not human editorial approval or a change to the production pool.
+
+Compared every adaptation with its stored source synopsis and checked the full
+five-level progression. Very Easy preserves source wording, including promotional
+language in Chicken Run. Easy removes names and explicit brand identifiers;
+Medium removes gender and named places. Hard removes distinctive settings,
+species and mechanisms; Very Hard keeps a short causal conflict. No new outside
+facts, ratings or licensing claims were introduced. References to danger,
+political upheaval and presumed death remain non-graphic. The new clues still
+need blind playtest feedback to assess difficulty and ambiguity.
+
+These additions are intended for the ten missing October 22–23 slots. Publication
+must use a fresh preview, retain existing immutable challenges, and follow the
+reviewed-PR workflow. Adding entries here does not itself publish them.

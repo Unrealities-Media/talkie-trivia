@@ -1,5 +1,20 @@
 # CI rollout checkpoint
 
+## Incremental secret scanning follow-up (October 15)
+
+Routine PRs scan from the PR base; main/master pushes scan from the event's
+previous commit. Both include intermediate commits and merge-resolution changes.
+Weekly Monday 08:23 UTC, manual and merge-queue runs retain full-history scans.
+Changes to scanner policy, invalid event metadata, missing history or a
+non-ancestor base also fall back to full history. Exact revoked-credential
+exceptions remain unchanged; new findings still fail the required check.
+
+The post-merge PR #17 history scan passed on October 16 at 00:57:35 UTC,
+after approximately eight minutes. This follow-up avoids repeating that whole
+history scan on ordinary merges. Its own policy-changing PR and merge will
+still trigger full scans. Targeted tests verify push/PR ranges, fallback behavior,
+and preservation of intermediate and merge-only findings using a real Git fixture.
+
 ## Web-beta build policy (October 15)
 
 At the owner's request, Android/iOS builds are manual-only and are not required
