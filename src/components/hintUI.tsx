@@ -7,6 +7,7 @@ import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Typography } from "./ui/typography"
 import { Hint } from "../models/trivia"
 import Animated, { FadeInDown, ReduceMotion } from "react-native-reanimated"
+import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
 
 type HintStatus = "available" | "used" | "disabled"
 
@@ -49,6 +50,7 @@ const HintUI: React.FC<HintUIProps> = memo(
     allHints,
   }) => {
     const styles = useStyles(themedStyles)
+    const reduced = usePremiereMotion()
 
     return (
       <View style={styles.container}>
@@ -74,7 +76,7 @@ const HintUI: React.FC<HintUIProps> = memo(
           </Typography>
         </Pressable>
 
-        {showHintOptions && <Animated.View entering={FadeInDown.duration(300).reduceMotion(ReduceMotion.System)} style={styles.hintButtonsContainer}>
+        {showHintOptions && <Animated.View entering={FadeInDown.duration(300).reduceMotion(reduced ? ReduceMotion.Always : ReduceMotion.Never)} style={styles.hintButtonsContainer}>
           <View style={styles.hintButtonArea}>
             {allHints.map((hint) => (
               <HintButton
@@ -92,7 +94,7 @@ const HintUI: React.FC<HintUIProps> = memo(
         </Animated.View>}
 
         {displayedHintText && (
-          <Animated.View testID="revealed-hint-chip" key={displayedHintText} entering={FadeInDown.duration(450).reduceMotion(ReduceMotion.System)} style={styles.displayedHintContainer}>
+          <Animated.View testID="revealed-hint-chip" key={displayedHintText} entering={FadeInDown.duration(450).reduceMotion(reduced ? ReduceMotion.Always : ReduceMotion.Never)} style={styles.displayedHintContainer}>
             <View style={styles.displayedHintContent}>
               <Ionicons name="bulb-outline" style={styles.displayedHintIcon} />
               <Typography style={styles.hintText} accessibilityLiveRegion="polite">
