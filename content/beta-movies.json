@@ -1038,5 +1038,265 @@
     "ageAppropriate": false,
     "factsChecked": false,
     "contentHash": "2192298e37ac316fb0a2d707f8d826876891c59c49a4ee8e7f0d95d4afbc16b9"
+  },
+  {
+    "movieId": 269149,
+    "description": "Determined to prove herself, Officer Judy Hopps, the first bunny on Zootopia's police force, jumps at the chance to crack her first case - even if it means partnering with scam-artist fox Nick Wilde to solve the mystery.",
+    "imdbId": "tt2948356",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Determined to prove herself, Officer Judy Hopps, the first bunny on Zootopia's police force, jumps at the chance to crack her first case - even if it means partnering with scam-artist fox Nick Wilde to solve the mystery.",
+      "LEVEL_2": "A rabbit becomes the first of her kind to join a city police force. Eager to prove herself on her first case, she partners with a fox who makes a living through scams.",
+      "LEVEL_3": "A newcomer to law enforcement hopes to overcome low expectations by solving a first case, but must cooperate with someone whose livelihood depends on deception.",
+      "LEVEL_4": "Someone seeking acceptance in a new role must rely on a partner whose methods conflict with that role.",
+      "LEVEL_5": "Proving oneself requires trusting an unlikely partner."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 269149
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "7f7be21c3dfa56c1b5c240b3b3646dadd1617a861b99db4b2e239ff0aaeab88a"
+  },
+  {
+    "movieId": 9806,
+    "description": "Bob Parr has given up his superhero days to log in time as an insurance adjuster and raise his three children with his formerly heroic wife in suburbia. But when he receives a mysterious assignment, it's time to get back into costume.",
+    "imdbId": "tt0317705",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Bob Parr has given up his superhero days to log in time as an insurance adjuster and raise his three children with his formerly heroic wife in suburbia. But when he receives a mysterious assignment, it's time to get back into costume.",
+      "LEVEL_2": "A former superhero now works in insurance and raises three children with his wife, who also once fought crime. A mysterious assignment offers him a chance to return to his old life.",
+      "LEVEL_3": "A former protector has settled into ordinary work and family responsibilities. An unexpected assignment offers a return to the exceptional life left behind.",
+      "LEVEL_4": "Someone who has set aside a defining part of life receives an opportunity to reclaim it, despite the responsibilities of a new routine.",
+      "LEVEL_5": "An invitation tests the choice to leave an old life behind."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 9806
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "f4827bf4e519efa2a41dbc83be8ac04486c28dcbb3cac52e37f4185cc652791b"
+  },
+  {
+    "movieId": 286217,
+    "description": "During a manned mission to Mars, Astronaut Mark Watney is presumed dead after a fierce storm and left behind by his crew. But Watney has survived and finds himself stranded and alone on the hostile planet. With only meager supplies, he must draw upon his ingenuity, wit and spirit to subsist and find a way to signal to Earth that he is alive.",
+    "imdbId": "tt3659388",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "During a manned mission to Mars, Astronaut Mark Watney is presumed dead after a fierce storm and left behind by his crew. But Watney has survived and finds himself stranded and alone on the hostile planet. With only meager supplies, he must draw upon his ingenuity, wit and spirit to subsist and find a way to signal to Earth that he is alive.",
+      "LEVEL_2": "An astronaut survives a violent storm after his crew mistakenly leaves him for dead on another planet. With few supplies, he must improvise ways to stay alive and tell people back home he survived.",
+      "LEVEL_3": "An explorer is mistakenly abandoned after a disaster. Limited supplies must sustain them while they improvise a way to contact the people who believe they are dead.",
+      "LEVEL_4": "Someone written off as lost must make limited resources last long enough to show others that rescue is still possible.",
+      "LEVEL_5": "Survival depends on correcting a fatal assumption."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 286217
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "4fded10b9f3f2f015c3f68657ee80019661545c31c6e53fac465bc762bb4581c"
+  },
+  {
+    "movieId": 137106,
+    "description": "An ordinary Lego mini-figure, mistakenly thought to be the extraordinary MasterBuilder, is recruited to join a quest to stop an evil Lego tyrant from conquering the universe.",
+    "imdbId": "tt1490017",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "An ordinary Lego mini-figure, mistakenly thought to be the extraordinary MasterBuilder, is recruited to join a quest to stop an evil Lego tyrant from conquering the universe.",
+      "LEVEL_2": "An ordinary construction-toy figure is mistaken for a uniquely gifted builder and recruited into a quest to stop a tyrant from taking control of the universe.",
+      "LEVEL_3": "An ordinary individual is mistakenly credited with exceptional creative abilities and recruited by others who hope those abilities can defeat a powerful ruler.",
+      "LEVEL_4": "Someone selected because of a mistaken belief must confront a threat that others expect only them to overcome.",
+      "LEVEL_5": "Mistaken expectations become a demand to do the extraordinary."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 137106
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "dd3f92ea2fa6c8554ddd80f4542816a1e7297cab023b2c8a4901663bdd7ef7b5"
+  },
+  {
+    "movieId": 10386,
+    "description": "In the small town of Rockwell, Maine in October 1957, a giant metal machine befriends a nine-year-old boy and ultimately finds its humanity by unselfishly saving people from their own fears and prejudices.",
+    "imdbId": "tt0129167",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "In the small town of Rockwell, Maine in October 1957, a giant metal machine befriends a nine-year-old boy and ultimately finds its humanity by unselfishly saving people from their own fears and prejudices.",
+      "LEVEL_2": "A huge metal machine befriends a young boy in a small town. As fear and prejudice put people in danger, the machine shows compassion by acting to save them.",
+      "LEVEL_3": "An unfamiliar visitor forms a friendship with a child. When fear of what is different threatens others, the visitor responds with an act of selfless protection.",
+      "LEVEL_4": "Someone treated as a threat answers fear with a sacrifice intended to protect the very people who are afraid.",
+      "LEVEL_5": "An act of protection challenges a fearful judgment."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 10386
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "c65f147081ab1e53bd30f5a60c7cc1f169e8fcb6ee4543d3b802b7d70d7367a5"
+  },
+  {
+    "movieId": 10315,
+    "description": "The Fantastic Mr. Fox, bored with his current life, plans a heist against the three local farmers. The farmers, tired of sharing their chickens with the sly fox, seek revenge against him and his family.",
+    "imdbId": "tt0432283",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "The Fantastic Mr. Fox, bored with his current life, plans a heist against the three local farmers. The farmers, tired of sharing their chickens with the sly fox, seek revenge against him and his family.",
+      "LEVEL_2": "A fox bored with his routine plans to steal from three nearby farmers. Their retaliation puts both him and his family at risk.",
+      "LEVEL_3": "Bored with a settled life, someone plans a theft against several neighbors. The targets retaliate, bringing danger to the thief and their family.",
+      "LEVEL_4": "An attempt to escape a dull routine provokes retaliation that puts loved ones at risk.",
+      "LEVEL_5": "A search for excitement brings danger home."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 10315
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "235b74dfd8f102e223bdf030abb8e2489e9ef0d7b64d406ccbd8e7c02ad8ad98"
+  },
+  {
+    "movieId": 116149,
+    "description": "A young Peruvian bear travels to London in search of a new home. Finding himself lost and alone at Paddington Station, he meets the kindly Brown family.",
+    "imdbId": "tt1109624",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "A young Peruvian bear travels to London in search of a new home. Finding himself lost and alone at Paddington Station, he meets the kindly Brown family.",
+      "LEVEL_2": "A young bear travels far from home hoping to find somewhere to live. Lost and alone at a railway station, he encounters a kind family.",
+      "LEVEL_3": "A young traveler arrives in an unfamiliar place in search of a home. Lost and alone, they encounter a family willing to offer kindness.",
+      "LEVEL_4": "A search for somewhere to belong depends on the kindness of strangers.",
+      "LEVEL_5": "An unfamiliar place offers an unexpected welcome."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 116149
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "e5b3636ae661a7961f98c08b4ee6cc9ab4e518169241b0e2cc74db9d16bb775c"
+  },
+  {
+    "movieId": 7443,
+    "description": "The creators of Wallace & Gromit bring you an exciting and original story about a group of chickens determined to fly the coop–even if they can’t fly! It’s hardly poultry in motion when Rocky attempts to teach Ginger and her feathered friends to fly…but, with teamwork, determination and a little bit o’ cluck, the fearless flock plots one last attempt in a spectacular bid for freedom.",
+    "imdbId": "tt0120630",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "The creators of Wallace & Gromit bring you an exciting and original story about a group of chickens determined to fly the coop–even if they can’t fly! It’s hardly poultry in motion when Rocky attempts to teach Ginger and her feathered friends to fly…but, with teamwork, determination and a little bit o’ cluck, the fearless flock plots one last attempt in a spectacular bid for freedom.",
+      "LEVEL_2": "A flock of chickens plans to escape captivity despite being unable to fly. A newcomer tries to teach them, while cooperation becomes essential to their bid for freedom.",
+      "LEVEL_3": "A captive group hopes to escape by learning a skill they do not possess. An outsider offers instruction, but their prospects depend on working together.",
+      "LEVEL_4": "People seeking freedom must turn a doubtful individual promise into a collective effort.",
+      "LEVEL_5": "A way out depends on learning to act together."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 7443
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "406ff02249d39107c5e7a5482315800182f11a5a2620ff637da9727ee3532f8f"
+  },
+  {
+    "movieId": 1584,
+    "description": "Fired from his band and hard up for cash, guitarist and vocalist Dewey Finn finagles his way into a job as a fifth-grade substitute teacher at a private school, where he secretly begins teaching his students the finer points of rock 'n' roll. The school's hard-nosed principal is rightly suspicious of Finn's activities. But Finn's roommate remains in the dark about what he's doing.",
+    "imdbId": "tt0332379",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Fired from his band and hard up for cash, guitarist and vocalist Dewey Finn finagles his way into a job as a fifth-grade substitute teacher at a private school, where he secretly begins teaching his students the finer points of rock 'n' roll. The school's hard-nosed principal is rightly suspicious of Finn's activities. But Finn's roommate remains in the dark about what he's doing.",
+      "LEVEL_2": "A musician fired from his band takes a substitute teaching job at a private school under false pretenses. He secretly teaches the children to play his kind of music while the principal grows suspicious.",
+      "LEVEL_3": "An out-of-work performer obtains a teaching position through deception and secretly redirects lessons toward a personal passion, attracting suspicion from the person in charge.",
+      "LEVEL_4": "Someone using a role dishonestly begins sharing a neglected talent with those entrusted to them, while risking discovery.",
+      "LEVEL_5": "A borrowed role creates an unexpected chance to teach."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 1584
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "cb2a62496ba4945c607cc360951268ddc18d15aba1fe17fb077569567f7c5f30"
+  },
+  {
+    "movieId": 594,
+    "description": "Viktor Navorski is a man without a country; his plane took off just as a coup d'etat exploded in his homeland, leaving it in shambles, and now he's stranded at Kennedy Airport, where he's holding a passport that nobody recognizes. While quarantined in the transit lounge until authorities can figure out what to do with him, Viktor simply goes on living – and courts romance with a beautiful flight attendant.",
+    "imdbId": "tt0362227",
+    "tagline": "",
+    "clues": {
+      "LEVEL_1": "Viktor Navorski is a man without a country; his plane took off just as a coup d'etat exploded in his homeland, leaving it in shambles, and now he's stranded at Kennedy Airport, where he's holding a passport that nobody recognizes. While quarantined in the transit lounge until authorities can figure out what to do with him, Viktor simply goes on living – and courts romance with a beautiful flight attendant.",
+      "LEVEL_2": "A traveler lands after a coup in his homeland has made his passport unusable. Confined to an airport while officials decide his status, he builds a daily life and pursues a romance with a flight attendant.",
+      "LEVEL_3": "A political upheaval makes a traveler's documents invalid during a journey. Unable to continue or leave the arrival area, they build a daily life while waiting for officials to resolve their status.",
+      "LEVEL_4": "Someone caught between incompatible rules must create a life inside what was meant to be a temporary stop.",
+      "LEVEL_5": "An unresolved status turns waiting into a way of life."
+    },
+    "catalogVersion": "376a171273c9bd4c89a1dda8b4e5ffec92b9f1475746f190b860c7fa8d039faf",
+    "source": {
+      "provider": "TMDB",
+      "file": "data/movies.json",
+      "field": "overview",
+      "movieId": 594
+    },
+    "reviewedBy": "",
+    "reviewedAt": "",
+    "approved": false,
+    "ageAppropriate": false,
+    "factsChecked": false,
+    "contentHash": "6f57f42a08fa4016a40ac916db778e2c48f031bc0a061603c36e6539b96acbc6"
   }
 ]
