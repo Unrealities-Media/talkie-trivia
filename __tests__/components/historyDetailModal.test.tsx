@@ -14,6 +14,8 @@ import { GameHistoryEntry } from "../../src/models/gameHistory"
 import { defaultPlayerGame, defaultTriviaItem } from "../../src/models/default"
 import { PlayerGame } from "../../src/models/game"
 import { TriviaItem } from "../../src/models/trivia"
+import { shareGameResult } from "../../src/utils/shareUtils"
+jest.mock("../../src/utils/shareUtils")
 
 // --- Mocks ---
 
@@ -115,6 +117,21 @@ const renderWithTheme = (ui: ReactElement, options?: RenderOptions) => {
 
 describe("HistoryDetailModal Component", () => {
   const onCloseMock = jest.fn()
+
+  it("shares the fetched archive result through the shared result control", async () => {
+    jest.mocked(shareGameResult).mockResolvedValue(undefined)
+    renderWithTheme(<HistoryDetailModal historyItem={mockHistoryItem} onClose={onCloseMock} />)
+    const share = await screen.findByRole("button", { name: "Share Your Result" })
+    fireEvent.press(share)
+    await waitFor(() => expect(shareGameResult).toHaveBeenCalledWith(mockPlayerGame))
+  })
+
+  it("does not offer sharing for an unacknowledged archive result", async () => {
+    mockGameService.fetchPlayerGameById.mockResolvedValue({ ...mockPlayerGame, statsProcessed: false })
+    renderWithTheme(<HistoryDetailModal historyItem={mockHistoryItem} onClose={onCloseMock} />)
+    await screen.findByTestId("mock-facts")
+    expect(screen.queryByRole("button", { name: "Share Your Result" })).toBeNull()
+  })
 
   beforeEach(() => {
     jest.clearAllMocks()

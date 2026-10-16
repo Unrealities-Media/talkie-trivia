@@ -75,6 +75,11 @@ const ShareResultButton: React.FC<ShareResultButtonProps> = ({
       {!!status && <Text accessibilityLiveRegion="polite" style={{ fontFamily: "PremiereSans", color: colors.textPrimary, fontSize: 13, lineHeight: 20, marginTop: 10, textAlign: "center" }}>{status}</Text>}
       {!!copyText && <TextInput accessibilityLabel="Your result to copy" value={copyText}
         editable={false} multiline numberOfLines={6} selectTextOnFocus
+        onFocus={event => {
+          // Some browsers focus a field inside a modal without revealing all
+          // of it above the fixed Close footer.
+          if (Platform.OS === "web") (event.currentTarget as unknown as HTMLElement).scrollIntoView({ block: "nearest" })
+        }}
         style={{ fontFamily: "PremiereSans", color: colors.textPrimary, backgroundColor: colors.surface,
           fontSize: 14, lineHeight: 22, marginTop: 12, padding: 12, width: "100%",
           borderWidth: 1, borderColor: colors.border, borderRadius: 4 }} />}
