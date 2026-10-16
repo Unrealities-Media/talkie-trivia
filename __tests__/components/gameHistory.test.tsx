@@ -54,6 +54,21 @@ describe("GameHistory Component", () => {
 
   afterEach(cleanup);
 
+  it.each([false, true])("distinguishes repeated titles by date, difficulty and outcome (compact=%s)", async compact => {
+    const entries: GameHistoryEntry[] = [
+      { ...mockHistoryData[0], challengeId: "first", guessCount: 1, score: 1 },
+      { ...mockHistoryData[0], challengeId: "second", dateId: "2025-11-14", difficulty: "LEVEL_4", wasCorrect: false, gaveUp: true, score: 0 },
+      { ...mockHistoryData[0], challengeId: "third", dateId: "2025-11-13", difficulty: "LEVEL_5", wasCorrect: false, gaveUp: false, score: 0 },
+    ];
+    mockGameService.fetchGameHistory.mockResolvedValue({ entries, next: null });
+    renderWithTheme(<GameHistory compact={compact} onHistoryItemPress={onHistoryItemPressMock} />);
+    await screen.findByRole("button", { name: "View Inception result. Saturday, November 15, 2025. Medium. Solved in 1 guess. 1 point." });
+    const revealed = screen.getByRole("button", { name: "View Inception result. Friday, November 14, 2025. Hard. Gave up. 0 points." });
+    expect(screen.getByRole("button", { name: "View Inception result. Thursday, November 13, 2025. Very Hard. Not solved. 0 points." })).toBeTruthy();
+    fireEvent.press(revealed);
+    expect(onHistoryItemPressMock).toHaveBeenCalledWith(entries[1]);
+  });
+
   it("shows only three recent movies and keeps their result actions", async () => {
     const entries = Array.from({ length: 4 }, (_, i) => ({ ...mockHistoryData[0], itemId: i, itemTitle: `Movie ${i}` }));
     mockGameService.fetchGameHistory.mockResolvedValue({ entries, next: null });
@@ -62,7 +77,7 @@ describe("GameHistory Component", () => {
     expect(screen.getByText("Movie 2")).toBeTruthy();
     expect(screen.queryByText("Movie 3")).toBeNull();
     expect(screen.queryByText("Refresh history")).toBeNull();
-    fireEvent.press(screen.getByLabelText("View Movie 1 result"));
+    fireEvent.press(screen.getByRole("button", { name: /^View Movie 1 result\./ }));
     expect(onHistoryItemPressMock).toHaveBeenCalledWith(entries[1]);
   });
 
@@ -183,7 +198,7 @@ describe("GameHistory Component", () => {
       mockGameService.fetchGameHistory.mockResolvedValue({ entries: mockHistoryData, next: null });
       renderWithTheme(<GameHistory onHistoryItemPress={onHistoryItemPressMock} />);
 
-      const firstItem = await screen.findByRole("button", { name: "View Inception result" });
+      const firstItem = await screen.findByRole("button", { name: "View Inception result. Saturday, November 15, 2025. Medium. Solved in 2 guesses. 850 points." });
       fireEvent.press(firstItem);
 
       expect(onHistoryItemPressMock).toHaveBeenCalledWith(mockHistoryData[0]);
