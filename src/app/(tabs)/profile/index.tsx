@@ -11,6 +11,7 @@ import ErrorMessage from "../../../components/errorMessage"
 import LoadingIndicator from "../../../components/loadingIndicator"
 import { Button } from "../../../components/ui/button"
 import DetailModal from "../../../components/detailModal"
+import { DailySlate, ProgressRing } from "../../../components/profileSlate"
 
 const AccountMerge = lazy(() => import("../../../components/accountMerge"))
 const SessionRecovery = lazy(() => import("../../../components/sessionRecovery"))
@@ -49,9 +50,12 @@ export default function ProfileScreen() {
           <Text style={{ ...heading, fontSize: 22 }}>TALKIE TRIVIA</Text>
           <Button title="Settings" variant="secondary" onPress={() => router.push("/profile/settings")} />
         </View>
-        <View>
-          <Text accessibilityRole="header" style={{ ...heading, fontSize: 38 }}>Your profile</Text>
-          <Text style={text}>{name ? `Welcome back, ${name}.` : user?.isAnonymous ? "Guest player · Progress saved" : "Your life in movies, one challenge at a time."}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+          {signedIn && <ProgressRing completed={completed} ready={ready} />}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text accessibilityRole="header" style={{ ...heading, fontSize: 38 }}>Your profile</Text>
+            <Text style={text}>{name ? `Welcome back, ${name}.` : user?.isAnonymous ? "Guest player · Progress saved" : "Your life in movies, one challenge at a time."}</Text>
+          </View>
         </View>
         {authLoading && <LoadingIndicator message="Opening your player account…" />}
         <Suspense fallback={<LoadingIndicator />}>
@@ -62,14 +66,12 @@ export default function ProfileScreen() {
         {deletion && <Button title="Continue account deletion" onPress={() => router.push("/profile/settings")} />}
         {signedIn && <>
           <AccountStats key={player.id} player={player} compact />
-          <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 4, padding: 16, gap: 12 }}>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 6 }}>
-              <Text style={{ ...text, color: colors.textPrimary }}>Today's challenges</Text>
+          <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: `${colors.border}99`, borderRadius: 14, padding: 16, gap: 12 }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 6 }}>
+              <Text accessibilityRole="header" style={{ ...heading, fontSize: 21 }}>Today's challenges</Text>
               <Text style={text}>{ready ? `${completed} of 5 complete` : "Progress unavailable"}</Text>
             </View>
-            {ready && <View accessibilityLabel={`${completed} of 5 daily challenges completed`} style={{ flexDirection: "row", gap: 5 }}>
-              {Object.keys(DIFFICULTY_MODES).map((key, index) => <View key={key} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: index < completed ? colors.success : colors.border }} />)}
-            </View>}
+            {ready && <DailySlate statuses={statuses} onSelect={blocked ? undefined : openGame} />}
             <Text style={text}>{!ready ? "Open Play to load today's challenges. Your movie history is still available." : completed === 5 ? "All five completed. Come back for the next daily movies." : completed > 0 ? `Streak secured. ${5 - completed} ${completed === 4 ? "movie" : "movies"} left to discover.` : "Five movies to discover. Start with any difficulty."}</Text>
             {syncStatus === "pending" && <Text style={text}>Open Play to retry your pending move.</Text>}
             <Button title={ready && completed < 5 && !blocked ? "Choose your next challenge →" : "Open Play →"} onPress={() => ready && completed < 5 && !blocked ? setChoosing(true) : router.navigate("/game")} />

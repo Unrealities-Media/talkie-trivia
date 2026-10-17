@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { StyleSheet, Text, View } from "react-native"
 import { Image } from "expo-image"
-import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
+import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from "react-native-reanimated"
 import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
 
 export const premiere = { ink: "#03131C", cream: "#F8E7CA", coral: "#FF7868", muted: "#B9C0C3" }
@@ -9,7 +9,26 @@ export const premiere = { ink: "#03131C", cream: "#F8E7CA", coral: "#FF7868", mu
 export default function PremiereStage({ children, cue }: { children: React.ReactNode; cue: number }) {
   const reduced = usePremiereMotion()
   const projection = useSharedValue(1)
+  const lamp = useSharedValue(reduced ? 0 : 1)
   const [isLaidOut, setIsLaidOut] = useState(false)
+  // The lamp warms up once when the screen first appears, then keeps a faint,
+  // irregular flicker. New clues reuse the projection fade below instead.
+  useEffect(() => {
+    if (!isLaidOut || reduced) {
+      lamp.value = 0
+      return
+    }
+    const dip = (to: number, duration: number) => withTiming(to, { duration, easing: Easing.linear })
+    lamp.value = 1
+    lamp.value = withSequence(
+      dip(0.3, 90), dip(0.85, 70), dip(0.12, 110), dip(0.55, 60), dip(0, 280),
+      withRepeat(withSequence(
+        withDelay(3600, dip(0.1, 50)), dip(0, 70), dip(0.06, 40), dip(0, 140),
+        withDelay(2300, dip(0.08, 60)), dip(0, 160),
+      ), -1),
+    )
+    return () => cancelAnimation(lamp)
+  }, [isLaidOut, reduced, lamp])
   useEffect(() => {
     if (!isLaidOut) return
     projection.value = reduced ? 1 : 0
@@ -19,16 +38,18 @@ export default function PremiereStage({ children, cue }: { children: React.React
   // Animate the projection light without scaling the text-bearing layer.
   // Keeping glyphs at their layout size avoids resampling their fine strokes.
   const screen = useAnimatedStyle(() => ({ opacity: 0.65 + projection.value * 0.35 }))
+  const flicker = useAnimatedStyle(() => ({ opacity: lamp.value }))
   const sweep = useAnimatedStyle(() => ({ opacity: Math.sin(projection.value * Math.PI) * 0.3, transform: [{ translateX: -300 + projection.value * 850 }, { rotate: "-18deg" }] }))
 
   return <View style={styles.stage}>
-    <Animated.View onLayout={() => setIsLaidOut(true)} style={[styles.screen, screen]}>
+    <Animated.View testID="premiere-screen" onLayout={() => setIsLaidOut(true)} style={[styles.screen, screen]}>
       <Image source={require("../../assets/premiere/screen.png")} style={[StyleSheet.absoluteFill, { opacity: 0.65 }]} contentFit="fill" accessible={false} />
       <View style={styles.paper}>
         <Text style={styles.clueLabel}>CLUE {String(Math.min(cue + 1, 5)).padStart(2, "0")}</Text>
         {children}
       </View>
       <Animated.View pointerEvents="none" importantForAccessibility="no-hide-descendants" style={[styles.sweep, sweep]} />
+      <Animated.View testID="projector-flicker" pointerEvents="none" importantForAccessibility="no-hide-descendants" style={[styles.lamp, flicker]} />
     </Animated.View>
   </View>
 }
@@ -40,6 +61,7 @@ const styles = StyleSheet.create({
   screenLabel: { fontFamily: "PremiereSans", textAlign: "center", color: premiere.ink, fontSize: 10, letterSpacing: 3.4 },
   rule: { width: 60, height: 1, backgroundColor: "#A89A80", alignSelf: "center", marginVertical: 7 },
   clueLabel: { fontFamily: "PremiereSans", textAlign: "center", color: premiere.ink, fontSize: 10, letterSpacing: 3.2 },
+  lamp: { ...StyleSheet.absoluteFill, backgroundColor: "#0A0806" },
   sweep: { position: "absolute", top: -80, bottom: -80, width: 90, backgroundColor: "#FFFFFF" },
   theatre: { width: "100%", marginTop: -6, overflow: "hidden" },
   caption: { fontFamily: "PremiereSans", color: premiere.muted, textAlign: "center", letterSpacing: 3.3, fontSize: 7, marginTop: 6, marginBottom: 9 },

@@ -97,7 +97,7 @@ export default function RevealSequence({ onAnimationComplete }: { onAnimationCom
       </Animated.View>
       {[left, right].map((motion, index) => <Animated.View key={index} pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants"
         style={[styles.curtain, index === 0 ? { left: 0 } : { right: 0 }, motion]}>
-        <LinearGradient colors={["#071720", "#21404A", "#0A202B", "#193440", "#061923"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={["#3E070D", "#7A1420", "#4A0910", "#8F1A26", "#5D0C14"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
         <View style={styles.curtainEdge} />
       </Animated.View>)}
     </Animated.View>

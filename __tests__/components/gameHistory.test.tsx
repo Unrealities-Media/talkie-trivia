@@ -69,6 +69,18 @@ describe("GameHistory Component", () => {
     expect(onHistoryItemPressMock).toHaveBeenCalledWith(entries[1]);
   });
 
+  it("shows a lost shelf poster with no points and falls back when its image fails", async () => {
+    const lost = { ...mockHistoryData[0], itemTitle: "Lost movie", wasCorrect: false, gaveUp: true, score: 0 };
+    mockGameService.fetchGameHistory.mockResolvedValue({ entries: [lost], next: null });
+    renderWithTheme(<GameHistory compact onHistoryItemPress={onHistoryItemPressMock} />);
+    expect(await screen.findByText("0 pts")).toBeTruthy();
+    expect(screen.getByText("Medium · Gave up")).toBeTruthy();
+    const poster = screen.getByTestId("history-poster");
+    expect(poster.props.source.uri).toContain("/inception.jpg");
+    fireEvent(poster, "error");
+    expect(screen.getByTestId("history-poster").props.source.uri).toBeUndefined();
+  });
+
   it("shows only three recent movies and keeps their result actions", async () => {
     const entries = Array.from({ length: 4 }, (_, i) => ({ ...mockHistoryData[0], itemId: i, itemTitle: `Movie ${i}` }));
     mockGameService.fetchGameHistory.mockResolvedValue({ entries, next: null });

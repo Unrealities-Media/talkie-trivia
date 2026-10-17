@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, memo, useCallback } from "react"
-import { View, Pressable, Platform, GestureResponderEvent } from "react-native"
+import { View, Pressable, Platform, GestureResponderEvent, StyleSheet } from "react-native"
 import { Image } from "expo-image"
 import { FlashList } from "@shopify/flash-list"
-import Animated from "react-native-reanimated"
+import Animated, { FadeInRight, ReduceMotion } from "react-native-reanimated"
 import { useAuth } from "../contexts/authContext"
 import { GameHistoryEntry } from "../models/gameHistory"
 import { hapticsService } from "../utils/hapticsService"
@@ -13,6 +13,7 @@ import { useStyles, Theme } from "../utils/hooks/useStyles"
 import { Typography } from "./ui/typography"
 import { useSkeletonAnimation } from "../utils/hooks/useSkeletonAnimation"
 import { useGameStore } from "../state/gameStore"
+import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
 import ErrorMessage from "./errorMessage"
 import { Button } from "./ui/button"
 
@@ -35,20 +36,9 @@ const GameHistorySkeletonItem = memo(() => {
   )
 })
 
-interface GameHistoryItemProps {
-  item: GameHistoryEntry
-  onPress: (item: GameHistoryEntry) => void
-  compact?: boolean
-}
-
-const GameHistoryItem = memo(({ item, onPress, compact }: GameHistoryItemProps) => {
-  const styles = useStyles(themedStyles)
-  const posterUri = `${API_CONFIG.TMDB_IMAGE_BASE_URL_W185}${item.posterPath}`
-  const [failedPoster, setFailedPoster] = useState<string | null>(null)
-  const fallbackPoster = require("../../assets/movie_default.png")
+function describe(item: GameHistoryEntry) {
   const difficultyLabel = DIFFICULTY_MODES[item.difficulty]?.label || "Unknown"
-  const date = new Date(item.dateId)
-  const formattedDate = date.toLocaleDateString("en-US", {
+  const formattedDate = new Date(item.dateId).toLocaleDateString("en-US", {
     timeZone: "UTC",
     weekday: "long",
     year: "numeric",
@@ -58,6 +48,57 @@ const GameHistoryItem = memo(({ item, onPress, compact }: GameHistoryItemProps) 
   const outcome = item.wasCorrect
     ? `Solved in ${item.guessCount} ${item.guessCount === 1 ? "guess" : "guesses"}`
     : item.gaveUp ? "Gave up" : "Not solved"
+  const label = `View ${item.itemTitle} result. ${formattedDate}. ${difficultyLabel}. ${outcome}. ${item.score} ${item.score === 1 ? "point" : "points"}.`
+  return { difficultyLabel, formattedDate, outcome, label }
+}
+
+const ShelfSkeleton = memo(() => {
+  const styles = useStyles(themedStyles)
+  const animatedStyle = useSkeletonAnimation()
+  return <Animated.View style={[styles.shelfItem, animatedStyle]} testID="skeleton-item">
+    <View style={[styles.shelfPoster, styles.skeletonPoster]} />
+    <View style={[styles.skeletonText, { width: "80%", marginTop: 8 }]} />
+  </Animated.View>
+})
+
+/** A poster on the profile shelf; slides in and tilts slightly while pressed. */
+const ShelfPoster = memo(({ item, index, onPress }: { item: GameHistoryEntry; index: number; onPress: (item: GameHistoryEntry) => void }) => {
+  const styles = useStyles(themedStyles)
+  const reduced = usePremiereMotion()
+  const posterUri = `${API_CONFIG.TMDB_IMAGE_BASE_URL_W185}${item.posterPath}`
+  const [failedPoster, setFailedPoster] = useState<string | null>(null)
+  const fallbackPoster = require("../../assets/movie_default.png")
+  const { difficultyLabel, outcome, label } = describe(item)
+  return <Animated.View entering={FadeInRight.delay(200 + index * 120).duration(600).reduceMotion(reduced ? ReduceMotion.Always : ReduceMotion.Never)} style={styles.shelfItem}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      testID={`history-item-${item.itemTitle}`}
+      onPress={() => { hapticsService.light(); onPress(item) }}
+      style={({ pressed }) => pressed && styles.shelfPressed}
+    >
+      <View style={styles.shelfPoster}>
+        <Image testID="history-poster" source={item.posterPath && failedPoster !== posterUri ? { uri: posterUri } : fallbackPoster}
+          placeholder={fallbackPoster} onError={() => setFailedPoster(posterUri)} contentFit="cover" style={StyleSheet.absoluteFill} />
+        <Typography style={[styles.shelfBadge, !item.wasCorrect && styles.shelfBadgeMiss]}>{item.wasCorrect ? `+${item.score}` : "0 pts"}</Typography>
+      </View>
+      <Typography style={styles.shelfTitle} numberOfLines={2}>{item.itemTitle}</Typography>
+      <Typography style={styles.compactResult} numberOfLines={1}>{difficultyLabel} · {outcome}</Typography>
+    </Pressable>
+  </Animated.View>
+})
+
+interface GameHistoryItemProps {
+  item: GameHistoryEntry
+  onPress: (item: GameHistoryEntry) => void
+}
+
+const GameHistoryItem = memo(({ item, onPress }: GameHistoryItemProps) => {
+  const styles = useStyles(themedStyles)
+  const posterUri = `${API_CONFIG.TMDB_IMAGE_BASE_URL_W185}${item.posterPath}`
+  const [failedPoster, setFailedPoster] = useState<string | null>(null)
+  const fallbackPoster = require("../../assets/movie_default.png")
+  const { difficultyLabel, formattedDate, label } = describe(item)
 
   const handlePress = () => {
     hapticsService.light()
@@ -82,32 +123,27 @@ const GameHistoryItem = memo(({ item, onPress, compact }: GameHistoryItemProps) 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`View ${item.itemTitle} result. ${formattedDate}. ${difficultyLabel}. ${outcome}. ${item.score} ${item.score === 1 ? "point" : "points"}.`}
+      accessibilityLabel={label}
       testID={`history-item-${item.itemTitle}`}
       onPress={handlePress}
       style={({ pressed }) => [
         styles.itemContainer,
-        compact && styles.compactItem,
         pressed && styles.itemPressed,
       ]}
     >
       <Image testID="history-poster" source={item.posterPath && failedPoster !== posterUri ? { uri: posterUri } : fallbackPoster}
         placeholder={fallbackPoster} onError={() => setFailedPoster(posterUri)}
-        style={[styles.posterImage, compact && { width: 44, height: 65 }]} />
+        style={styles.posterImage} />
       <View style={styles.infoContainer}>
-        <Typography style={[styles.itemTitle, compact && { fontSize: 14 }]} numberOfLines={2}>
+        <Typography style={styles.itemTitle} numberOfLines={2}>
           {item.itemTitle}
         </Typography>
-        {!compact && <Typography style={styles.dateText}>{formattedDate}</Typography>}
-        {compact ? <Typography style={styles.compactResult}>
-          {difficultyLabel} · {outcome}
-        </Typography> : <>
-          <Typography style={styles.difficultyText}>Difficulty: {difficultyLabel}</Typography>
-          {getResultText()}
-        </>}
+        <Typography style={styles.dateText}>{formattedDate}</Typography>
+        <Typography style={styles.difficultyText}>Difficulty: {difficultyLabel}</Typography>
+        {getResultText()}
       </View>
       <View style={styles.scoreContainer}>
-        <Typography style={[styles.scoreText, compact && { fontSize: 15 }]}>{item.score}</Typography>
+        <Typography style={styles.scoreText}>{item.score}</Typography>
         <Typography style={styles.scoreLabel}>PTS</Typography>
       </View>
     </Pressable>
@@ -199,16 +235,18 @@ const HistoryForAccount = ({ uid, onHistoryItemPress, compact = false }: GameHis
           setCursors(previous => [...previous.slice(0, page + 1), next]); setPage(page + 1)
         }, event)} />}
       </View>}
-      {loading ? <View>
-        {Array(compact ? 3 : 5)
+      {loading ? compact ? <View style={styles.shelf}>
+        {[0, 1, 2].map(index => <ShelfSkeleton key={`skeleton-${index}`} />)}
+      </View> : <View>
+        {Array(5)
           .fill(0)
           .map((_, index) => (
             <GameHistorySkeletonItem key={`skeleton-${index}`} />
           ))}
       </View> : error ? <View style={styles.emptyContainer}>
         <ErrorMessage message={error} onRetry={event => navigate(() => setAttempt(value => value + 1), event)} />
-      </View> : compact ? <View>
-        {history.slice(0, 3).map(item => <GameHistoryItem key={item.challengeId ?? `${item.dateId}-${item.difficulty}-${item.itemId}`} item={item} onPress={onHistoryItemPress} compact />)}
+      </View> : compact ? <View style={styles.shelf}>
+        {history.slice(0, 3).map((item, index) => <ShelfPoster key={item.challengeId ?? `${item.dateId}-${item.difficulty}-${item.itemId}`} item={item} index={index} onPress={onHistoryItemPress} />)}
         {history.length === 0 && <Typography style={styles.emptyText}>Your collection starts with your first completed challenge.</Typography>}
       </View> :
       <FlashList
@@ -237,11 +275,14 @@ const GameHistory = (props: GameHistoryProps) => {
 }
 
 const themedStyles = (theme: Theme): any => ({
-  compactItem: {
-    backgroundColor: "transparent", borderWidth: 0, borderBottomWidth: 1,
-    borderRadius: 0, paddingHorizontal: 0, paddingVertical: 8, marginBottom: 0,
-  },
-  compactResult: { fontFamily: "PremiereSans", fontSize: 12, lineHeight: 18, color: theme.colors.textSecondary },
+  shelf: { flexDirection: "row", gap: 10, paddingVertical: 8 },
+  shelfItem: { flex: 1, minWidth: 0, maxWidth: 124 },
+  shelfPressed: { opacity: 0.85, transform: [{ scale: 0.96 }, { rotate: "-1deg" }] },
+  shelfPoster: { width: "100%", aspectRatio: 2 / 3, borderRadius: 6, overflow: "hidden", backgroundColor: theme.colors.surface, ...theme.shadows.medium },
+  shelfBadge: { position: "absolute", top: 5, right: 5, fontFamily: "PremiereSans", fontSize: 10, lineHeight: 14, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 999, overflow: "hidden", backgroundColor: `${theme.colors.background}DD`, color: theme.colors.quinary },
+  shelfBadgeMiss: { color: theme.colors.textSecondary },
+  shelfTitle: { fontFamily: "PremiereSans", fontSize: 12, lineHeight: 16, color: theme.colors.textPrimary, marginTop: 7 },
+  compactResult: { fontFamily: "PremiereSans", fontSize: 10.5, lineHeight: 15, color: theme.colors.textSecondary },
   container: {
     flex: 1,
     width: "100%",

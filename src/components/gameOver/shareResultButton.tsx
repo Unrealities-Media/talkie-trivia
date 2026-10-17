@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react"
-import { View, Alert, ViewStyle, Text, TextInput, Platform } from "react-native"
+import { View, Alert, ViewStyle, Text, TextInput, Platform, StyleSheet } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
+import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from "react-native-reanimated"
+import { usePremiereMotion } from "../../utils/hooks/usePremiereMotion"
 import { PlayerGame } from "../../models/game"
 import { shareGameResult, generateShareMessage } from "../../utils/shareUtils"
 import { Button } from "../ui/button"
@@ -10,10 +13,38 @@ import Svg, { Path } from "react-native-svg"
 
 interface ShareResultButtonProps {
   playerGame: PlayerGame
+  /** Sweeps a highlight across the button a few times to draw attention to it. */
+  shimmer?: boolean
 }
+
+function Shimmer() {
+  const reduced = usePremiereMotion()
+  const sweep = useSharedValue(0)
+  useEffect(() => {
+    if (reduced) return
+    sweep.value = withDelay(2200, withRepeat(withSequence(
+      withTiming(1, { duration: 900, easing: Easing.inOut(Easing.cubic) }),
+      withDelay(2800, withTiming(0, { duration: 0 })),
+    ), 3))
+    return () => cancelAnimation(sweep)
+  }, [reduced, sweep])
+  const motion = useAnimatedStyle(() => ({ opacity: sweep.value > 0 && sweep.value < 1 ? 1 : 0, transform: [{ translateX: -140 + sweep.value * 480 }, { rotate: "20deg" }] }))
+  if (reduced) return null
+  return <View testID="share-shimmer" pointerEvents="none" style={shimmerStyles.clip}>
+    <Animated.View style={[shimmerStyles.band, motion]}>
+      <LinearGradient colors={["#FFFFFF00", "#FFFFFF73", "#FFFFFF00"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+    </Animated.View>
+  </View>
+}
+
+const shimmerStyles = StyleSheet.create({
+  clip: { ...StyleSheet.absoluteFill, overflow: "hidden", borderRadius: 10 },
+  band: { position: "absolute", top: -30, bottom: -30, width: 70 },
+})
 
 const ShareResultButton: React.FC<ShareResultButtonProps> = ({
   playerGame,
+  shimmer = false,
 }) => {
   const styles = useStyles(themedStyles)
   const { colors } = useThemeTokens()
@@ -63,6 +94,7 @@ const ShareResultButton: React.FC<ShareResultButtonProps> = ({
 
   return (
     <View style={[u.wFull, u.alignCenter, styles.container]}>
+      <View style={styles.button}>
       <Button
         title="Share Your Result"
         leadingIcon={<Svg width={23} height={25} viewBox="0 0 24 26" fill="none" stroke="#061923" strokeWidth={1.7} aria-hidden={true}><Path d="M12 17V2M7 7l5-5 5 5M7 11H4v13h16V11h-3" /></Svg>}
@@ -72,6 +104,8 @@ const ShareResultButton: React.FC<ShareResultButtonProps> = ({
         variant="primary"
         style={styles.button}
       />
+      {shimmer && savedScore(playerGame) !== null && !isSharing && <Shimmer />}
+      </View>
       {!!status && <Text accessibilityLiveRegion="polite" style={{ fontFamily: "PremiereSans", color: colors.textPrimary, fontSize: 13, lineHeight: 20, marginTop: 10, textAlign: "center" }}>{status}</Text>}
       {!!copyText && <TextInput accessibilityLabel="Your result to copy" value={copyText}
         editable={false} multiline numberOfLines={6} selectTextOnFocus
