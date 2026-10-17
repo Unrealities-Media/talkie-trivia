@@ -1,10 +1,13 @@
 import React from "react"
-import { render as renderComponent, screen, fireEvent } from "@testing-library/react-native"
+import { act, render as renderComponent, screen, fireEvent } from "@testing-library/react-native"
 import { ThemeProvider } from "../../src/contexts/themeContext"
 import GameOverView from "../../src/components/gameOverView"
 import { defaultPlayerGame } from "../../src/models/default"
+import { useGameStore } from "../../src/state/gameStore"
 const render = (ui: React.ReactElement) => renderComponent(<ThemeProvider>{ui}</ThemeProvider>)
 
+// Content checks read final values; the count-up itself is covered in useCountUp tests.
+jest.mock("../../src/utils/hooks/usePremiereMotion", () => ({ usePremiereMotion: () => true }))
 jest.mock("../../src/utils/hooks/useExternalLink", () => ({ useExternalLink: () => ({ openLink: jest.fn() }) }))
 jest.mock("../../src/components/countdownTimer", () => () => null)
 jest.mock("../../src/components/nextChallenge", () => () => null)
@@ -40,6 +43,15 @@ describe("Movie celebration", () => {
     expect(screen.getByText(title as string)).toBeTruthy()
     expect(screen.getByText(`${message} · Medium`)).toBeTruthy()
     expect(screen.getByText("0")).toBeTruthy()
+  })
+  it("lights the streak marquee only for a confirmed result with an active streak", () => {
+    useGameStore.setState({ playerStats: { ...useGameStore.getState().playerStats, currentStreak: 4 } })
+    const view = render(<GameOverView playerGame={game} lastGuessResult={null} />)
+    expect(screen.getByLabelText("4 day streak. Every challenge you finish keeps it alive, win or lose.")).toBeTruthy()
+    expect(screen.getByLabelText("2 of 5 guesses used")).toBeTruthy()
+    view.rerender(<ThemeProvider><GameOverView playerGame={{ ...game, id: "unconfirmed", statsProcessed: false }} lastGuessResult={null} /></ThemeProvider>)
+    expect(screen.queryByText("Days in a row")).toBeNull()
+    act(() => useGameStore.setState({ playerStats: { ...useGameStore.getState().playerStats, currentStreak: 0 } }))
   })
   it("does not invent a saved score before confirmation", () => {
     render(<GameOverView playerGame={{ ...game, statsProcessed: false }} lastGuessResult={null} />)

@@ -1,8 +1,8 @@
-import React, { useState } from "react"
-import { View, Text, Pressable, StyleSheet, useWindowDimensions, Platform } from "react-native"
+import React, { useEffect, useState } from "react"
+import { View, Text, Pressable, StyleSheet, useWindowDimensions, Platform, LayoutChangeEvent } from "react-native"
 import { Image } from "expo-image"
 import { LinearGradient } from "expo-linear-gradient"
-import Animated, { FadeInDown, ReduceMotion } from "react-native-reanimated"
+import Animated, { cancelAnimation, Easing, FadeIn, FadeInDown, ReduceMotion, SharedValue, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSpring, withTiming } from "react-native-reanimated"
 import { PlayerGame } from "../models/game"
 import { API_CONFIG } from "../config/constants"
 import { DIFFICULTY_MODES } from "../config/difficulty"
@@ -11,6 +11,8 @@ import { releaseYear } from "../utils/dateDisplay"
 import { imdbPersonUrl, imdbTitleUrl } from "../utils/imdbLinks"
 import { movieReward } from "../services/movieRewardService"
 import { useExternalLink } from "../utils/hooks/useExternalLink"
+import { useCountUp } from "../utils/hooks/useCountUp"
+import { useGameStore } from "../state/gameStore"
 import { usePremiereMotion } from "../utils/hooks/usePremiereMotion"
 import CountdownTimer from "./countdownTimer"
 import NextChallenge from "./nextChallenge"
@@ -23,6 +25,26 @@ interface GameOverViewProps {
   lastGuessResult: { itemId: number | string; correct: boolean } | null
 }
 
+// Web needs an explicit choice: the system setting is not read there (see usePremiereMotion).
+const motionFor = (reduced: boolean) => reduced ? ReduceMotion.Always : ReduceMotion.Never
+
+/** Runs a 0 → 1 timeline once on mount, or jumps to 1 when motion is reduced. */
+function useEntrance(delay: number, run: (to: number) => number) {
+  const reduced = usePremiereMotion()
+  const progress = useSharedValue(reduced ? 1 : 0)
+  useEffect(() => {
+    if (reduced) { progress.value = 1; return }
+    progress.value = withDelay(delay, run(1))
+    return () => cancelAnimation(progress)
+  }, [reduced, delay, progress, run])
+  return progress
+}
+const slow = (to: number) => withTiming(to, { duration: 14000, easing: Easing.out(Easing.quad) })
+const rise = (to: number) => withTiming(to, { duration: 850, easing: Easing.out(Easing.back(1.6)) })
+const spring = (to: number) => withSpring(to, { damping: 13, stiffness: 90 })
+const sweep = (to: number) => withTiming(to, { duration: 950, easing: Easing.inOut(Easing.cubic) })
+const grow = (to: number) => withTiming(to, { duration: 420, easing: Easing.out(Easing.cubic) })
+
 // Reset failed images and expanded controls when revisiting a different result.
 export default function GameOverView(props: GameOverViewProps) {
   return <MovieRewardScreen key={props.playerGame.id} {...props} />
@@ -32,6 +54,8 @@ function MovieRewardScreen({ playerGame: game, lastGuessResult }: GameOverViewPr
   const reduced = usePremiereMotion()
   const s = useStyles(themedStyles)
   const { colors } = useThemeTokens()
+  const streak = useGameStore(state => state.playerStats.currentStreak)
+  const enter = (delay: number) => FadeInDown.delay(delay).duration(550).reduceMotion(motionFor(reduced))
   const { width, fontScale } = useWindowDimensions()
   const narrow = width <= 390
   const [showGuesses, setShowGuesses] = useState(false)
@@ -60,41 +84,69 @@ function MovieRewardScreen({ playerGame: game, lastGuessResult }: GameOverViewPr
   const credits = movie.hints.filter(h => !["actors", "genre", "decade"].includes(h.type) && (typeof h.value === "string" || typeof h.value === "number"))
   const decade = movie.hints.find(h => h.type === "decade")?.value
   const released = [year, typeof decade === "string" ? decade : null].filter(Boolean).join(" · ")
+  const points = useCountUp(score ?? 0, { delay: 1100, duration: 1100 })
+  const hints = game.difficulty === "LEVEL_2" ? manualHintsUsed(game) : 0
+  const title = useEntrance(120, rise)
+  const backdrop = useEntrance(250, slow)
+  const poster = useEntrance(550, spring)
+  const glint = useEntrance(1500, sweep)
+  const titleMotion = useAnimatedStyle(() => ({ opacity: Math.min(1, title.value * 1.4), transform: [{ perspective: 600 }, { translateY: (1 - title.value) * 34 }, { rotateX: `${(1 - title.value) * -60}deg` }] }))
+  const kenBurns = useAnimatedStyle(() => ({ opacity: Math.min(1, backdrop.value * 12), transform: [{ scale: 1.15 - backdrop.value * 0.13 }, { translateX: backdrop.value * -8 }] }))
+  const posterMotion = useAnimatedStyle(() => ({ opacity: Math.min(1, poster.value * 2), transform: [{ perspective: 800 }, { translateY: (1 - poster.value) * 60 }, { rotateY: `${(1 - poster.value) * -25}deg` }, { scale: 0.9 + poster.value * 0.1 }] }))
+  const glintMotion = useAnimatedStyle(() => ({ opacity: glint.value > 0 && glint.value < 1 ? 1 : 0, transform: [{ translateX: -120 + glint.value * 260 }, { rotate: "18deg" }] }))
 
   return <Animated.View testID="cinematic-reward" entering={FadeInDown.duration(450).reduceMotion(reduced ? ReduceMotion.Always : ReduceMotion.Never)} style={s.page}>
     <View style={s.celebration}>
       <View accessibilityRole="header" accessible tabIndex={Platform.OS === "web" ? -1 : undefined} testID="result-heading">
-        <Text style={[s.resultTitle, narrow && s.resultTitleNarrow]}>{result}</Text>
+        <Animated.Text style={[s.resultTitle, narrow && s.resultTitleNarrow, titleMotion]}>{result}</Animated.Text>
       </View>
-      <Text style={s.resultMessage}>{message} · {difficulty}</Text>
+      <Animated.Text entering={enter(450)} style={s.resultMessage}>{message} · {difficulty}</Animated.Text>
     </View>
     <View style={s.hero}>
-      <Image testID="reward-backdrop" accessibilityLabel={`${movie.title} artwork`} accessible source={heroUrl ? { uri: heroUrl } : fallback}
-        onError={() => fail(heroUrl)} contentFit="cover" style={StyleSheet.absoluteFill} />
+      <Animated.View style={[StyleSheet.absoluteFill, kenBurns]}>
+        <Image testID="reward-backdrop" accessibilityLabel={`${movie.title} artwork`} accessible source={heroUrl ? { uri: heroUrl } : fallback}
+          onError={() => fail(heroUrl)} contentFit="cover" style={StyleSheet.absoluteFill} />
+      </Animated.View>
       <LinearGradient pointerEvents="none" colors={[`${colors.background}00`, colors.background]} locations={[0.35, 1]} style={StyleSheet.absoluteFill} />
     </View>
     <View style={[s.filmReveal, narrow && s.filmRevealNarrow, fontScale > 1.3 && s.filmRevealLargeText]}>
-      <View style={[s.posterFrame, narrow && s.posterFrameNarrow]}>
+      <Animated.View style={[s.posterFrame, narrow && s.posterFrameNarrow, posterMotion]}>
         <Image testID="reward-poster" accessibilityLabel={`${movie.title} poster`} accessible source={available(posterUrl) ? { uri: posterUrl } : fallback}
           onError={() => fail(posterUrl)} contentFit="contain" style={s.poster} />
-      </View>
-      <View style={[s.filmInfo, fontScale > 1.3 && s.filmInfoLargeText]}>
+        <View pointerEvents="none" style={s.glintClip}>
+          <Animated.View style={[s.glint, glintMotion]}>
+            <LinearGradient colors={["#F8E7CA00", "#F8E7CA80", "#F8E7CA00"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+          </Animated.View>
+        </View>
+      </Animated.View>
+      <Animated.View entering={enter(900)} style={[s.filmInfo, fontScale > 1.3 && s.filmInfoLargeText]}>
         <Text style={s.eyebrow}>TODAY'S FEATURE</Text>
         <Text accessibilityRole="header" style={[s.title, narrow && s.titleNarrow]}>{movie.title}</Text>
         <Text style={s.subtitle}>{[year, genreText].filter(Boolean).join(" · ")}</Text>
+      </Animated.View>
+    </View>
+    {!!reward.tagline && <Animated.Text entering={enter(1000)} style={s.tagline}>{reward.tagline}</Animated.Text>}
+    <Animated.View entering={enter(1000)} testID="result-scorecard" style={s.scorecard}>
+      <View style={s.scoreRow}>
+        <View accessible accessibilityLabel={score === null ? "Score unavailable" : `${score.toLocaleString()} points earned`}>
+          <Text style={s.points}>{score === null ? "—" : points.toLocaleString()}</Text>
+          <Text style={s.statLabel}>{score === null ? "Score unavailable" : "POINTS EARNED"}</Text>
+        </View>
+        <View accessible accessibilityLabel={`${game.guesses.length} of ${game.guessesMax} guesses used`} style={s.track}>
+          {Array.from({ length: Math.max(game.guessesMax, game.guesses.length) }, (_, i) => <TrackStep key={i} index={i}
+            color={game.correctAnswer && i === game.guesses.length - 1 ? colors.quinary : i < game.guesses.length ? colors.border : `${colors.border}40`} />)}
+        </View>
       </View>
-    </View>
-    {!!reward.tagline && <Text style={s.tagline}>{reward.tagline}</Text>}
-    <View style={s.resultStrip}>
-      <View style={s.stat}><Text style={s.statNumber}>{score === null ? "—" : score.toLocaleString()}</Text><Text style={s.statLabel}>{score === null ? "Score unavailable" : "POINTS EARNED"}</Text></View>
-      <View style={[s.stat, s.statDivider]}><Text style={s.statNumber}>{game.guesses.length}</Text><Text style={s.statLabel}>GUESSES USED</Text></View>
-      <View style={[s.stat, s.statDivider]}><Text style={s.statNumber}>{difficulty}</Text><Text style={s.statLabel}>DIFFICULTY</Text></View>
-    </View>
-    {game.difficulty === "LEVEL_2" && manualHintsUsed(game) > 0 && <Text style={s.note}>
-      {manualHintsUsed(game)} hints used{game.correctAnswer ? ` · ${manualHintsUsed(game) * 50} hint points already deducted` : ""}
-    </Text>}
+      <View style={s.chips}>
+        <Text style={s.chip}>{difficulty}</Text>
+        <Text style={s.chip}>{game.guesses.length} of {game.guessesMax} guesses</Text>
+        {hints > 0 && <Text style={s.chip}>{hints} {hints === 1 ? "hint" : "hints"} used{game.correctAnswer ? ` · −${hints * 50} points` : ""}</Text>}
+      </View>
+    </Animated.View>
+    {game.statsProcessed && streak > 0 && <Animated.View entering={enter(1300)}><StreakMarquee streak={streak} /></Animated.View>}
+    <Animated.View entering={enter(1500)} style={s.actions}><ShareResultButton playerGame={game} shimmer /></Animated.View>
     {reward.people.length > 0 && <View style={s.castSection}>
-      <Text accessibilityRole="header" style={s.sectionTitle}>Starring</Text>
+      <Animated.Text entering={enter(1600)} accessibilityRole="header" style={s.sectionTitle}>Starring</Animated.Text>
       <View style={s.cast}>{reward.people.map((person, i) => {
         const url = imdbPersonUrl(person.imdbId)
         const portraitUrl = imageUrl(person.portrait, API_CONFIG.TMDB_IMAGE_BASE_URL_W185)
@@ -103,12 +155,13 @@ function MovieRewardScreen({ playerGame: game, lastGuessResult }: GameOverViewPr
             onError={() => fail(portraitUrl)} contentFit="cover" contentPosition={{ top: "20%", left: "50%" }} style={[s.portrait, narrow && s.portraitNarrow]} />
           <Text style={[s.actorName, narrow && s.actorNameNarrow]}>{person.name}</Text>
         </>
-        const style = [s.person, fontScale > 1.3 && s.personLargeText]
-        return url ? <Pressable key={`${person.name}-${i}`} accessibilityRole="link" accessibilityLabel={`Open IMDb page for ${person.name}`} onPress={() => openLink(url)} style={style}>{content}</Pressable>
-          : <View key={`${person.name}-${i}`} style={style}>{content}</View>
+        return <Animated.View key={`${person.name}-${i}`} entering={enter(1700 + i * 110)} style={[s.person, fontScale > 1.3 && s.personLargeText]}>
+          {url ? <Pressable accessibilityRole="link" accessibilityLabel={`Open IMDb page for ${person.name}`} onPress={() => openLink(url)}
+            style={({ pressed }) => pressed && s.personPressed}>{content}</Pressable> : content}
+        </Animated.View>
       })}</View>
     </View>}
-    <View style={[s.storyCard, narrow && s.storyCardNarrow]}>
+    <Animated.View entering={FadeIn.delay(1900).duration(600).reduceMotion(motionFor(reduced))} style={[s.storyCard, narrow && s.storyCardNarrow]}>
       <Text accessibilityRole="header" style={s.sectionTitle}>The story</Text>
       <Text style={s.body}>{reward.summary}</Text>
       <View style={s.facts}>
@@ -118,8 +171,7 @@ function MovieRewardScreen({ playerGame: game, lastGuessResult }: GameOverViewPr
         <View style={s.credit}><Text style={s.creditLabel}>YOUR CHALLENGE</Text><Text style={s.creditValue}>{difficulty} · {message}</Text></View>
       </View>
       {titleUrl && <Pressable accessibilityRole="link" onPress={() => openLink(titleUrl)} style={s.external}><Text style={s.link}>Explore {movie.title} on IMDb ↗</Text></Pressable>}
-    </View>
-    <View style={s.actions}><ShareResultButton playerGame={game} /></View>
+    </Animated.View>
     {game.guesses.length > 0 && <View style={s.history}>
       <Pressable accessibilityRole="button" accessibilityState={{ expanded: showGuesses }} aria-expanded={showGuesses} onPress={() => setShowGuesses(value => !value)} style={s.historyToggle}>
         <Text style={s.link}>{showGuesses ? "Hide" : "View"} your guesses ({game.guesses.length}) {showGuesses ? "−" : "+"}</Text>
@@ -131,6 +183,62 @@ function MovieRewardScreen({ playerGame: game, lastGuessResult }: GameOverViewPr
       <CountdownTimer compact />
     </View>
   </Animated.View>
+}
+
+function TrackStep({ index, color }: { index: number; color: string }) {
+  const s = useStyles(themedStyles)
+  const progress = useEntrance(1300 + index * 90, grow)
+  const motion = useAnimatedStyle(() => ({ transform: [{ scaleX: progress.value }] }))
+  return <Animated.View style={[s.trackStep, { backgroundColor: color }, motion]} />
+}
+
+const BULB_SPACING = 18
+
+/** Theatre-marquee bulbs chase around the streak card. */
+function StreakMarquee({ streak }: { streak: number }) {
+  const s = useStyles(themedStyles)
+  const reduced = usePremiereMotion()
+  const [size, setSize] = useState({ width: 0, height: 0 })
+  const phase = useSharedValue(0)
+  useEffect(() => {
+    if (reduced) return
+    phase.value = withRepeat(withTiming(1, { duration: 1600, easing: Easing.linear }), -1)
+    return () => cancelAnimation(phase)
+  }, [reduced, phase])
+  const { width, height } = size
+  const perimeter = 2 * (width + height)
+  const count = perimeter > 0 ? Math.floor(perimeter / BULB_SPACING) : 0
+  const point = (distance: number) => distance < width ? [distance, 0]
+    : distance < width + height ? [width, distance - width]
+    : distance < 2 * width + height ? [2 * width + height - distance, height]
+    : [0, perimeter - distance]
+  const onLayout = (event: LayoutChangeEvent) => {
+    const { width: w, height: h } = event.nativeEvent.layout
+    if (w !== width || h !== height) setSize({ width: w, height: h })
+  }
+  return <View onLayout={onLayout} style={s.streak} accessible accessibilityLabel={`${streak} day streak. Every challenge you finish keeps it alive, win or lose.`}>
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      {Array.from({ length: count }, (_, i) => {
+        const [x, y] = point((i / count) * perimeter)
+        return <Bulb key={i} index={i} count={count} phase={phase} reduced={reduced} x={x} y={y} />
+      })}
+    </View>
+    <Text style={s.streakNumber}>{streak}</Text>
+    <View style={s.streakText}>
+      <Text style={s.streakTitle}>{streak === 1 ? "Day streak" : "Days in a row"}</Text>
+      <Text style={s.subtitle}>Every challenge you finish keeps it alive, win or lose.</Text>
+    </View>
+  </View>
+}
+
+function Bulb({ index, count, phase, reduced, x, y }: { index: number; count: number; phase: SharedValue<number>; reduced: boolean; x: number; y: number }) {
+  const s = useStyles(themedStyles)
+  const glow = useAnimatedStyle(() => {
+    if (reduced) return { opacity: 0.6 }
+    const distance = (phase.value - index / count + 1) % 1
+    return { opacity: distance < 0.12 ? 1 - distance * 6 : 0.28 }
+  })
+  return <Animated.View style={[s.bulb, { left: x - 2.5, top: y - 2.5 }, glow]} />
 }
 
 const themedStyles = (theme: Theme) => StyleSheet.create({
@@ -146,6 +254,8 @@ const themedStyles = (theme: Theme) => StyleSheet.create({
   posterFrame: { width: 106, height: 159, padding: 4, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.backgroundLight, ...theme.shadows.medium },
   posterFrameNarrow: { width: 94, height: 141 },
   poster: { width: "100%", height: "100%" },
+  glintClip: { ...StyleSheet.absoluteFill, overflow: "hidden" },
+  glint: { position: "absolute", top: -40, bottom: -40, width: 46 },
   filmInfo: { flex: 1, minWidth: 0, paddingBottom: 2 },
   filmInfoLargeText: { flex: 0, width: "100%" },
   eyebrow: { fontFamily: "PremiereSans", fontSize: 10, lineHeight: 16, letterSpacing: 2, color: theme.colors.textSecondary },
@@ -153,16 +263,24 @@ const themedStyles = (theme: Theme) => StyleSheet.create({
   titleNarrow: { fontSize: 36, lineHeight: 40 },
   subtitle: { fontFamily: "PremiereSans", fontSize: 12, lineHeight: 19, color: theme.colors.textSecondary },
   tagline: { fontFamily: "PremiereClue", fontSize: 21, lineHeight: 28, color: theme.colors.textPrimary, textAlign: "center", marginTop: 22, marginHorizontal: 25 },
-  resultStrip: { flexDirection: "row", marginHorizontal: 25, marginTop: 22, paddingVertical: 15, borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.colors.border },
-  stat: { flex: 1, minWidth: 0, paddingHorizontal: 4, alignItems: "center" },
-  statDivider: { borderLeftWidth: 1, borderColor: `${theme.colors.border}66` },
-  statNumber: { fontFamily: "PremiereDisplay", fontSize: 30, lineHeight: 34, color: theme.colors.textPrimary, textAlign: "center" },
-  statLabel: { fontFamily: "PremiereSans", fontSize: 9, lineHeight: 14, letterSpacing: 1, color: theme.colors.textSecondary, marginTop: 6, textAlign: "center" },
-  note: { fontFamily: "PremiereSans", fontSize: 11, lineHeight: 17, color: theme.colors.textSecondary, marginTop: 8, marginHorizontal: 25 },
+  scorecard: { marginHorizontal: 20, marginTop: 22, padding: 16, gap: 12, borderRadius: 14, borderWidth: 1, borderColor: `${theme.colors.border}99`, backgroundColor: theme.colors.surface },
+  scoreRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" },
+  points: { fontFamily: "PremiereDisplay-Bold", fontSize: 40, lineHeight: 44, color: theme.colors.accentText, fontVariant: ["tabular-nums"] },
+  statLabel: { fontFamily: "PremiereSans", fontSize: 9, lineHeight: 14, letterSpacing: 1.5, color: theme.colors.textSecondary, marginTop: 4 },
+  track: { flexDirection: "row", gap: 5 },
+  trackStep: { width: 18, height: 6, borderRadius: 3, transformOrigin: "left" },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  chip: { fontFamily: "PremiereSans", fontSize: 11, lineHeight: 16, color: theme.colors.textSecondary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: `${theme.colors.textPrimary}10`, overflow: "hidden" },
+  streak: { marginHorizontal: 20, marginTop: 12, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: theme.colors.backgroundLight },
+  bulb: { position: "absolute", width: 5, height: 5, borderRadius: 2.5, backgroundColor: "#FFD38A" },
+  streakNumber: { fontFamily: "PremiereDisplay-Bold", fontSize: 30, lineHeight: 34, color: theme.colors.textPrimary, minWidth: 34, textAlign: "center" },
+  streakText: { flex: 1, minWidth: 0 },
+  streakTitle: { fontFamily: "PremiereSans", fontSize: 13, lineHeight: 19, color: theme.colors.textPrimary },
   castSection: { marginTop: 23, marginHorizontal: 25 },
   sectionTitle: { fontFamily: "PremiereDisplay", fontSize: 26, lineHeight: 32, color: theme.colors.textPrimary, marginBottom: 12 },
   cast: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   person: { width: "22%", flexGrow: 1, maxWidth: "25%", minHeight: 44 },
+  personPressed: { opacity: 0.75, transform: [{ scale: 0.97 }] },
   personLargeText: { width: "45%", maxWidth: "49%" },
   portrait: { width: "100%", height: 114, borderRadius: 2 },
   portraitNarrow: { height: 94 },

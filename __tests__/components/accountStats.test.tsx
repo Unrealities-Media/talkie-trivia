@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-
 import AccountStats from "../../src/components/accountStats"
 import { gameService } from "../../src/services/gameService"
 import { ThemeProvider } from "../../src/contexts/themeContext"
+jest.mock("../../src/utils/hooks/usePremiereMotion", () => ({ usePremiereMotion: () => true }))
 jest.mock("../../src/services/gameService", () => ({ gameService: { fetchPlayerStats: jest.fn() } }))
 jest.mock("../../src/state/gameStore", () => ({ useGameStore: (select: any) => select({ playerStats: null, error: "Today's content unavailable", loading: true }) }))
 jest.mock("../../src/components/playerStats", () => {
