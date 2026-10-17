@@ -58,9 +58,10 @@ test('cinematic reward matches the selected composition and handles result varia
   await page.evaluate(() => document.fonts.ready)
   await page.waitForFunction(() => [...document.querySelectorAll('[data-testid="cinematic-reward"] img')].every(image => image.complete && image.naturalWidth > 0))
   await capture('cinematic-reward-460.png')
+  // The backdrop pushes in briefly on arrival; measure it once it has settled.
+  await expect.poll(async () => (await page.getByTestId('reward-backdrop').boundingBox()).height, { timeout: 10000 }).toBe(224)
   const artwork = await page.getByTestId('reward-backdrop').boundingBox()
   const poster = await page.getByTestId('reward-poster').boundingBox()
-  expect(artwork.height).toBe(224)
   expect(poster.y).toBeLessThan(artwork.y + artwork.height)
   const cast = await page.getByText('Starring', { exact: true }).boundingBox()
   const story = await page.getByText('The story', { exact: true }).boundingBox()

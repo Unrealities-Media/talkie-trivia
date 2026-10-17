@@ -39,7 +39,8 @@ function useEntrance(delay: number, run: (to: number) => number) {
   }, [reduced, delay, progress, run])
   return progress
 }
-const slow = (to: number) => withTiming(to, { duration: 14000, easing: Easing.out(Easing.quad) })
+// Settles exactly at rest so the artwork band keeps its laid-out size.
+const settle = (to: number) => withTiming(to, { duration: 3000, easing: Easing.out(Easing.cubic) })
 const rise = (to: number) => withTiming(to, { duration: 850, easing: Easing.out(Easing.back(1.6)) })
 const spring = (to: number) => withSpring(to, { damping: 13, stiffness: 90 })
 const sweep = (to: number) => withTiming(to, { duration: 950, easing: Easing.inOut(Easing.cubic) })
@@ -87,11 +88,11 @@ function MovieRewardScreen({ playerGame: game, lastGuessResult }: GameOverViewPr
   const points = useCountUp(score ?? 0, { delay: 1100, duration: 1100 })
   const hints = game.difficulty === "LEVEL_2" ? manualHintsUsed(game) : 0
   const title = useEntrance(120, rise)
-  const backdrop = useEntrance(250, slow)
+  const backdrop = useEntrance(250, settle)
   const poster = useEntrance(550, spring)
   const glint = useEntrance(1500, sweep)
   const titleMotion = useAnimatedStyle(() => ({ opacity: Math.min(1, title.value * 1.4), transform: [{ perspective: 600 }, { translateY: (1 - title.value) * 34 }, { rotateX: `${(1 - title.value) * -60}deg` }] }))
-  const kenBurns = useAnimatedStyle(() => ({ opacity: Math.min(1, backdrop.value * 12), transform: [{ scale: 1.15 - backdrop.value * 0.13 }, { translateX: backdrop.value * -8 }] }))
+  const kenBurns = useAnimatedStyle(() => ({ opacity: Math.min(1, backdrop.value * 12), transform: [{ scale: 1.12 - backdrop.value * 0.12 }, { translateX: (1 - backdrop.value) * 8 }] }))
   const posterMotion = useAnimatedStyle(() => ({ opacity: Math.min(1, poster.value * 2), transform: [{ perspective: 800 }, { translateY: (1 - poster.value) * 60 }, { rotateY: `${(1 - poster.value) * -25}deg` }, { scale: 0.9 + poster.value * 0.1 }] }))
   const glintMotion = useAnimatedStyle(() => ({ opacity: glint.value > 0 && glint.value < 1 ? 1 : 0, transform: [{ translateX: -120 + glint.value * 260 }, { rotate: "18deg" }] }))
 
