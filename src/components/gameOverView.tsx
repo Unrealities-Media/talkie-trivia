@@ -216,7 +216,7 @@ function StreakMarquee({ streak }: { streak: number }) {
     const { width: w, height: h } = event.nativeEvent.layout
     if (w !== width || h !== height) setSize({ width: w, height: h })
   }
-  return <View onLayout={onLayout} style={s.streak} accessible accessibilityLabel={`${streak} day streak. Every challenge you finish keeps it alive, win or lose.`}>
+  return <View testID="streak-marquee" onLayout={onLayout} style={s.streak} accessible accessibilityLabel={`${streak} day streak. Every challenge you finish keeps it alive, win or lose.`}>
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       {Array.from({ length: count }, (_, i) => {
         const [x, y] = point((i / count) * perimeter)
@@ -238,7 +238,7 @@ function Bulb({ index, count, phase, reduced, x, y }: { index: number; count: nu
     const distance = (phase.value - index / count + 1) % 1
     return { opacity: distance < 0.12 ? 1 - distance * 6 : 0.28 }
   })
-  return <Animated.View style={[s.bulb, { left: x - 2.5, top: y - 2.5 }, glow]} />
+  return <Animated.View testID="marquee-bulb" style={[s.bulb, { left: x - 2.5, top: y - 2.5 }, glow]} />
 }
 
 const themedStyles = (theme: Theme) => StyleSheet.create({

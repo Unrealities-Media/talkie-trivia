@@ -42,7 +42,7 @@ export default function PremiereStage({ children, cue }: { children: React.React
   const sweep = useAnimatedStyle(() => ({ opacity: Math.sin(projection.value * Math.PI) * 0.3, transform: [{ translateX: -300 + projection.value * 850 }, { rotate: "-18deg" }] }))
 
   return <View style={styles.stage}>
-    <Animated.View onLayout={() => setIsLaidOut(true)} style={[styles.screen, screen]}>
+    <Animated.View testID="premiere-screen" onLayout={() => setIsLaidOut(true)} style={[styles.screen, screen]}>
       <Image source={require("../../assets/premiere/screen.png")} style={[StyleSheet.absoluteFill, { opacity: 0.65 }]} contentFit="fill" accessible={false} />
       <View style={styles.paper}>
         <Text style={styles.clueLabel}>CLUE {String(Math.min(cue + 1, 5)).padStart(2, "0")}</Text>

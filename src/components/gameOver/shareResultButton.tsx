@@ -30,7 +30,7 @@ function Shimmer() {
   }, [reduced, sweep])
   const motion = useAnimatedStyle(() => ({ opacity: sweep.value > 0 && sweep.value < 1 ? 1 : 0, transform: [{ translateX: -140 + sweep.value * 480 }, { rotate: "20deg" }] }))
   if (reduced) return null
-  return <View pointerEvents="none" style={shimmerStyles.clip}>
+  return <View testID="share-shimmer" pointerEvents="none" style={shimmerStyles.clip}>
     <Animated.View style={[shimmerStyles.band, motion]}>
       <LinearGradient colors={["#FFFFFF00", "#FFFFFF73", "#FFFFFF00"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
     </Animated.View>
